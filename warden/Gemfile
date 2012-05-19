@@ -1,9 +1,9 @@
 source "http://rubygems.org"
 
 gem "rake"
-gem "vcap_common"
-gem "vcap_logging"
-gem "eventmachine", "0.12.11.cloudfoundry.3"
+gem "vcap_common", :git => 'git://github.com/cloudfoundry/vcap-common.git', :ref => '72b230b6'
+gem "vcap_logging", :git => 'git://github.com/cloudfoundry/common.git', :ref => 'e36886a1'
+gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'git://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
 gem "yajl-ruby"
 gem "em-posix-spawn", '> 0.0.1'
 
