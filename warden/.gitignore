@@ -2,3 +2,4 @@
 .bundle
 pkg/*
 /tmp
+root/linux/skeleton/bin/clone
