@@ -44,13 +44,13 @@ describe "server implementing Linux containers", :platform => "linux", :needs_ro
       hund_mb = 100 * 1024 * 1024
       client.limit(@handle, "mem", hund_mb).should == "ok"
       client.limit(@handle, "mem").should == hund_mb
-      raw_lim = File.read(File.join("/dev/cgroup/", "instance-#{@handle}", "memory.limit_in_bytes"))
+      raw_lim = File.read(File.join("/sys/fs/cgroup/", "instance-#{@handle}", "memory.limit_in_bytes"))
       raw_lim.to_i.should == hund_mb
     end
 
     it 'stops containers in which an oom event occurs' do
       one_mb = 1024 * 1024
-      usage = File.read(File.join("/dev/cgroup/", "instance-#{@handle}", "memory.usage_in_bytes"))
+      usage = File.read(File.join("/sys/fs/cgroup/", "instance-#{@handle}", "memory.usage_in_bytes"))
       mem_limit = usage.to_i + 10 * one_mb
       client.limit(@handle, "mem", mem_limit)
 

@@ -5,8 +5,13 @@ set -o errexit
 shopt -s nullglob
 cd $(dirname "${0}")
 
-cgroup_path=/dev/cgroup
-mkdir -p ${cgroup_path}
+cgroup_path=/sys/fs/cgroup
+
+if [ ! -d $cgroup_path ]
+then
+  echo "$cgroup_path does not exist..."
+  exit 1
+fi
 
 # Mount if not already mounted
 if ! grep -q ${cgroup_path} /proc/mounts; then

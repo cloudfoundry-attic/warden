@@ -8,8 +8,8 @@ cd $(dirname "${0}")
 source ./common.sh
 source ./config
 
-mkdir -p /dev/cgroup/instance-${id}
-pushd /dev/cgroup/instance-${id} > /dev/null
+mkdir -p /sys/fs/cgroup/instance-${id}
+pushd /sys/fs/cgroup/instance-${id} > /dev/null
 
 cat ../cpuset.cpus > cpuset.cpus
 cat ../cpuset.mems > cpuset.mems

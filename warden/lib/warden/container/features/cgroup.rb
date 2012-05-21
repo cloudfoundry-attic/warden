@@ -9,7 +9,7 @@ module Warden
       module Cgroup
 
         def cgroup_root_path
-          File.join("/dev/cgroup", "instance-#{self.handle}")
+          File.join("/sys/fs/cgroup", "instance-#{self.handle}")
         end
 
         def get_info
