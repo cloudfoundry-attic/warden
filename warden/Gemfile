@@ -9,5 +9,5 @@ gem "em-posix-spawn", '> 0.0.1'
 
 group :spec do
   gem "rspec"
-  gem "warden-client"
+  gem "warden-client", :git => 'git://github.com/d/vcap-warden-and-friends.git'
 end
