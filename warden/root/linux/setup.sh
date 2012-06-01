@@ -5,6 +5,17 @@ set -o errexit
 shopt -s nullglob
 cd $(dirname "${0}")
 
+# Check if our old mount point exists, and if so clean it up
+if [ -d /dev/cgroup ]
+then
+  if grep -q /dev/cgroup /proc/mounts
+  then
+    umount /dev/cgroup
+  fi
+
+  rmdir /dev/cgroup
+fi
+
 cgroup_path=/sys/fs/cgroup
 
 if [ ! -d $cgroup_path ]
