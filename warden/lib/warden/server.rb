@@ -4,6 +4,7 @@ require "warden/logger"
 require "warden/errors"
 require "warden/container"
 require "warden/pool/network"
+require "warden/pool/port"
 
 require "eventmachine"
 require "yajl"
@@ -75,10 +76,14 @@ module Warden
 
     def self.setup_network(config = nil)
       config ||= {}
+
       network_start_address = Network::Address.new(config["pool_start_address"] || "10.254.0.0")
       network_size = config["pool_size"] || 64
       network_pool = Pool::Network.new(network_start_address, network_size)
       container_klass.network_pool = network_pool
+
+      port_pool = Pool::Port.new
+      container_klass.port_pool = port_pool
     end
 
     def self.setup(config = {})
