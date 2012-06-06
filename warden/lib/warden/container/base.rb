@@ -58,9 +58,9 @@ module Warden
           @registry = nil
         end
 
-        # This needs to be set by some setup routine. Container logic expects
-        # this attribute to hold an instance of Warden::Pool::Network.
+        # These attributes need to be set by some setup routine.
         attr_accessor :network_pool
+        attr_accessor :port_pool
 
         # Acquire resources required for every container instance.
         def acquire(resources)
