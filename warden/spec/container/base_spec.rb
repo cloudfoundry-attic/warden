@@ -6,11 +6,17 @@ class SpecNetworkPool < Array
   alias :release :push
 end
 
+class SpecUidPool < Array
+  alias :acquire :shift
+  alias :release :push
+end
+
 describe Warden::Container::Base do
 
   # Shortcuts
   Container = Warden::Container::Base
   NetworkPool = SpecNetworkPool
+  UidPool = SpecUidPool
 
   def new_connection
     connection = double("connection")
@@ -30,6 +36,10 @@ describe Warden::Container::Base do
     NetworkPool.new
   end
 
+  let(:uid_pool) do
+    UidPool.new
+  end
+
   before(:all) do
     Warden::Logger.logger = nil
   end
@@ -37,8 +47,10 @@ describe Warden::Container::Base do
   before(:each) do
     Container.reset!
     Container.network_pool = network_pool
+    Container.uid_pool = uid_pool
 
     network_pool.push(network)
+    uid_pool.push(1)
   end
 
   def initialize_container(connection = nil, options = {})
@@ -57,6 +69,7 @@ describe Warden::Container::Base do
         container = Container.new(connection)
         container.network.should == network
         network_pool.should be_empty
+        uid_pool.should be_empty
       end
 
       it "should register with the specified connection" do
@@ -79,6 +92,7 @@ describe Warden::Container::Base do
         end.to raise_error
 
         network_pool.size.should == 1
+        uid_pool.size.should == 1
       end
     end
   end
@@ -132,6 +146,7 @@ describe Warden::Container::Base do
         end.to raise_error
 
         network_pool.size.should == 1
+        uid_pool.size.should == 1
       end
 
       context "on failure of destroy" do
@@ -152,6 +167,7 @@ describe Warden::Container::Base do
           end.to raise_error
 
           network_pool.should be_empty
+          uid_pool.should be_empty
         end
       end
     end

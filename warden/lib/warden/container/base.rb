@@ -61,6 +61,7 @@ module Warden
         # These attributes need to be set by some setup routine.
         attr_accessor :network_pool
         attr_accessor :port_pool
+        attr_accessor :uid_pool
 
         # Acquire resources required for every container instance.
         def acquire(resources)
@@ -72,6 +73,8 @@ module Warden
 
             resources[:network] = network
           end
+
+          resources[:uid] ||= uid_pool.acquire
         end
 
         # Release resources required for every container instance.
@@ -79,6 +82,9 @@ module Warden
           if network = resources.delete(:network)
             network_pool.release(network)
           end
+
+          uid = resources.delete(:uid)
+          uid_pool.release(uid) if uid
         end
 
         # Override #new to make sure that acquired resources are released when
@@ -206,6 +212,10 @@ module Warden
 
       def container_ip
         @container_ip ||= network + 2
+      end
+
+      def uid
+        @uid ||= resources[:uid]
       end
 
       def grace_time
