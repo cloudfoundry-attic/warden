@@ -43,6 +43,7 @@ module Warden
           "network_host_ip" => host_ip.to_human,
           "network_container_ip" => container_ip.to_human,
           "network_netmask" => self.class.network_pool.netmask.to_human,
+          "user_uid" => uid,
           "disk_size_mb" => @config[:disk_size_mb],
           "rootfs_path" => rootfs_path,
         }
