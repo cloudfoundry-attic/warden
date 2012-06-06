@@ -46,17 +46,14 @@ module Warden
         job
       end
 
-      # Nothing has to be done to map an external port to an insecure
-      # container. The container lives in the same kernel namespaces as all
-      # other processes, so it has to share its ip space them. To make it more
-      # likely for a process inside the insecure container to bind to this
-      # inbound port, we grab and return an ephemeral port.
       def do_net_in
-        socket = TCPServer.new("0.0.0.0", 0)
-        socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
-        socket.do_not_reverse_lookup = true
-        port = socket.addr[1]
-        socket.close
+        port = self.class.port_pool.acquire
+
+        # Port may be re-used after this container has been destroyed
+        on(:after_destroy) {
+          self.class.port_pool.release(port)
+        }
+
         port
       end
 
