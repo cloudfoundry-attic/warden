@@ -59,7 +59,7 @@ module Warden
         end
 
         # This needs to be set by some setup routine. Container logic expects
-        # this attribute to hold an instance of Warden::Pool::NetworkPool.
+        # this attribute to hold an instance of Warden::Pool::Network.
         attr_accessor :network_pool
 
         # Acquire resources required for every container instance.
