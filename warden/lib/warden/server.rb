@@ -86,12 +86,22 @@ module Warden
       container_klass.port_pool = port_pool
     end
 
+    def self.setup_user(config = nil)
+      config ||= {}
+
+      uid_start_uid = config["pool_start_uid"] || 10000
+      uid_size = config["pool_size"] || 64
+      uid_pool = Pool::Uid.new(uid_start_uid.to_i, uid_size.to_i)
+      container_klass.uid_pool = uid_pool
+    end
+
     def self.setup(config = {})
       @config = config
 
       setup_server config["server"]
       setup_logger config["logging"]
       setup_network config["network"]
+      setup_user config["user"]
     end
 
     def self.run!
