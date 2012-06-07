@@ -11,7 +11,7 @@ network access. As of writing, the only supported OS is Linux.
 
 ## Getting Started
 
-This short guide assumes Ruby 1.9 and Bundler are already available.
+This short guide assumes Ruby 1.9 and Bundler are already available. Ensure that Ruby 1.9 has GNU readline library support through the package: 'libreadline-dev' and zlib support through the 'zlib1g-dev' package.
 
 #### Install the right kernel
 
