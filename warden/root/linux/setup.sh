@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname "${0}")
 
-# Check if our old mount point exists, and if so clean it up
+# Check if the old mount point exists, and if so clean it up
 if [ -d /dev/cgroup ]
 then
   if grep -q /dev/cgroup /proc/mounts
@@ -26,10 +26,28 @@ then
   exit 1
 fi
 
-# Mount if not already mounted
-if ! grep -q ${cgroup_path} /proc/mounts; then
-  mount -t cgroup -o blkio,devices,memory,cpuacct,cpu,cpuset none ${cgroup_path}
+# Check if /sys/fs/cgroup is mounted with a cgroup mount, and umount if so
+if grep "${cgroup_path}\s" /proc/mounts | cut -d' ' -f3 | grep -q cgroup
+then
+  umount $cgroup_path
 fi
+
+# Mount tmpfs
+if ! grep "${cgroup_path}\s" /proc/mounts | cut -d' ' -f3 | grep -q tmpfs
+then
+  mount -t tmpfs none $cgroup_path
+fi
+
+# Mount cgroup subsystems individually
+for subsystem in cpu cpuacct devices memory
+do
+  mkdir -p $cgroup_path/$subsystem
+
+  if ! grep -q "${cgroup_path}/$subsystem\s" /proc/mounts
+  then
+    mount -t cgroup -o $subsystem none $cgroup_path/$subsystem
+  fi
+done
 
 ./net.sh setup
 
