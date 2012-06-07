@@ -22,7 +22,7 @@ module Warden
             @container = container
 
             oom_notifier_path = Warden::Util.path("src/oom/oom")
-            @child = DeferredChild.new(oom_notifier_path, container.cgroup_root_path)
+            @child = DeferredChild.new(oom_notifier_path, container.cgroup_path(:memory))
 
             # Zero exit status means a process OOMed, non-zero means an error occurred
             @child.callback do
@@ -90,7 +90,7 @@ module Warden
             end
 
             ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
-              File.open(File.join(cgroup_root_path, path), 'w') do |f|
+              File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
                 f.write(mem_limit.to_s)
               end
             end

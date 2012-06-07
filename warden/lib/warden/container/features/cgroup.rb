@@ -8,15 +8,15 @@ module Warden
 
       module Cgroup
 
-        def cgroup_root_path
-          File.join("/sys/fs/cgroup", "instance-#{self.handle}")
+        def cgroup_path(subsystem)
+          File.join("/sys/fs/cgroup", subsystem.to_s, "instance-#{self.handle}")
         end
 
         def get_info
           info = super
 
           begin
-            File.open(File.join(cgroup_root_path, "memory.usage_in_bytes"), 'r') do |f|
+            File.open(File.join(cgroup_path(:memory), "memory.usage_in_bytes"), 'r') do |f|
               usage = f.read
               info['stats']['mem_usage_B'] = Integer(usage.chomp)
             end

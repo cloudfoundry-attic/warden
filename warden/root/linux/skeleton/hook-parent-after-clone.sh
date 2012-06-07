@@ -10,16 +10,22 @@ cd $(dirname "${0}")
 source ./common.sh
 source ./config
 
-mkdir -p /sys/fs/cgroup/instance-${id}
-pushd /sys/fs/cgroup/instance-${id} > /dev/null
+# Add new group for every subsystem
+for system_path in /sys/fs/cgroup/*
+do
+  instance_path=$system_path/instance-$id
 
-cat ../cpuset.cpus > cpuset.cpus
-cat ../cpuset.mems > cpuset.mems
+  mkdir -p $instance_path
 
-echo 1 > cgroup.clone_children
-echo ${PID} > tasks
+  if [ $(basename $system_path) == "cpuset" ]
+  then
+    cat $system_path/cpuset.cpus > $instance_path/cpuset.cpus
+    cat $system_path/cpuset.mems > $instance_path/cpuset.mems
+  fi
 
-popd > /dev/null
+  echo 1 > $instance_path/cgroup.clone_children
+  echo $PID > $instance_path/tasks
+done
 
 echo ${PPID} >> ppid
 
