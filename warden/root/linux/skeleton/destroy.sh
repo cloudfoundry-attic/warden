@@ -7,6 +7,8 @@ shopt -s nullglob
 
 cd $(dirname "${0}")
 
+./net.sh teardown
+
 # Wait for the kernel to release resources
 while [ 1 ]; do
   if [ -f ppid ]; then
