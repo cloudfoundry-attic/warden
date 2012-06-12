@@ -3,6 +3,7 @@ require "warden/container/base"
 require "warden/container/features/cgroup"
 require "warden/container/features/net"
 require "warden/container/features/mem_limit"
+require "warden/container/features/disk_usage"
 
 module Warden
 
@@ -13,6 +14,7 @@ module Warden
       include Features::Cgroup
       include Features::Net
       include Features::MemLimit
+      include Features::DiskUsage
 
       class << self
 
