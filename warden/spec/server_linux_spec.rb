@@ -113,6 +113,39 @@ describe "server implementing Linux containers", :platform => "linux", :needs_ro
     end
   end
 
+  describe "network forwarding", :netfilter => true do
+
+    include_context :server_linux
+
+    before(:each) do
+      @handle = client.create
+    end
+
+    after(:each) do
+      # Verify that the port mapping in @ports works
+      job = client.spawn(@handle, "echo ok | nc -l #{@ports["container_port"]}")
+
+      # Give nc some time to start
+      sleep 0.050
+
+      # Connect via external IP
+      external_ip = `ip route get 1.1.1.1`.split(/\n/).first.split(/\s+/).last
+      `nc #{external_ip} #{@ports["host_port"]}`.chomp.should == "ok"
+
+      # Clean up
+      client.link(@handle, job)
+    end
+
+    it "should work" do
+      @ports = client.net(@handle, :in)
+    end
+
+    it "should allow the container side port to be specified" do
+      @ports = client.net(@handle, :in, 8080)
+      @ports["container_port"].should == 8080
+    end
+  end
+
   describe "cgroup" do
 
     include_context :server_linux

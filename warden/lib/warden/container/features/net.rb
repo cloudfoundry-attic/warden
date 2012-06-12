@@ -15,20 +15,24 @@ module Warden
           base.extend(ClassMethods)
         end
 
-        def do_net_in
-          port = self.class.port_pool.acquire
+        def do_net_in(container_port = nil)
+          host_port = self.class.port_pool.acquire
+
+          # Use same port on the container side as the host side if unspecified
+          container_port ||= host_port
 
           # Port may be re-used after this container has been destroyed
           on(:after_destroy) {
-            self.class.port_pool.release(port)
+            self.class.port_pool.release(host_port)
           }
 
           sh *[ %{env},
-                %{PORT=%s} % port,
+                %{HOST_PORT=%d} % host_port,
+                %{CONTAINER_PORT=%d} % container_port,
                 %{%s/net.sh} % container_path,
                 %{in} ]
 
-          port
+          { :host_port => host_port, :container_port => container_port }
 
         rescue WardenError
           self.class.port_pool.release(port)

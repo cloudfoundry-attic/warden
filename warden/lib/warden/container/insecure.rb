@@ -46,15 +46,18 @@ module Warden
         job
       end
 
-      def do_net_in
-        port = self.class.port_pool.acquire
+      def do_net_in(container_port = nil)
+        host_port = self.class.port_pool.acquire
+
+        # Ignore the container port, since there is nothing we can do
+        container_port = host_port
 
         # Port may be re-used after this container has been destroyed
         on(:after_destroy) {
           self.class.port_pool.release(port)
         }
 
-        port
+        { :host_port => host_port, :container_port => container_port }
       end
 
       def do_copy_in(src_path, dst_path)
