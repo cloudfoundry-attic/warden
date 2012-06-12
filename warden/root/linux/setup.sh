@@ -27,13 +27,13 @@ then
 fi
 
 # Check if /sys/fs/cgroup is mounted with a cgroup mount, and umount if so
-if grep "${cgroup_path}\s" /proc/mounts | cut -d' ' -f3 | grep -q cgroup
+if grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q cgroup
 then
   umount $cgroup_path
 fi
 
 # Mount tmpfs
-if ! grep "${cgroup_path}\s" /proc/mounts | cut -d' ' -f3 | grep -q tmpfs
+if ! grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q tmpfs
 then
   mount -t tmpfs none $cgroup_path
 fi
@@ -43,7 +43,7 @@ for subsystem in cpu cpuacct devices memory
 do
   mkdir -p $cgroup_path/$subsystem
 
-  if ! grep -q "${cgroup_path}/$subsystem\s" /proc/mounts
+  if ! grep -q "${cgroup_path}/$subsystem " /proc/mounts
   then
     mount -t cgroup -o $subsystem none $cgroup_path/$subsystem
   fi
