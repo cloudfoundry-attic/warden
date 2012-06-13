@@ -26,11 +26,10 @@ module Warden
             self.class.port_pool.release(host_port)
           }
 
-          sh *[ %{env},
-                %{HOST_PORT=%d} % host_port,
-                %{CONTAINER_PORT=%d} % container_port,
-                %{%s/net.sh} % container_path,
-                %{in} ]
+          sh File.join(container_path, "net.sh"), "in", :env => {
+            "HOST_PORT"      => host_port,
+            "CONTAINER_PORT" => container_port,
+          }
 
           { :host_port => host_port, :container_port => container_port }
 
@@ -42,11 +41,10 @@ module Warden
         def do_net_out(spec)
           network, port = spec.split(":")
 
-          sh *[ %{env},
-                %{NETWORK=%s} % network,
-                %{PORT=%s} % port,
-                %{%s/net.sh} % container_path,
-                %{out} ]
+          sh File.join(container_path, "net.sh"), "out", :env => {
+            "NETWORK" => network,
+            "PORT"    => port,
+          }
 
           "ok"
         end

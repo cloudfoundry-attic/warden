@@ -24,7 +24,14 @@ module Warden
           end
 
         skip_raise = options.delete(:raise) == false
-        options = { :timeout => 5.0, :max => 1024 * 1024 }.merge(options)
+
+        # All environment variables must be strings
+        env = options.delete(:env) || {}
+        env.keys.each do |k|
+          env[k] = env[k].to_s
+        end
+
+        options = { :env => env, :timeout => 5.0, :max => 1024 * 1024 }.merge(options)
 
         p = DeferredChild.new(*(args + [options]))
         p.yield

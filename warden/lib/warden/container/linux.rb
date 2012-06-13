@@ -25,10 +25,10 @@ module Warden
 
           super(config)
 
-          sh *[ %{env},
-            %{ALLOW_NETWORKS=%s} % allow_networks.join(" "),
-            %{DENY_NETWORKS=%s} % deny_networks.join(" "),
-            %{%s/setup.sh} % root_path ]
+          sh File.join(root_path, "setup.sh"), :env => {
+            "ALLOW_NETWORKS" => allow_networks.join(" "),
+            "DENY_NETWORKS" => deny_networks.join(" "),
+          }
         end
       end
 
@@ -50,27 +50,23 @@ module Warden
         env
       end
 
-      def env_command
-        "env #{env.map { |k, v| "#{k}=#{v}" }.join(" ")}"
-      end
-
       def do_create
-        sh "#{env_command} #{root_path}/create.sh #{container_path}", :timeout => nil
+        sh File.join(root_path, "create.sh"), container_path, :env => env, :timeout => nil
         debug "container created"
 
         write_bind_mount_commands
         debug "wrote bind mount commands"
 
-        sh "#{env_command} #{container_path}/start.sh", :timeout => nil
+        sh File.join(container_path, "start.sh"), :env => env, :timeout => nil
         debug "container started"
       end
 
       def do_stop
-        sh "#{container_path}/stop.sh"
+        sh File.join(container_path, "stop.sh")
       end
 
       def do_destroy
-        sh "#{root_path}/destroy.sh #{container_path}", :timeout => nil
+        sh File.join(root_path, "destroy.sh"), container_path, :timeout => nil
         debug "container destroyed"
       end
 
@@ -114,7 +110,7 @@ module Warden
         perform_rsync("vcap@container:#{src_path}", dst_path)
 
         if owner
-          sh "chown -R #{owner} #{dst_path}"
+          sh "chown", "-R", owner, dst_path
         end
 
         "ok"
@@ -203,13 +199,19 @@ module Warden
 
       def perform_rsync(src_path, dst_path)
         ssh_config_path = File.join(container_path, "ssh", "ssh_config")
-        cmd = ["rsync -e 'ssh -T -F #{ssh_config_path}'",
-               "-r",           # Recursive copy
-               "-p",           # Preserve permissions
-               "--links",      # Preserve symlinks
-               src_path,
-               dst_path].join(" ")
-        sh(cmd, :timeout => nil)
+
+        # Build arguments
+        args  = ["rsync"]
+        args += ["-e", "ssh -T -F #{ssh_config_path}"]
+        args += ["-r"]      # Recursive copy
+        args += ["-p"]      # Preserve permissions
+        args += ["--links"] # Preserve symlinks
+        args += [src_path, dst_path]
+
+        # Add option hash
+        args << { :timeout => nil }
+
+        sh *args
       end
 
       def write_bind_mount_commands
