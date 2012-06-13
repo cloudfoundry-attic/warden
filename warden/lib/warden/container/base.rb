@@ -43,7 +43,7 @@ module Warden
       class << self
 
         attr_reader :root_path
-        attr_reader :rootfs_path
+        attr_reader :container_rootfs_path
         attr_reader :container_depot_path
 
         # Stores a map of handles to their respective container objects. Only
@@ -107,12 +107,14 @@ module Warden
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
 
-          @rootfs_path = config["server"]["container_rootfs"] \
-                         || File.join(@root_path, "base", "rootfs")
+          @container_rootfs_path   = config["server"]["container_rootfs_path"]
+          @container_rootfs_path ||= config["server"]["container_rootfs"]
+          @container_rootfs_path ||= File.join(@root_path, "base", "rootfs")
 
+          @container_depot_path   = config["server"]["container_depot_path"]
+          @container_depot_path ||= config["server"]["container_depot"]
+          @container_depot_path ||= File.join(@root_path, "instances")
 
-          @container_depot_path = config["server"]["container_depot"] \
-                                  || File.join(@root_path, "instances")
           FileUtils.mkdir_p(@container_depot_path)
         end
 
@@ -278,8 +280,8 @@ module Warden
       end
 
       # Path to the chroot used as the ro portion of the union mount
-      def rootfs_path
-        @rootfs_path ||= self.class.rootfs_path
+      def container_rootfs_path
+        @container_rootfs_path ||= self.class.container_rootfs_path
       end
 
       # Path to the directory that will house all created containers

@@ -27,11 +27,11 @@ server:
 
   # Specifies the path to the base chroot used as the read-only root
   # filesystem
-  container_rootfs: /tmp/warden/rootfs
+  container_rootfs_path: /tmp/warden/rootfs
 
   # Specifies the path to the parent directory under which all containers
   # will live.
-  container_depot: /tmp/warden/containers
+  container_depot_path: /tmp/warden/containers
 
 logging:
   level: debug2

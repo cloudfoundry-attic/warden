@@ -45,7 +45,7 @@ module Warden
           "network_netmask" => self.class.network_pool.netmask.to_human,
           "user_uid" => uid,
           "disk_size_mb" => @config[:disk_size_mb],
-          "rootfs_path" => rootfs_path,
+          "rootfs_path" => container_rootfs_path,
         }
         env
       end
