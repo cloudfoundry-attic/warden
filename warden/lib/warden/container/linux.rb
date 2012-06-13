@@ -72,8 +72,6 @@ module Warden
       def do_destroy
         sh "#{root_path}/destroy.sh #{container_path}", :timeout => nil
         debug "container destroyed"
-        sh "rm -rf #{container_path}", :timeout => nil
-        debug "container removed"
       end
 
       def create_job(script, opts = {})
