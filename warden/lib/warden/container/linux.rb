@@ -3,6 +3,7 @@ require "warden/container/base"
 require "warden/container/features/cgroup"
 require "warden/container/features/net"
 require "warden/container/features/mem_limit"
+require "warden/container/features/quota"
 
 module Warden
 
@@ -13,6 +14,7 @@ module Warden
       include Features::Cgroup
       include Features::Net
       include Features::MemLimit
+      include Features::Quota
 
       class << self
 
@@ -28,6 +30,8 @@ module Warden
           sh File.join(root_path, "setup.sh"), :env => {
             "ALLOW_NETWORKS" => allow_networks.join(" "),
             "DENY_NETWORKS" => deny_networks.join(" "),
+            "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
+            "CONTAINER_DEPOT_PATH" => container_depot_path,
           }
         end
       end

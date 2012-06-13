@@ -345,6 +345,7 @@ Other dependencies are:
 
 * build-essential (for compiling Warden's C bits)
 * debootstrap (for bootstrapping the container's base filesystem)
+* quota (for managing file system quotas)
 
 Further bootstrapping of Warden can be done by running `rake setup`.
 
