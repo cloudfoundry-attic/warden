@@ -1,12 +1,12 @@
 GIT
   remote: git://github.com/cloudfoundry/common.git
-  revision: e36886a189b82f880a5aa3e9169712d5d9048a88
-  ref: e36886a1
+  revision: 309a39e1ff876efec3ec568fcc7e902d857f8107
+  ref: 309a39e1
   specs:
-    em-posix-spawn (0.0.5)
+    em-posix-spawn (0.0.6)
       eventmachine
       posix-spawn
-    vcap_logging (1.0.1)
+    vcap_logging (1.0.2)
       rake
 
 GIT
@@ -71,7 +71,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  em-posix-spawn (> 0.0.1)
+  em-posix-spawn!
   eventmachine (= 0.12.11.cloudfoundry.3)!
   rake
   rspec
