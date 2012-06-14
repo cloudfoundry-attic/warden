@@ -283,8 +283,8 @@ module Warden
 
         case request[2]
         when "in"
-          request.require_arguments { |n| n == 3 }
-          container.net_in
+          request.require_arguments { |n| n == 3 || n == 4 }
+          container.net_in(request[3])
         when "out"
           request.require_arguments { |n| n == 4 }
           container.net_out(request[3])

@@ -85,16 +85,21 @@ case "${1}" in
     ;;
 
   "in")
-    if [ -z "${PORT:-}" ]; then
-      echo "Please specify PORT..." 1>&2
+    if [ -z "${HOST_PORT:-}" ]; then
+      echo "Please specify HOST_PORT..." 1>&2
+      exit 1
+    fi
+
+    if [ -z "${CONTAINER_PORT:-}" ]; then
+      echo "Please specify CONTAINER_PORT..." 1>&2
       exit 1
     fi
 
     iptables -t nat -A ${nat_instance_chain} \
       --protocol tcp \
-      --destination-port "${PORT}" \
+      --destination-port "${HOST_PORT}" \
       --jump DNAT \
-      --to-destination "${network_container_ip}"
+      --to-destination "${network_container_ip}:${CONTAINER_PORT}"
 
     ;;
 

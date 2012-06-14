@@ -16,17 +16,17 @@ module Warden
       end
 
       def do_create
-        sh "#{root_path}/create.sh #{container_path}"
+        sh File.join(root_path, "create.sh"), container_path
         debug "insecure container created"
       end
 
       def do_stop
-        sh "#{container_path}/stop.sh"
+        sh File.join(container_path, "stop.sh")
         debug "insecure container stopped"
       end
 
       def do_destroy
-        sh "#{root_path}/destroy.sh #{container_path}"
+        sh File.join(root_path, "destroy.sh"), container_path
         debug "insecure container destroyed"
       end
 
@@ -46,15 +46,18 @@ module Warden
         job
       end
 
-      def do_net_in
-        port = self.class.port_pool.acquire
+      def do_net_in(container_port = nil)
+        host_port = self.class.port_pool.acquire
+
+        # Ignore the container port, since there is nothing we can do
+        container_port = host_port
 
         # Port may be re-used after this container has been destroyed
         on(:after_destroy) {
           self.class.port_pool.release(port)
         }
 
-        port
+        { :host_port => host_port, :container_port => container_port }
       end
 
       def do_copy_in(src_path, dst_path)
@@ -67,7 +70,7 @@ module Warden
         perform_rsync(container_relative_path(src_path), dst_path)
 
         if owner
-          sh "chown -R #{owner} #{dst_path}"
+          sh "chown", "-R", owner, dst_path
         end
 
         "ok"
@@ -76,13 +79,17 @@ module Warden
       private
 
       def perform_rsync(src_path, dst_path)
-        cmd = ["rsync",
-               "-r",           # Recursive copy
-               "-p",           # Preserve permissions
-               "--links",      # Preserve symlinks
-               src_path,
-               dst_path].join(" ")
-        sh(cmd, :timeout => nil)
+        # Build arguments
+        args  = ["rsync"]
+        args += ["-r"]      # Recursive copy
+        args += ["-p"]      # Preserve permissions
+        args += ["--links"] # Preserve symlinks
+        args += [src_path, dst_path]
+
+        # Add option hash
+        args << { :timeout => nil }
+
+        sh *args
       end
 
       def container_relative_path(path)

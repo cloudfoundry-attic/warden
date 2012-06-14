@@ -147,11 +147,7 @@ EOT
       @client.connect() unless @client.connected?
       @client.write(words)
       begin
-        raw_result = @client.read.inspect
-        # Brutal hack to work around the fact that JSON refuses
-        # to parse simple strings.
-        x = JSON.parse("[#{raw_result}]")
-        command_info[:result] = x[0]
+        command_info[:result] = @client.read
         case words[0]
         when 'create'
           puts command_info[:result]
@@ -166,7 +162,7 @@ EOT
           puts stderr
           puts
         else
-          puts raw_result
+          puts command_info[:result].inspect
         end
       rescue  => e
         command_info[:error] = e

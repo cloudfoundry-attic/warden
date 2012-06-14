@@ -421,12 +421,12 @@ module Warden
         debug "exit"
       end
 
-      def net_in
+      def net_in(port = nil)
         debug "entry"
 
         check_state_in(State::Active)
 
-        do_net_in
+        do_net_in(port)
 
       rescue => err
         warn "error: #{err.message}"
