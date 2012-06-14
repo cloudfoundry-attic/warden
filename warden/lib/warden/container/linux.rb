@@ -44,7 +44,6 @@ module Warden
           "network_container_ip" => container_ip.to_human,
           "network_netmask" => self.class.network_pool.netmask.to_human,
           "user_uid" => uid,
-          "disk_size_mb" => @config[:disk_size_mb],
           "rootfs_path" => container_rootfs_path,
         }
         env
@@ -124,11 +123,6 @@ module Warden
         bind_mounts = sanitize_config_bind_mounts(config.delete("bind_mounts"))
         result[:bind_mounts] = bind_mounts
 
-        disk_size_mb = Server.container_disk_size_mb
-        disk_size_mb = config.delete("disk_size_mb") if config.has_key?("disk_size_mb")
-        disk_size_mb = sanitize_config_disk_size_mb(disk_size_mb)
-        result[:disk_size_mb] = disk_size_mb
-
         result
       end
 
@@ -178,23 +172,6 @@ module Warden
 
         # Filter nil entries
         bind_mounts.compact
-      end
-
-      def sanitize_config_disk_size_mb(disk_size_mb)
-        if disk_size_mb.is_a?(String)
-          begin
-            disk_size_mb = Integer(disk_size_mb)
-          rescue ArgumentError
-            raise WardenError.new("Expected `disk_size_mb` to be an integer.")
-          end
-        end
-
-        # Must be an integer
-        if !disk_size_mb.kind_of?(Integer)
-          raise WardenError.new("Expected `disk_size_mb` to be an integer.")
-        end
-
-        disk_size_mb
       end
 
       def perform_rsync(src_path, dst_path)

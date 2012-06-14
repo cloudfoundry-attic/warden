@@ -32,8 +32,6 @@ The OPTION argument for `create` can be one of:
       e.g. create bind_mount:/tmp/,/home/vcap/tmp,ro
   * grace_time:SECONDS
       e.g. create grace_time:300
-  * disk_size_mb:SIZE
-      e.g. create disk_size_mb:512
 
 Please see README.md for more details.
 EOT
@@ -102,7 +100,7 @@ EOT
         when "grace_time"
           config["grace_time"] = tail
         when "disk_size_mb"
-          config["disk_size_mb"] = tail
+          # Deprecated
         else
           raise "Unknown argument: #{head}"
         end
