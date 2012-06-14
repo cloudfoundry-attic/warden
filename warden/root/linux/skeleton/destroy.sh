@@ -9,15 +9,17 @@ cd $(dirname "${0}")
 
 ./net.sh teardown
 
-# Wait for the kernel to release resources
-while [ 1 ]; do
-  if [ -f ppid ]; then
-    kill -9 $(cat ppid) 2> /dev/null || true
-    rm -f ppid
-  fi
+if [ -f ppid ]
+then
+  ppid=$(cat ppid)
+  rm -f ppid
 
-  [ $(losetup -j fs | wc -l) -eq 0 ] && exit 0
-  sleep 0.1
-done
+  while true
+  do
+    kill -9 $ppid 2> /dev/null || true
+    [ ! -d /proc/$ppid ] && exit 0
+    sleep 0.1
+  done
+fi
 
 exit 1
