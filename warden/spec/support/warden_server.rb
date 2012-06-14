@@ -19,13 +19,46 @@ shared_context :warden_server do
   }
 
   let(:container_root) {
-    File.expand_path("../../../root", __FILE__)
+    Warden::Util.path("root")
   }
+
+  let(:container_depot_path) {
+    Dir.mktmpdir(nil, Warden::Util.path("tmp"))
+  }
+
+  let(:container_depot_file) {
+    container_depot_path + ".img"
+  }
+
+  around(:each) do |example|
+
+    `dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null`
+    $?.should be_success
+
+    features  = []
+    features << "^has_journal" # don't include a journal
+    features << "uninit_bg"    # skip initialization of block groups
+
+    `mkfs.ext4 -q -F -O #{features.join(",")} #{container_depot_file}`
+    $?.should be_success
+
+    `mount -o loop #{container_depot_file} #{container_depot_path}`
+    $?.should be_success
+
+    example.run
+
+    `umount #{container_depot_path}`
+    $?.should be_success
+
+    `rmdir #{container_depot_path}`
+    $?.should be_success
+
+    `rm #{container_depot_file}`
+    $?.should be_success
+  end
 
   before :each do
     FileUtils.rm_f(unix_domain_path)
-
-    @container_depot = Dir.mktmpdir
 
     # Grab new network for every test to avoid resource contention
     start_address = next_class_c
@@ -39,7 +72,7 @@ shared_context :warden_server do
           "unix_domain_path" => unix_domain_path,
           "container_root" => container_root,
           "container_klass" => container_klass,
-          "container_depot" => @container_depot,
+          "container_depot" => container_depot_path,
           "container_grace_time" => 1 },
         "network" => {
           "pool_start_address" => start_address,
@@ -73,9 +106,7 @@ shared_context :warden_server do
 
     # Destroy all artifacts
     Dir[File.join(container_root, "*", "clear.sh")].each do |clear|
-      `#{clear} #{@container_depot} > /dev/null`
+      `#{clear} #{container_depot_path} > /dev/null`
     end
-
-    FileUtils.rm_rf(@container_depot)
   end
 end
