@@ -72,9 +72,8 @@ shared_context :warden_server do
     Process.waitpid(@pid)
 
     # Destroy all artifacts
-    Dir[File.join(container_root, "*", "clear.sh",
-                  @container_depot)].each do |clear|
-      system(clear)
+    Dir[File.join(container_root, "*", "clear.sh")].each do |clear|
+      `#{clear} #{@container_depot} > /dev/null`
     end
 
     FileUtils.rm_rf(@container_depot)
