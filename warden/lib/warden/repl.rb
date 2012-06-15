@@ -2,6 +2,7 @@ require "readline"
 require "shellwords"
 require "warden/client"
 require "json"
+require "pp"
 
 module Warden
   class Repl
@@ -149,9 +150,7 @@ EOT
       begin
         command_info[:result] = @client.read
         case words[0]
-        when 'create'
-          puts command_info[:result]
-        when 'run'
+        when 'run', 'link'
           status, stdout, stderr = command_info[:result]
           puts "exit status: #{status}"
           puts
@@ -162,7 +161,7 @@ EOT
           puts stderr
           puts
         else
-          puts command_info[:result].inspect
+          pp command_info[:result]
         end
       rescue  => e
         command_info[:error] = e
