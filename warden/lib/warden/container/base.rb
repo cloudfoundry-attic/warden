@@ -410,6 +410,28 @@ module Warden
         debug "exit"
       end
 
+      def stream(job_id, &block)
+        debug "entry"
+
+        unless block
+          raise WardenError.new("empty block provided")
+        end
+
+        job = jobs[job_id.to_s]
+        unless job
+          raise WardenError.new("no such job")
+        end
+
+        job.stream(&block)
+
+      rescue => err
+        warn "error: #{err.message}"
+        raise
+
+      ensure
+        debug "exit"
+      end
+
       def run(script, opts = {})
         debug "entry"
 
@@ -569,9 +591,10 @@ module Warden
         attr_reader :container
         attr_reader :job_id
 
-        def initialize(container)
+        def initialize(container, child)
           @container = container
           @job_id = container.class.generate_job_id
+          @child = child
 
           @status = nil
           @yielded = []
@@ -587,7 +610,23 @@ module Warden
           @status = status
           @yielded.each { |f| f.resume(@status) }
         end
+
+        def stream(&block)
+
+          fiber = Fiber.current
+          stream_processor = lambda do |listener, data|
+            fiber.resume(listener, data) if fiber.alive?
+          end
+
+          listeners = @child.add_streams_listener(&stream_processor)
+          while !listeners.all?(&:closed?)
+            listener, data = Fiber.yield
+            block.call(listener.name, data) unless data.empty?
+            listeners.delete(listener) if listener.closed?
+          end
+        end
       end
     end
   end
 end
+
