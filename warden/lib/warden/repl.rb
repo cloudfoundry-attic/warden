@@ -8,7 +8,8 @@ module Warden
   class Repl
 
     COMMAND_LIST = ['ping', 'create', 'stop', 'destroy', 'spawn', 'link',
-                    'run', 'net', 'limit', 'info', 'list','copy', 'help']
+                    'stream', 'run', 'net', 'limit', 'info', 'list','copy',
+                    'help']
 
     HELP_MESSAGE =<<-EOT
 ping                          - ping warden
@@ -17,6 +18,7 @@ destroy <handle>              - shutdown container <handle>
 stop <handle>                 - stop all processes in <handle>
 spawn <handle> cmd            - spawns cmd inside container <handle>, returns #jobid
 link <handle> #jobid          - do blocking read on results from #jobid
+stream <handle> #jobid        - do blocking stream on results from #jobid
 run <handle>  cmd             - short hand for link(spawn(cmd)) i.e. runs cmd, blocks for result
 list                          - list containers
 info <handle>                 - show metadata for container <handle>
@@ -160,6 +162,11 @@ EOT
           puts "stderr:"
           puts stderr
           puts
+        when 'stream'
+          while command_info[:result].length > 0
+            puts "#{command_info[:result]}"
+            command_info[:result] = @client.read
+          end
         else
           pp command_info[:result]
         end
