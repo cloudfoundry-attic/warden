@@ -126,6 +126,10 @@ module Warden
           super
         end
 
+        def add_streams_listener(&listener)
+          @child.add_streams_listener(&listener)
+        end
+
         def yield
           f = Fiber.current
 

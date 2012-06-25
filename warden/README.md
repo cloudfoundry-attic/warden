@@ -252,6 +252,16 @@ containing its `STDOUT` and a string containing its `STDERR`. These
 elements may be `null` when they cannot be determined (e.g. the
 script couldn't be executed, was killed, etc.).
 
+### `stream HANDLE JOB_ID`
+
+Stream `STDOUT` and `STDERR` of scripts identified by `JOB_ID`, running
+in the container identified by `HANDLE`.
+
+Returns a 2-element typle containing the type of stream viz. `STDOUT`
+or `STDERR` as the first element, and a chunk of the stream as the
+second element. This element is never empty or `null`. Returns an empty
+tuple upon termination of the stream.
+
 ### `limit HANDLE (mem) [VALUE]`
 
 Set or get resource limits for the container identified by `HANDLE`.
