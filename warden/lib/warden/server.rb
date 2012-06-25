@@ -316,6 +316,17 @@ module Warden
         Server.container_klass.registry.keys
       end
 
+      def process_stream(request)
+        request.require_arguments { |n| n == 3 }
+        container = find_container(request[1])
+
+        container.stream(request[2]) { |name, data|
+          send_response([name, data])
+        }
+
+        []
+      end
+
       protected
 
       def find_container(handle)
