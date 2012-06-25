@@ -119,6 +119,34 @@ shared_examples "a warden server" do |container_klass|
         # Only test exit status
         result[0].should == 0
       end
+
+      it "works when the client streams the output of its unfinished job" do
+        handle = client.create
+        job = client.spawn(handle, "printf A; sleep 0.05; printf B")
+        sleep 0.00
+
+        stdout = ''
+        client.write(["stream", handle, job])
+        update = client.read
+        while update.length > 0
+          update[0].should == "stdout"
+          stdout << update[1]
+          update = client.read
+        end
+
+        stdout.should == 'AB'
+      end
+
+      it "works when the client streams the output of its finished job" do
+        handle = client.create
+        job = client.spawn(handle, "printf AB")
+        sleep 0.05
+
+        client.write(["stream", handle, job])
+        update = client.read
+        update[0].should == "stdout"
+        update[1].should == "AB"
+      end
     end
 
     context "on different connections" do
@@ -161,6 +189,68 @@ shared_examples "a warden server" do |container_klass|
 
         # Only test exit status
         result[0].should == 0
+      end
+
+      it "works when both c1 and c2 stream the output of c1's unfinished job"
+      do
+        handle = c1.create
+        job = c1.spawn(handle, "printf A; sleep 0.05; printf B")
+        sleep 0.00
+
+        c1.write(["stream", handle, job])
+        c2.write(["stream", handle, job])
+
+        [c1, c2].each do |client|
+          stdout = ''
+          update = client.read
+          while update.length > 0
+            update[0].should == "stdout"
+            stdout << update[1]
+            update = client.read
+          end
+
+          stdout.should == 'AB'
+        end
+      end
+
+      it "works when both c1 and c2 stream the output of c1's finished job" do
+        handle = c1.create
+        job = c1.spawn(handle, "printf AB")
+        sleep 0.00
+
+        c1.write(["stream", handle, job])
+        c2.write(["stream", handle, job])
+
+        [c1, c2].each do |client|
+          stdout = ''
+          update = client.read
+          while update.length > 0
+            update[0].should == "stdout"
+            stdout << update[1]
+            update = client.read
+          end
+
+          stdout.should == 'AB'
+        end
+      end
+
+      it "works when c2 streams the output of c1's job after c1 disconnected"
+      do
+        handle = c1.create
+        job = c1.spawn(handle, "printf AB")
+        c1.disconnect
+
+        c2.write(["stream", handle, job])
+
+        stdout = ''
+        update = c2.read
+        while update.length > 0
+          update[0].should == "stdout"
+          stdout << update[1]
+          update = c2.read
+        end
+
+        stdout.should == 'AB'
       end
     end
   end
