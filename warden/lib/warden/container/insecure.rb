@@ -31,9 +31,9 @@ module Warden
       end
 
       def create_job(script, opts = {})
-        job = Job.new(self)
-
         child = DeferredChild.new(File.join(container_path, "run.sh"), :input => script)
+
+        job = Job.new(self, child)
 
         child.callback do
           job.resume [child.exit_status, child.stdout, child.stderr]

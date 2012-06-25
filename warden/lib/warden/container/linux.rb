@@ -74,8 +74,6 @@ module Warden
       end
 
       def create_job(script, opts = {})
-        job = Job.new(self)
-
         user = opts["privileged"] ? "root" : "vcap"
 
         # -T: Never request a TTY
@@ -86,6 +84,8 @@ module Warden
         args << { :input => script }
 
         child = DeferredChild.new("ssh", *args)
+
+        job = Job.new(self, child)
 
         child.callback do
           if child.exit_status == 255
