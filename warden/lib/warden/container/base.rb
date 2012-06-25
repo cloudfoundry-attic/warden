@@ -410,6 +410,28 @@ module Warden
         debug "exit"
       end
 
+      def stream(job_id, &block)
+        debug "entry"
+
+        unless block
+          raise WardenError.new("empty block provided")
+        end
+
+        job = jobs[job_id.to_s]
+        unless job
+          raise WardenError.new("no such job")
+        end
+
+        job.stream(&block)
+
+      rescue => err
+        warn "error: #{err.message}"
+        raise
+
+      ensure
+        debug "exit"
+      end
+
       def run(script, opts = {})
         debug "entry"
 
@@ -569,12 +591,14 @@ module Warden
         attr_reader :container
         attr_reader :job_id
 
-        def initialize(container)
+        def initialize(container, child)
           @container = container
           @job_id = container.class.generate_job_id
+          @child = child
 
           @status = nil
           @yielded = []
+          @stream_listeners = Set.new
         end
 
         def yield
@@ -586,6 +610,49 @@ module Warden
         def resume(status)
           @status = status
           @yielded.each { |f| f.resume(@status) }
+          # Signalling that the job has finished, and streams have been closed.
+          @stream_listeners.each { |f| f.resume(nil) if f.alive? }
+        end
+
+        def stream(&block)
+
+          fiber = Fiber.current
+          stream_processor = lambda { |update|
+            fiber.resume(update) if fiber.alive?
+          }
+
+          num_sentinels = @child.add_streams_listener(&stream_processor)
+          num_streams = num_sentinels
+
+          @stream_listeners << fiber
+          streams = Set.new
+          sentinel_ctr = 0
+          while !@status || sentinel_ctr < num_sentinels
+
+            update = Fiber.yield
+
+            unless update.nil?
+              if update.sentinel?
+                sentinel_ctr += 1
+                if sentinel_ctr > num_sentinels
+                  msg = "Expected #{num_sentinels} sentinels,"
+                  msg << "but received #{sentinel_ctr} sentinels."
+                  raise WardenError.new(msg)
+                end
+              else
+                if !streams.include?(update.name)
+                  streams << update.name
+                  if streams.length > num_streams
+                    msg = "Expected #{num_streams} streams,"
+                    msg << "but received #{streams.length} streams."
+                    raise WardenError.new(msg)
+                  end
+                end
+
+                block.call(update.name, update.data)
+              end
+            end
+          end
         end
       end
     end
