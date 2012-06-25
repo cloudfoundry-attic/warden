@@ -2,10 +2,10 @@ source "http://rubygems.org"
 
 gem "rake"
 gem "vcap_common", :git => 'git://github.com/cloudfoundry/vcap-common.git', :ref => '72b230b6'
-gem "vcap_logging", :git => 'git://github.com/cloudfoundry/common.git', :ref => '309a39e1'
+gem "vcap_logging", :git => 'git://github.com/cloudfoundry/common.git', :ref => '3f6636fc'
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'git://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
 gem "yajl-ruby"
-gem "em-posix-spawn", :git => 'git://github.com/cloudfoundry/common.git', :ref => '309a39e1'
+gem "em-posix-spawn", :git => 'git://github.com/cloudfoundry/common.git', :ref => '3f6636fc'
 
 group :spec do
   gem "rspec"
