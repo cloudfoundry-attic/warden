@@ -356,11 +356,14 @@ describe Warden::Container::Base do
       @container = initialize_container
     end
 
-    shared_examples "succeeds when born" do |blk|
+    let(:container) do
+      @container
+    end
 
+    shared_examples "succeeds when born" do |blk|
       it "succeeds when container was not yet created" do
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to_not raise_error
       end
 
@@ -368,7 +371,7 @@ describe Warden::Container::Base do
         @container.create
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
 
@@ -377,7 +380,7 @@ describe Warden::Container::Base do
         @container.stop
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
 
@@ -386,24 +389,23 @@ describe Warden::Container::Base do
         @container.destroy
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
     end
 
     shared_examples "succeeds when active" do |blk|
-
       it "succeeds when container was created" do
         @container.create
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to_not raise_error
       end
 
       it "fails when container was not yet created" do
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
 
@@ -412,7 +414,7 @@ describe Warden::Container::Base do
         @container.stop
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
 
@@ -421,18 +423,17 @@ describe Warden::Container::Base do
         @container.destroy
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
     end
 
     shared_examples "succeeds when active or stopped" do |blk|
-
       it "succeeds when container was created" do
         @container.create
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to_not raise_error
       end
 
@@ -441,13 +442,13 @@ describe Warden::Container::Base do
         @container.stop
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to_not raise_error
       end
 
       it "fails when container was not yet created" do
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
 
@@ -457,28 +458,28 @@ describe Warden::Container::Base do
         @container.destroy
 
         expect do
-          blk.call(@container)
+          instance_eval(&blk)
         end.to raise_error(/container state/i)
       end
     end
 
     describe "create" do
 
-      include_examples "succeeds when born", lambda { |container|
+      include_examples "succeeds when born", Proc.new {
         container.create
       }
     end
 
     describe "stop" do
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.stop
       }
     end
 
     describe "destroy" do
 
-      include_examples "succeeds when active or stopped", lambda { |container|
+      include_examples "succeeds when active or stopped", Proc.new {
         container.destroy
       }
     end
@@ -490,7 +491,7 @@ describe Warden::Container::Base do
         @container.stub(:create_job).and_return(@job)
       end
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.spawn("echo foo")
       }
     end
@@ -501,7 +502,7 @@ describe Warden::Container::Base do
         @container.stub(:do_net_in)
       end
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.net_in
       }
     end
@@ -512,7 +513,7 @@ describe Warden::Container::Base do
         @container.stub(:do_net_out)
       end
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.net_out("something")
       }
     end
@@ -523,7 +524,7 @@ describe Warden::Container::Base do
         @container.stub(:get_limit_foo)
       end
 
-      include_examples "succeeds when active or stopped", lambda { |container|
+      include_examples "succeeds when active or stopped", Proc.new {
         container.get_limit(:foo)
       }
     end
@@ -534,7 +535,7 @@ describe Warden::Container::Base do
         @container.stub(:set_limit_foo)
       end
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.set_limit(:foo, "something")
       }
     end
@@ -544,7 +545,7 @@ describe Warden::Container::Base do
         @container.stub(:do_copy_in)
       end
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.copy("in", "/tmp/foo", "/tmp/bar")
       }
     end
@@ -554,7 +555,7 @@ describe Warden::Container::Base do
         @container.stub(:do_copy_out)
       end
 
-      include_examples "succeeds when active", lambda { |container|
+      include_examples "succeeds when active", Proc.new {
         container.copy("out", "/tmp/foo", "/tmp/bar")
       }
     end
