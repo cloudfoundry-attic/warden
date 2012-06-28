@@ -24,21 +24,12 @@ describe Warden::Container::Base do
     connection
   end
 
-  let(:connection) do
-    new_connection
-  end
+  let(:connection)   { new_connection }
 
-  let(:network) do
-    Warden::Network::Address.new("127.0.0.0")
-  end
-
-  let(:network_pool) do
-    NetworkPool.new
-  end
-
-  let(:uid_pool) do
-    UidPool.new
-  end
+  let(:network_pool) { NetworkPool.new }
+  let(:network)      { Warden::Network::Address.new("127.0.0.0") }
+  let(:uid_pool)     { UidPool.new }
+  let(:uid)          { 1 }
 
   before(:all) do
     Warden::Logger.logger = nil
@@ -50,87 +41,70 @@ describe Warden::Container::Base do
     Container.uid_pool = uid_pool
 
     network_pool.push(network)
-    uid_pool.push(1)
+    uid_pool.push(uid)
   end
 
-  def initialize_container(connection = nil, options = {})
-    container = Container.new(connection || new_connection, options)
+  def initialize_container
+    container = Container.new
     container.stub(:do_create)
     container.stub(:do_stop)
     container.stub(:do_destroy)
+    container.acquire
     container
   end
 
-  context "initialization" do
-    context "on success" do
-      it "should acquire a network" do
-        container = Container.new(connection)
-        container.network.should == network
-        network_pool.should be_empty
-        uid_pool.should be_empty
-      end
-
-      it "should register with the specified connection" do
-        connection.should_receive(:on).with(:close)
-        container = Container.new(connection)
-        container.connections.should include(connection)
-      end
-    end
-
-    context "on failure" do
-      before(:each) do
-        # Make initialization fail by raising from #register_connection
-        connection.should_receive(:on).with(:close).and_raise(Warden::WardenError.new("failure"))
-      end
-
-      it "should release the acquired network" do
-        expect do
-          Container.new(connection)
-        end.to raise_error
-
-        network_pool.size.should == 1
-        uid_pool.size.should == 1
-      end
-    end
-  end
-
   context "create" do
-    before(:each) do
-      @container = initialize_container
+    let(:container) { Container.new }
+
+    before do
+      container.stub(:do_create)
     end
 
     it "should call #do_create" do
-      @container.should_receive(:do_create)
-      @container.dispatch(Warden::Protocol::CreateRequest.new)
+      container.should_receive(:do_create)
+      container.dispatch(Warden::Protocol::CreateRequest.new)
     end
 
     it "should return the container handle" do
-      response = @container.dispatch(Warden::Protocol::CreateRequest.new)
+      response = container.dispatch(Warden::Protocol::CreateRequest.new)
       response.handle.should == network.to_hex
     end
 
-    it "should register with the global registry" do
-      @container.dispatch(Warden::Protocol::CreateRequest.new)
+    it "should acquire a network" do
+      container.dispatch(Warden::Protocol::CreateRequest.new)
+      container.network.should == network
+      network_pool.should be_empty
+    end
 
+    it "should acquire a uid" do
+      container.dispatch(Warden::Protocol::CreateRequest.new)
+      container.uid.should == uid
+      uid_pool.should be_empty
+    end
+
+    it "should register with the global registry" do
+      container.dispatch(Warden::Protocol::CreateRequest.new)
       Container.registry.size.should == 1
     end
 
     context "on failure" do
-      before(:each) do
-        @container.stub(:do_create).and_raise(Warden::WardenError.new("create"))
+      before do
+        container.stub(:do_stop)
+        container.stub(:do_destroy)
+        container.stub(:do_create).and_raise(Warden::WardenError.new("create"))
       end
 
       it "should destroy" do
-        @container.should_receive(:do_destroy)
+        container.should_receive(:do_destroy)
 
         expect do
-          @container.dispatch(Warden::Protocol::CreateRequest.new)
+          container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error
       end
 
       it "should not register with the global registry" do
         expect do
-          @container.dispatch(Warden::Protocol::CreateRequest.new)
+          container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error
 
         Container.registry.should be_empty
@@ -138,31 +112,45 @@ describe Warden::Container::Base do
 
       it "should release the acquired network" do
         expect do
-          @container.dispatch(Warden::Protocol::CreateRequest.new)
+          container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error
 
         network_pool.size.should == 1
+      end
+
+      it "should release the acquired uid" do
+        expect do
+          container.dispatch(Warden::Protocol::CreateRequest.new)
+        end.to raise_error
+
         uid_pool.size.should == 1
       end
 
       context "on failure of destroy" do
-        before(:each) do
-          @container.stub(:do_destroy).and_raise(Warden::WardenError.new("destroy"))
+        before do
+          container.stub(:do_destroy).and_raise(Warden::WardenError.new("destroy"))
         end
 
         it "should raise original error" do
           expect do
-            @container.dispatch(Warden::Protocol::CreateRequest.new)
+            container.dispatch(Warden::Protocol::CreateRequest.new)
           end.to raise_error(/create/i)
         end
 
-        it "should not release the acquired network" do
+        it "should release the acquired network" do
           expect do
-            @container.dispatch(Warden::Protocol::CreateRequest.new)
+            container.dispatch(Warden::Protocol::CreateRequest.new)
           end.to raise_error
 
-          network_pool.should be_empty
-          uid_pool.should be_empty
+          network_pool.size.should == 1
+        end
+
+        it "should release the acquired uid" do
+          expect do
+            container.dispatch(Warden::Protocol::CreateRequest.new)
+          end.to raise_error
+
+          uid_pool.size.should == 1
         end
       end
     end
@@ -219,36 +207,38 @@ describe Warden::Container::Base do
   end
 
   describe "connection management" do
-    before(:each) do
-      @connection = new_connection
-      @container = initialize_container(@connection)
+    let(:container) { Container.new }
+    let(:connection) { new_connection }
+
+    before do
+      container.register_connection(connection)
     end
 
     it "should not store existing connections more than once" do
       expect do
-        @container.register_connection(@connection)
-      end.to_not change(@container.connections, :size)
+        container.register_connection(connection)
+      end.to_not change(container.connections, :size)
     end
 
     it "should store new connections" do
       another_connection = new_connection
 
       expect do
-        @container.register_connection(another_connection)
-      end.to change(@container.connections, :size)
+        container.register_connection(another_connection)
+      end.to change(container.connections, :size)
     end
 
     it "should setup grace timer when the last connection closed" do
-      @container.should_receive(:setup_grace_timer)
-      @container.connections.size.should == 1
-      @connection.emit(:close)
+      container.should_receive(:setup_grace_timer)
+      container.connections.size.should == 1
+      connection.emit(:close)
     end
 
     it "should setup grace timer when the next to last connection is closed" do
-      @container.register_connection(new_connection)
-      @container.should_not_receive(:setup_grace_timer)
-      @container.connections.size.should == 2
-      @connection.emit(:close)
+      container.register_connection(new_connection)
+      container.should_not_receive(:setup_grace_timer)
+      container.connections.size.should == 2
+      connection.emit(:close)
     end
   end
 
@@ -257,7 +247,7 @@ describe Warden::Container::Base do
       it "should fire after server-wide grace time" do
         Warden::Server.should_receive(:container_grace_time).and_return(0.02)
 
-        @container = initialize_container(new_connection)
+        @container = initialize_container
 
         em do
           @container.should_receive(:fire_grace_timer)
@@ -270,7 +260,8 @@ describe Warden::Container::Base do
 
     context "when nil" do
       it "should not fire" do
-        @container = initialize_container(new_connection, "grace_time" => nil)
+        @container = initialize_container
+        @container.grace_time = nil
 
         em do
           @container.should_not_receive(:fire_grace_timer)
@@ -283,7 +274,8 @@ describe Warden::Container::Base do
 
     context "when not nil" do
       before(:each) do
-        @container = initialize_container(new_connection, "grace_time" => 0.02)
+        @container = initialize_container
+        @container.grace_time = 0.02
       end
 
       it "should fire after grace time" do

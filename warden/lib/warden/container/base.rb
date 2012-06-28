@@ -63,45 +63,6 @@ module Warden
         attr_accessor :port_pool
         attr_accessor :uid_pool
 
-        # Acquire resources required for every container instance.
-        def acquire(resources)
-          unless resources[:network]
-            network = network_pool.acquire
-            unless network
-              raise WardenError.new("could not acquire network")
-            end
-
-            resources[:network] = network
-          end
-
-          resources[:uid] ||= uid_pool.acquire
-        end
-
-        # Release resources required for every container instance.
-        def release(resources)
-          if network = resources.delete(:network)
-            network_pool.release(network)
-          end
-
-          uid = resources.delete(:uid)
-          uid_pool.release(uid) if uid
-        end
-
-        # Override #new to make sure that acquired resources are released when
-        # one of the pooled resourced can not be required. Acquiring the
-        # necessary resources must be atomic to prevent leakage.
-        def new(conn, config = {})
-          resources = {}
-          acquire(resources)
-          instance = super(resources, config)
-          instance.register_connection(conn)
-          instance
-
-        rescue WardenError
-          release(resources)
-          raise
-        end
-
         # Called before the server starts.
         def setup(config = {})
           @root_path = File.join(Warden::Util.path("root"),
@@ -130,25 +91,17 @@ module Warden
       attr_reader :jobs
       attr_reader :events
       attr_reader :limits
+      attr_reader :state
+      attr_accessor :grace_time
 
-      def initialize(resources, config = {})
-        @resources   = resources
+      def initialize
+        @resources   = Hash.new { |h,k| raise WardenError.new("Unknown resource: #{k}") }
         @connections = ::Set.new
         @jobs        = {}
-        @state       = State::Born
         @events      = Set.new
         @limits      = {}
-
-        grace_time = Server.container_grace_time
-        grace_time = config.delete("grace_time") if config.has_key?("grace_time")
-
-        begin
-          grace_time = Float(grace_time) unless grace_time.nil?
-        rescue ArgumentError => err
-          raise WardenError.new("Cannot parse grace time from %s." % grace_time.inspect)
-        end
-
-        @config = { :grace_time => grace_time }
+        @state       = State::Born
+        @grace_time  = Server.container_grace_time
       end
 
       def network
@@ -169,10 +122,6 @@ module Warden
 
       def uid
         @uid ||= resources[:uid]
-      end
-
-      def grace_time
-        @config[:grace_time]
       end
 
       def cancel_grace_timer
@@ -290,10 +239,56 @@ module Warden
         end
       end
 
-      def before_create
+      # Acquire resources required for every container instance.
+      def acquire
+        @acquired ||= {}
+
+        unless @resources.has_key?(:network)
+          network = self.class.network_pool.acquire
+          unless network
+            raise WardenError.new("Could not acquire network")
+          end
+
+          @acquired[:network] = network
+          @resources[:network] = network
+        end
+
+        unless @resources.has_key?(:uid)
+          uid = self.class.uid_pool.acquire
+          unless uid
+            raise WardenError.new("Could not acquire UID")
+          end
+
+          @acquired[:uid] = uid
+          @resources[:uid] = uid
+        end
+      end
+
+      # Release resources required for every container instance.
+      def release
+        @acquired ||= {}
+
+        if network = @acquired.delete(:network)
+          self.class.network_pool.release(network)
+        end
+
+        if uid = @acquired.delete(:uid)
+          self.class.uid_pool.release(uid)
+        end
+      end
+
+      def before_create(request, response)
         check_state_in(State::Born)
 
-        self.state = State::Active
+        begin
+          acquire
+
+          self.state = State::Active
+
+        rescue
+          release
+          raise
+        end
       end
 
       def after_create(request, response)
@@ -311,6 +306,9 @@ module Warden
           begin
             dispatch(Protocol::DestroyRequest.new)
           rescue WardenError
+            # Make sure that resources are released
+            release
+
             # Ignore, raise original error
           end
 
@@ -350,7 +348,7 @@ module Warden
       end
 
       def after_destroy
-        self.class.release(resources)
+        release
       end
 
       def do_destroy(request, response)
