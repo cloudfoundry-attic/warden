@@ -9,8 +9,8 @@ module Warden
           RW = 1
         end
 
-        required :src, :string, 1
-        required :dst, :string, 2
+        required :src_path, :string, 1
+        required :dst_path, :string, 2
         required :mode, BindMount::Mode, 3
       end
 
