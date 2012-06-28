@@ -61,6 +61,14 @@ module Warden
       def reload
         self.class.decode(encode)
       end
+
+      private
+
+      def type
+        klass_name = self.class.name.gsub(/(Request|Response)$/, "")
+        klass_name = klass_name.split("::").last
+        Type.const_get(klass_name)
+      end
     end
 
     class BaseRequest < BaseMessage
@@ -72,23 +80,21 @@ module Warden
       end
 
       def wrap
-        klass_name = self.class.name.gsub(/Request$/, "")
-        klass_name = klass_name.split("::").last
-
-        WrappedRequest.new \
-          :type => Type.const_get(klass_name),
-          :payload => encode
+        WrappedRequest.new(:type => type, :payload => encode)
       end
     end
 
     class BaseResponse < BaseMessage
-      def wrap
-        klass_name = self.class.name.gsub(/Response$/, "")
-        klass_name = klass_name.split("::").last
+      def ok?
+        !error?
+      end
 
-        WrappedResponse.new \
-          :type => Type.const_get(klass_name),
-          :payload => encode
+      def error?
+        type == Type::Error
+      end
+
+      def wrap
+        WrappedResponse.new(:type => type, :payload => encode)
       end
     end
 
