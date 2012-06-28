@@ -4,6 +4,9 @@ require "warden/protocol/error"
 describe Warden::Protocol::ErrorResponse do
   it_should_behave_like "wrappable response"
 
+  it { should_not be_ok }
+  it { should be_error }
+
   subject do
     described_class.new
   end

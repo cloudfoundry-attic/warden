@@ -34,4 +34,7 @@ end
 
 describe Warden::Protocol::CopyInResponse do
   it_should_behave_like "wrappable response"
+
+  it { should be_ok }
+  it { should_not be_error }
 end

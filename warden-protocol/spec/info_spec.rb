@@ -21,6 +21,9 @@ end
 describe Warden::Protocol::InfoResponse do
   it_should_behave_like "wrappable response"
 
+  it { should be_ok }
+  it { should_not be_error }
+
   subject do
     described_class.new
   end

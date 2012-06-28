@@ -26,6 +26,9 @@ end
 describe Warden::Protocol::NetInResponse do
   it_should_behave_like "wrappable response"
 
+  it { should be_ok }
+  it { should_not be_error }
+
   subject do
     described_class.new(:host_port => 1234, :container_port => 1234)
   end
