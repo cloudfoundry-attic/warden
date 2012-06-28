@@ -15,7 +15,7 @@ describe Warden::Protocol::LimitMemoryRequest do
 
   field :limit_in_bytes do
     it_should_be_optional
-    it_should_be_typed_as_uint
+    it_should_be_typed_as_uint64
   end
 
   it "should respond to #create_response" do
@@ -35,6 +35,6 @@ describe Warden::Protocol::LimitMemoryResponse do
 
   field :limit_in_bytes do
     it_should_be_optional
-    it_should_be_typed_as_uint
+    it_should_be_typed_as_uint64
   end
 end
