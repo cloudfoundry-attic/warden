@@ -22,6 +22,7 @@ require "warden/protocol/limit_disk"
 
 require "warden/protocol/ping"
 require "warden/protocol/list"
+require "warden/protocol/echo"
 
 module Warden
   module Protocol
