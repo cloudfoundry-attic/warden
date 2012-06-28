@@ -25,6 +25,7 @@ module Warden
 
       Ping = 91
       List = 92
+      Echo = 93
 
       def self.generate_klass_map(suffix)
         map = Hash[self.constants.map do |name|
