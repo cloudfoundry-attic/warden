@@ -62,9 +62,7 @@ describe Warden::Container::Base do
   end
 
   context "initialization" do
-
     context "on success" do
-
       it "should acquire a network" do
         container = Container.new(connection)
         container.network.should == network
@@ -80,7 +78,6 @@ describe Warden::Container::Base do
     end
 
     context "on failure" do
-
       before(:each) do
         # Make initialization fail by raising from #register_connection
         connection.should_receive(:on).with(:close).and_raise(Warden::WardenError.new("failure"))
@@ -98,28 +95,27 @@ describe Warden::Container::Base do
   end
 
   context "create" do
-
     before(:each) do
       @container = initialize_container
     end
 
     it "should call #do_create" do
       @container.should_receive(:do_create)
-      @container.create
+      @container.dispatch(Warden::Protocol::CreateRequest.new)
     end
 
     it "should return the container handle" do
-      @container.create.should == network.to_hex
+      response = @container.dispatch(Warden::Protocol::CreateRequest.new)
+      response.handle.should == network.to_hex
     end
 
     it "should register with the global registry" do
-      @container.create
+      @container.dispatch(Warden::Protocol::CreateRequest.new)
 
       Container.registry.size.should == 1
     end
 
     context "on failure" do
-
       before(:each) do
         @container.stub(:do_create).and_raise(Warden::WardenError.new("create"))
       end
@@ -128,13 +124,13 @@ describe Warden::Container::Base do
         @container.should_receive(:do_destroy)
 
         expect do
-          @container.create
-        end.to raise_error(/create/i)
+          @container.dispatch(Warden::Protocol::CreateRequest.new)
+        end.to raise_error
       end
 
       it "should not register with the global registry" do
         expect do
-          @container.create
+          @container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error
 
         Container.registry.should be_empty
@@ -142,7 +138,7 @@ describe Warden::Container::Base do
 
       it "should release the acquired network" do
         expect do
-          @container.create
+          @container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error
 
         network_pool.size.should == 1
@@ -150,20 +146,19 @@ describe Warden::Container::Base do
       end
 
       context "on failure of destroy" do
-
         before(:each) do
           @container.stub(:do_destroy).and_raise(Warden::WardenError.new("destroy"))
         end
 
         it "should raise original error" do
           expect do
-            @container.create
+            @container.dispatch(Warden::Protocol::CreateRequest.new)
           end.to raise_error(/create/i)
         end
 
         it "should not release the acquired network" do
           expect do
-            @container.create
+            @container.dispatch(Warden::Protocol::CreateRequest.new)
           end.to raise_error
 
           network_pool.should be_empty
@@ -174,69 +169,56 @@ describe Warden::Container::Base do
   end
 
   describe "stop" do
-
     before(:each) do
       @container = initialize_container
-      @container.create
+      @container.dispatch(Warden::Protocol::CreateRequest.new)
     end
 
     it "should call #do_stop" do
       @container.should_receive(:do_stop)
-      @container.stop
-    end
-
-    it "should return ok" do
-      @container.stop.should == "ok"
+      @container.dispatch(Warden::Protocol::StopRequest.new)
     end
   end
 
   describe "destroy" do
-
     before(:each) do
       @container = initialize_container
-      @container.create
+      @container.dispatch(Warden::Protocol::CreateRequest.new)
     end
 
     it "should call #do_destroy" do
       @container.should_receive(:do_destroy)
-      @container.destroy
-    end
-
-    it "should return ok" do
-      @container.destroy.should == "ok"
+      @container.dispatch(Warden::Protocol::DestroyRequest.new)
     end
 
     context "when stopped" do
-
       before(:each) do
-        @container.stop
+        @container.dispatch(Warden::Protocol::StopRequest.new)
       end
 
       it "should not call #do_stop" do
         @container.should_not_receive(:do_stop)
-        @container.destroy
+        @container.dispatch(Warden::Protocol::DestroyRequest.new)
       end
     end
 
     context "when not yet stopped" do
-
       it "should call #do_stop" do
         @container.should_receive(:do_stop)
-        @container.destroy
+        @container.dispatch(Warden::Protocol::DestroyRequest.new)
       end
 
       it "should not care if #do_stop succeeds" do
         @container.should_receive(:do_stop).and_raise(Warden::WardenError.new("failure"))
 
         expect do
-          @container.destroy
+          @container.dispatch(Warden::Protocol::DestroyRequest.new)
         end.to_not raise_error(/failure/i)
       end
     end
   end
 
   describe "connection management" do
-
     before(:each) do
       @connection = new_connection
       @container = initialize_container(@connection)
@@ -271,9 +253,7 @@ describe Warden::Container::Base do
   end
 
   context "grace timer" do
-
     context "when unspecified" do
-
       it "should fire after server-wide grace time" do
         Warden::Server.should_receive(:container_grace_time).and_return(0.02)
 
@@ -289,7 +269,6 @@ describe Warden::Container::Base do
     end
 
     context "when nil" do
-
       it "should not fire" do
         @container = initialize_container(new_connection, "grace_time" => nil)
 
@@ -303,7 +282,6 @@ describe Warden::Container::Base do
     end
 
     context "when not nil" do
-
       before(:each) do
         @container = initialize_container(new_connection, "grace_time" => 0.02)
       end
@@ -328,10 +306,10 @@ describe Warden::Container::Base do
       end
 
       context "when fired" do
-
         it "should destroy container" do
           em do
-            @container.should_receive(:destroy)
+            @container.should_receive(:dispatch).
+              with(Warden::Protocol::DestroyRequest.new)
             @container.setup_grace_timer
 
             ::EM.add_timer(0.03) { done }
@@ -340,7 +318,9 @@ describe Warden::Container::Base do
 
         it "should ignore any WardenError raised by destroy" do
           em do
-            @container.should_receive(:destroy).and_raise(Warden::WardenError.new("failure"))
+            @container.should_receive(:dispatch).
+              with(Warden::Protocol::DestroyRequest.new).
+              and_raise(Warden::WardenError.new("failure"))
             @container.setup_grace_timer
 
             ::EM.add_timer(0.03) { done }
@@ -351,7 +331,6 @@ describe Warden::Container::Base do
   end
 
   describe "state" do
-
     before(:each) do
       @container = initialize_container
     end
@@ -368,7 +347,7 @@ describe Warden::Container::Base do
       end
 
       it "fails when container was already created" do
-        @container.create
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -376,8 +355,8 @@ describe Warden::Container::Base do
       end
 
       it "fails when container was already stopped" do
-        @container.create
-        @container.stop
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::StopRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -385,8 +364,8 @@ describe Warden::Container::Base do
       end
 
       it "fails when container was already destroyed" do
-        @container.create
-        @container.destroy
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::DestroyRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -396,7 +375,7 @@ describe Warden::Container::Base do
 
     shared_examples "succeeds when active" do |blk|
       it "succeeds when container was created" do
-        @container.create
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -410,8 +389,8 @@ describe Warden::Container::Base do
       end
 
       it "fails when container was already stopped" do
-        @container.create
-        @container.stop
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::StopRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -419,8 +398,8 @@ describe Warden::Container::Base do
       end
 
       it "fails when container was already destroyed" do
-        @container.create
-        @container.destroy
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::DestroyRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -430,7 +409,7 @@ describe Warden::Container::Base do
 
     shared_examples "succeeds when active or stopped" do |blk|
       it "succeeds when container was created" do
-        @container.create
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -438,8 +417,8 @@ describe Warden::Container::Base do
       end
 
       it "succeeds when container was created and stopped" do
-        @container.create
-        @container.stop
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::StopRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -453,9 +432,9 @@ describe Warden::Container::Base do
       end
 
       it "fails when container was already destroyed" do
-        @container.create
-        @container.stop
-        @container.destroy
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::StopRequest.new)
+        @container.dispatch(Warden::Protocol::DestroyRequest.new)
 
         expect do
           instance_eval(&blk)
@@ -464,99 +443,91 @@ describe Warden::Container::Base do
     end
 
     describe "create" do
-
       include_examples "succeeds when born", Proc.new {
-        container.create
+        container.dispatch(Warden::Protocol::CreateRequest.new)
       }
     end
 
     describe "stop" do
-
       include_examples "succeeds when active", Proc.new {
-        container.stop
+        container.dispatch(Warden::Protocol::StopRequest.new)
       }
     end
 
     describe "destroy" do
-
       include_examples "succeeds when active or stopped", Proc.new {
-        container.destroy
+        container.dispatch(Warden::Protocol::DestroyRequest.new)
       }
     end
 
     describe "spawn" do
-
       before(:each) do
         @job = double("job", :job_id => 1)
         @container.stub(:create_job).and_return(@job)
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.spawn("echo foo")
+        container.dispatch(Warden::Protocol::SpawnRequest.new)
       }
     end
 
     describe "net_in" do
-
       before(:each) do
         @container.stub(:do_net_in)
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.net_in
+        container.net_in(Warden::Protocol::NetInRequest.new)
       }
     end
 
     describe "net_out" do
-
       before(:each) do
         @container.stub(:do_net_out)
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.net_out("something")
+        container.net_out(Warden::Protocol::NetOutRequest.new)
       }
     end
 
-    describe "get_limit" do
-
-      before(:each) do
-        @container.stub(:get_limit_foo)
-      end
-
-      include_examples "succeeds when active or stopped", Proc.new {
-        container.get_limit(:foo)
-      }
-    end
-
-    describe "set_limit" do
-
-      before(:each) do
-        @container.stub(:set_limit_foo)
-      end
-
-      include_examples "succeeds when active", Proc.new {
-        container.set_limit(:foo, "something")
-      }
-    end
-
-    describe "copy in" do
+    describe "copy_in" do
       before(:each) do
         @container.stub(:do_copy_in)
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.copy("in", "/tmp/foo", "/tmp/bar")
+        container.copy_in(Warden::Protocol::CopyInRequest.new)
       }
     end
 
-    describe "copy out" do
+    describe "copy_out" do
       before(:each) do
         @container.stub(:do_copy_out)
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.copy("out", "/tmp/foo", "/tmp/bar")
+        container.copy_out(Warden::Protocol::CopyOutRequest.new)
+      }
+    end
+
+    describe "limit_memory" do
+      before(:each) do
+        @container.stub(:do_limit_memory)
+      end
+
+      include_examples "succeeds when active or stopped", Proc.new {
+        container.limit_memory(Warden::Protocol::LimitMemoryRequest.new)
+      }
+    end
+
+    describe "limit_disk" do
+      before(:each) do
+        @container.stub(:do_limit_disk)
+      end
+
+      include_examples "succeeds when active or stopped", Proc.new {
+        container.limit_memory(Warden::Protocol::LimitDiskRequest.new)
       }
     end
   end
