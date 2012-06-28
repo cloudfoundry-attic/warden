@@ -37,11 +37,16 @@ Run the setup routine, which compiles the C code bundled with Warden and
 sets up the base file system for Linux containers.
 
 ```
-sudo bundle exec rake setup
+sudo bundle exec rake setup[config/linux.yml]
 ```
 
-**NOTE**: if `sudo` complains that `bundle` cannot be found, try `sudo
+**NOTE**:
+If `sudo` complains that `bundle` cannot be found, try `sudo
 env PATH=$PATH` to pass your current `PATH` to the `sudo` environment.
+
+The setup routine sets up the file system for the containers at the directory
+path specified under the key: server -> container_rootfs_path in the
+config file: config/linux.yml.
 
 #### Run Warden
 
