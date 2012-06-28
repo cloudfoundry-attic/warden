@@ -9,9 +9,28 @@ RSpec::Core::RakeTask.new(:spec) do |t|
 end
 
 desc "Run (or re-run) steps to setup warden"
-task :setup, :rootfs_dir do |t, args|
-  default_rootfs_dir = File.join(File.dirname(__FILE__), "root/linux/base/rootfs")
-  args.with_defaults(:rootfs_dir => default_rootfs_dir)
+task :setup, :config_path do |t, args|
+
+  require "warden/logger"
+  logger = Warden::Logger.logger
+
+  rootfs_dir = nil
+
+  if args[:config_path]
+    config = YAML.load_file(args["config_path"])
+    if config["server"] && config["server"]["container_rootfs_path"]
+      rootfs_dir = config["server"]["container_rootfs_path"]
+    else
+      msg = "Config file: #{args["config_path"]} doesn't contain "
+      msg << "the key: server -> container_rootfs_path."
+      logger.error(msg)
+      Process.exit
+    end
+  else
+    msg = "No config file provided."
+    logger.error(msg)
+    Process.exit
+  end
 
   Dir.chdir("src") do
     sh "make clean all"
@@ -19,7 +38,7 @@ task :setup, :rootfs_dir do |t, args|
 
   sh "cp src/clone/clone root/linux/skeleton/bin"
 
-  sh "sudo -E root/linux/base/setup.sh #{args[:rootfs_dir]}"
+  sh "sudo -E root/linux/base/setup.sh #{rootfs_dir}"
 end
 
 namespace :warden do
