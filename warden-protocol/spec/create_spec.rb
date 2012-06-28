@@ -9,8 +9,8 @@ describe Warden::Protocol::CreateRequest do
 
     it "should be populated with BindMount objects" do
       m = Warden::Protocol::CreateRequest::BindMount.new
-      m.src = "/src"
-      m.dst = "/dst"
+      m.src_path = "/src"
+      m.dst_path = "/dst"
       m.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
 
       subject.bind_mounts = [m]
