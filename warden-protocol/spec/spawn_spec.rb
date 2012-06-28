@@ -29,6 +29,9 @@ end
 describe Warden::Protocol::SpawnResponse do
   it_should_behave_like "wrappable response"
 
+  it { should be_ok }
+  it { should_not be_error }
+
   subject do
     described_class.new(:job_id => 1)
   end
