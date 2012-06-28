@@ -54,6 +54,20 @@ module Helper
       end
     end
 
+    def it_should_be_typed_as_uint64
+      it_should_be_typed_as_uint
+
+      it "should allow integer 2^64-1" do
+        subject.send("#{field.name}=", 2**64-1)
+        subject.should be_valid
+      end
+
+      it "should not allow integer 2^64" do
+        subject.send("#{field.name}=", 2**64)
+        subject.should_not be_valid
+      end
+    end
+
     def it_should_be_typed_as_string
       it "should allow an empty string" do
         subject.send("#{field.name}=", "")
