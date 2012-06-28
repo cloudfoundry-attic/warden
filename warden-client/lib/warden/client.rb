@@ -1,5 +1,5 @@
 require "socket"
-require "yajl"
+require "warden/protocol"
 
 module Warden
 
@@ -34,36 +34,51 @@ module Warden
       connect
     end
 
-    def read
-      line = @sock.gets
-      if line.nil?
+    def io
+      rv = yield
+      if rv.nil?
         disconnect
         raise ::EOFError
       end
 
-      object = ::Yajl::Parser.parse(line)
-      payload = object["payload"]
+      rv
+    end
+
+    def read
+      length = io { @sock.gets }
+      data = io { @sock.read(length.to_i) }
+
+      # Discard \r\n
+      io { @sock.read(2) }
+
+      wrapped_response = Warden::Protocol::WrappedResponse.decode(data)
+      response = wrapped_response.response
 
       # Raise error replies
-      if object["type"] == "error"
-        raise Warden::Client::ServerError.new(payload)
+      if response.is_a?(Warden::Protocol::ErrorResponse)
+        raise Warden::Client::ServerError.new(response.message)
       end
 
-      payload
+      response
     end
 
-    def write(args)
-      json = ::Yajl::Encoder.encode(args, :pretty => false)
-      @sock.write(json + "\n")
+    def write(request)
+      data = request.wrap.encode.to_s
+      @sock.write data.length.to_s + "\r\n"
+      @sock.write data + "\r\n"
     end
 
-    def call(args)
-      write(args)
+    def call(request)
+      write(request)
       read
     end
 
     def method_missing(sym, *args, &blk)
-      call([sym, *args])
+      klass_name = sym.to_s.gsub(/(^|_)([a-z])/) { $2.upcase }
+      klass_name += "Request"
+      klass = Warden::Protocol.const_get(klass_name)
+
+      call(klass.new(*args))
     end
   end
 end

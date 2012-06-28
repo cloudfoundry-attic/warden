@@ -1,6 +1,6 @@
 require "socket"
-require "yajl"
 require "tempfile"
+require "warden/protocol"
 
 class Session
 
@@ -9,11 +9,11 @@ class Session
     @handler = handler
 
     # Post-initialization
-    handle([nil])
+    handle(nil)
   end
 
-  def handle(args)
-    @handler.call(self, args) if @handler
+  def handle(request)
+    @handler.call(self, request) if @handler
   end
 
   def close
@@ -22,15 +22,21 @@ class Session
     @sock = nil
   end
 
-  def reply(obj)
-    data = ::Yajl::Encoder.encode(obj, :pretty => false) + "\n"
-    @sock.write(data)
+  def respond(response)
+    data = response.wrap.encode.to_s
+    @sock.write data.length.to_s + "\r\n"
+    @sock.write data + "\r\n"
   end
 
   def run!
-    while @sock && line = @sock.gets
-      args = ::Yajl::Parser.parse(line)
-      handle(args)
+    while @sock && length = @sock.gets
+      data = @sock.read(length.to_i)
+
+      # Discard \r\n
+      @sock.read(2)
+
+      wrapped_request = Warden::Protocol::WrappedRequest.decode(data)
+      handle(wrapped_request.request)
     end
   end
 end

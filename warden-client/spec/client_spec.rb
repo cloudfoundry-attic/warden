@@ -120,14 +120,16 @@ describe Warden::Client do
   context "when connected" do
 
     before(:each) do
-      start_server do |session, args|
-        case args.shift
+      start_server do |session, request|
+        next if request.nil?
+
+        case request.message
         when "eof"
           session.close
         when "error"
-          session.reply(:type => "error", :payload => "error")
-        when "echo"
-          session.reply(:payload => args)
+          session.respond(Warden::Protocol::ErrorResponse.new(:message => "error"))
+        else
+          session.respond(request.create_response(:message => request.message))
         end
       end
 
@@ -137,7 +139,7 @@ describe Warden::Client do
 
     it "should raise EOFError on eof" do
       expect do
-        client.eof
+        client.echo(:message => "eof")
       end.to raise_error(::EOFError)
 
       # This should update the connection status
@@ -146,7 +148,7 @@ describe Warden::Client do
 
     it "should raise Warden::Client::ServerError on error payloads" do
       expect do
-        client.error
+        client.echo(:message => "error")
       end.to raise_error(Warden::Client::ServerError)
 
       # This should not affect the connection
@@ -154,8 +156,8 @@ describe Warden::Client do
     end
 
     it "should return decoded payload for non-error replies" do
-      reply = client.echo("hello")
-      reply.should == ["hello"]
+      response = client.echo(:message => "hello")
+      response.message.should == "hello"
     end
   end
 end
