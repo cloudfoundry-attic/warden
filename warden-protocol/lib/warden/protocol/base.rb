@@ -10,9 +10,10 @@ module Warden
       Destroy = 13
       Info    = 14
 
-      Spawn = 21
-      Link  = 22
-      Run   = 23
+      Spawn  = 21
+      Link   = 22
+      Run    = 23
+      Stream = 24
 
       NetIn  = 31
       NetOut = 32
