@@ -244,8 +244,23 @@ module Warden
       end
 
       def process_container_request(request, container)
-        response = container.dispatch(request)
-        send_response(response)
+        case request
+        when Protocol::StreamRequest
+          container.dispatch(request) do |name, data|
+            response = request.create_response
+            response.name = name
+            response.data = data
+            send_response(response)
+          end
+
+          # Terminate with empty response
+          response = request.create_response
+          send_response(response)
+
+        else
+          response = container.dispatch(request)
+          send_response(response)
+        end
       end
 
       def process_ping(_)
