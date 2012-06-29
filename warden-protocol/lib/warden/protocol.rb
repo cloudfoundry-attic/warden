@@ -10,6 +10,7 @@ require "warden/protocol/info"
 require "warden/protocol/spawn"
 require "warden/protocol/link"
 require "warden/protocol/run"
+require "warden/protocol/stream"
 
 require "warden/protocol/net_in"
 require "warden/protocol/net_out"
