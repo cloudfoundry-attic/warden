@@ -360,7 +360,7 @@ module Warden
       end
 
       def do_spawn(request, response)
-        job = create_job(request.script, :privileged => request.privileged)
+        job = create_job(request)
         jobs[job.job_id] = job
 
         response.job_id = job.job_id

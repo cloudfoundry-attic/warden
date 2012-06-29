@@ -5,6 +5,8 @@ require "warden/container/features/net"
 require "warden/container/features/mem_limit"
 require "warden/container/features/quota"
 
+require "shellwords"
+
 module Warden
 
   module Container
@@ -36,11 +38,6 @@ module Warden
         end
       end
 
-      def initialize(resources, config = {})
-        super(resources, config)
-        @config.merge!(sanitize_config(config.dup))
-      end
-
       def env
         env = {
           "id" => handle,
@@ -53,37 +50,43 @@ module Warden
         env
       end
 
-      def do_create
+      def do_create(request, response)
         sh File.join(root_path, "create.sh"), container_path, :env => env, :timeout => nil
         debug "container created"
 
-        write_bind_mount_commands
+        write_bind_mount_commands(request)
         debug "wrote bind mount commands"
 
         sh File.join(container_path, "start.sh"), :env => env, :timeout => nil
         debug "container started"
+
+        nil
       end
 
-      def do_stop
+      def do_stop(request, response)
         sh File.join(container_path, "stop.sh")
+
+        nil
       end
 
-      def do_destroy
+      def do_destroy(request, response)
         sh File.join(root_path, "destroy.sh"), container_path, :timeout => nil
         debug "container destroyed"
+
+        nil
       end
 
-      def create_job(script, opts = {})
+      def create_job(request)
         job = Job.new(self)
 
-        user = opts["privileged"] ? "root" : "vcap"
+        user = request.privileged ? "root" : "vcap"
 
         # -T: Never request a TTY
         # -F: Use configuration from <container_path>/ssh/ssh_config
         args = ["-T",
                 "-F", File.join(container_path, "ssh", "ssh_config"),
                 "#{user}@container"]
-        args << { :input => script }
+        args << { :input => request.script }
 
         child = DeferredChild.new("ssh", *args)
 
@@ -103,80 +106,29 @@ module Warden
         job
       end
 
-      def do_copy_in(src_path, dst_path)
+      def do_copy_in(request, response)
+        src_path = request.src_path
+        dst_path = request.dst_path
+
         perform_rsync(src_path, "vcap@container:#{dst_path}")
 
-        "ok"
+        nil
       end
 
-      def do_copy_out(src_path, dst_path, owner=nil)
+      def do_copy_out(request, response)
+        src_path = request.src_path
+        dst_path = request.dst_path
+
         perform_rsync("vcap@container:#{src_path}", dst_path)
 
-        if owner
-          sh "chown", "-R", owner, dst_path
+        if request.owner
+          sh "chown", "-R", request.owner, dst_path
         end
 
-        "ok"
+        nil
       end
 
       private
-
-      def sanitize_config(config)
-        result = {}
-
-        bind_mounts = sanitize_config_bind_mounts(config.delete("bind_mounts"))
-        result[:bind_mounts] = bind_mounts
-
-        result
-      end
-
-      def sanitize_config_bind_mounts(bind_mounts)
-        bind_mounts ||= []
-
-        # Raise when it is not an Array
-        if !bind_mounts.is_a?(Array)
-          raise WardenError.new("Expected `bind_mounts` to hold an array.")
-        end
-
-        # Transform entries
-        bind_mounts = bind_mounts.map do |src_path, dst_path, options|
-          options ||= {}
-
-          if !src_path.is_a?(String)
-            raise WardenError.new("Expected `src_path` to be a string.")
-          end
-
-          if !dst_path.is_a?(String)
-            raise WardenError.new("Expected `dst_path` to be a string.")
-          end
-
-          if !options.is_a?(Hash)
-            raise WardenError.new("Expected `options` to be a hash.")
-          end
-
-          # Fix up destination path to be an absolute path inside the union
-          dst_path = File.join(container_path,
-                                "union",
-                                dst_path.slice(1, dst_path.size - 1))
-
-          # Check that the mount mode -- if given -- is "ro" or "rw"
-          if options.has_key?("mode")
-            unless ["ro", "rw"].include?(options["mode"])
-              raise WardenError, [
-                  %{Invalid mode for bind mount "%s".} % src_path,
-                  %{Must be one of "ro", "rw".}
-                ].join(" ")
-            end
-
-            options[:mode] = options.delete("mode")
-          end
-
-          [src_path, dst_path, options]
-        end
-
-        # Filter nil entries
-        bind_mounts.compact
-      end
 
       def perform_rsync(src_path, dst_path)
         ssh_config_path = File.join(container_path, "ssh", "ssh_config")
@@ -195,18 +147,32 @@ module Warden
         sh *args
       end
 
-      def write_bind_mount_commands
+      def write_bind_mount_commands(request)
+        return if request.bind_mounts.nil? || request.bind_mounts.empty?
+
         File.open(File.join(container_path, "hook-parent-before-clone.sh"), "a") do |file|
           file.puts
           file.puts
 
-          @config[:bind_mounts].each do |src_path, dst_path, options|
+          request.bind_mounts.each do |bind_mount|
+            src_path = bind_mount.src_path
+            dst_path = bind_mount.dst_path
+
+            # Fix up destination path to be an absolute path inside the union
+            dst_path = File.join(container_path, "union", dst_path[1..-1])
+
+            mode = case bind_mount.mode
+                   when Protocol::CreateRequest::BindMount::Mode::RO
+                     "ro"
+                   when Protocol::CreateRequest::BindMount::Mode::RW
+                     "rw"
+                   else
+                     raise "Unknown mode"
+                   end
+
             file.puts "mkdir -p #{dst_path}" % [dst_path]
             file.puts "mount -n --bind #{src_path} #{dst_path}"
-
-            if options[:mode]
-              file.puts "mount -n --bind -o remount,#{options[:mode]} #{src_path} #{dst_path}"
-            end
+            file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
           end
         end
       end
