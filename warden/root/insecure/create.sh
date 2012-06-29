@@ -18,5 +18,5 @@ if [ -d ${target} ]; then
 fi
 
 cp -r skeleton "${target}"
-unshare -m "${target}"/setup.sh
+"${target}"/setup.sh
 echo ${target}
