@@ -2,12 +2,14 @@ require "readline"
 require "shellwords"
 require "warden/client"
 require "json"
+require "pp"
 
 module Warden
   class Repl
 
     COMMAND_LIST = ['ping', 'create', 'stop', 'destroy', 'spawn', 'link',
-                    'run', 'net', 'limit', 'info', 'list','copy', 'help']
+                    'stream', 'run', 'net', 'limit', 'info', 'list','copy',
+                    'help']
 
     HELP_MESSAGE =<<-EOT
 ping                          - ping warden
@@ -16,6 +18,7 @@ destroy <handle>              - shutdown container <handle>
 stop <handle>                 - stop all processes in <handle>
 spawn <handle> cmd            - spawns cmd inside container <handle>, returns #jobid
 link <handle> #jobid          - do blocking read on results from #jobid
+stream <handle> #jobid        - do blocking stream on results from #jobid
 run <handle>  cmd             - short hand for link(spawn(cmd)) i.e. runs cmd, blocks for result
 list                          - list containers
 info <handle>                 - show metadata for container <handle>
@@ -149,7 +152,7 @@ EOT
         case words[0]
         when 'create'
           puts command_info[:result]
-        when 'run'
+        when 'run', 'link'
           status, stdout, stderr = command_info[:result]
           puts "exit status: #{status}"
           puts
@@ -159,8 +162,13 @@ EOT
           puts "stderr:"
           puts stderr
           puts
+        when 'stream'
+          while command_info[:result].length > 0
+            puts "#{command_info[:result]}"
+            command_info[:result] = @client.read
+          end
         else
-          puts command_info[:result].inspect
+          pp command_info[:result]
         end
       rescue  => e
         command_info[:error] = e
