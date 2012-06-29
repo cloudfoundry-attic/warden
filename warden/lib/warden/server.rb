@@ -8,7 +8,7 @@ require "warden/pool/port"
 require "warden/pool/uid"
 
 require "eventmachine"
-require "yajl"
+require "warden/protocol"
 
 require "fileutils"
 require "fiber"
@@ -119,7 +119,7 @@ module Warden
 
     class ClientConnection < ::EM::Connection
 
-      include ::EM::Protocols::LineText2
+      CRLF = "\r\n"
 
       include EventEmitter
       include Logger
@@ -128,6 +128,7 @@ module Warden
         @blocked = false
         @closing = false
         @requests = []
+        @buf = ""
       end
 
       def unbind
@@ -144,26 +145,39 @@ module Warden
         !! @closing
       end
 
-      def send_object(obj)
-        json = Yajl::Encoder.encode(obj, :pretty => false)
-        send_data(json + "\n")
-      end
-
-      def send_error(str)
-        send_object({ "type" => "error", "payload" => str })
-      end
-
       def send_response(obj)
-        send_object({ "type" => "object", "payload" => obj })
+        data = obj.wrap.encode.to_s
+        send_data data.length.to_s + "\r\n"
+        send_data data + "\r\n"
       end
 
-      def receive_line(line = nil)
-        object = Yajl::Parser.parse(line)
-        receive_request(object)
-      rescue Yajl::ParseError => e
-        send_error e.message
-        close_connection_after_writing
-        debug "Disconnected client after error parsing request: #{e}"
+      def send_error(err)
+        send_response Protocol::ErrorResponse.new(:message => err.message)
+      end
+
+      def receive_data(data = nil)
+        @buf << data if data
+
+        crlf = @buf.index(CRLF)
+        if crlf
+          begin
+            length = Integer(@buf[0...crlf])
+            protocol_length = crlf + 2 + length + 2
+            if @buf.length >= protocol_length
+              payload = @buf[crlf + 2, length]
+
+              # Trim buffer
+              @buf = @buf[protocol_length..-1]
+
+              # Unwrap request
+              request = Protocol::WrappedRequest.decode(payload).request
+              receive_request(request)
+            end
+          rescue => e
+            close_connection_after_writing
+            warn "Disconnected client after error parsing request: #{e} (#{e.backtrace.first})"
+          end
+        end
       end
 
       def receive_request(req = nil)
@@ -174,7 +188,10 @@ module Warden
         return if @blocked or @closing
 
         request = @requests.shift
+
         return if request.nil?
+
+        debug request
 
         f = Fiber.new {
           begin
@@ -193,29 +210,42 @@ module Warden
       end
 
       def process(request)
-        unless request.is_a?(Array)
-          send_error "invalid request"
-          return
-        end
+        case request
+        when Protocol::PingRequest
+          response = request.create_response
+          send_response(response)
 
-        debug request.inspect
+        when Protocol::ListRequest
+          response = request.create_response
+          response.handles = Server.container_klass.registry.keys.map(&:to_s)
+          send_response(response)
 
-        if request.empty?
-          return
-        end
+        when Protocol::EchoRequest
+          response = request.create_response
+          response.message = request.message
+          send_response(response)
 
-        begin
-          method = "process_#{request.first}"
-          if respond_to?(method)
-            result = send(method, Request.new(request))
+        when Protocol::CreateRequest
+          container = Server.container_klass.new
+          container.register_connection(self)
+          response = container.dispatch(request)
+          send_response(response)
+
+        else
+          if request.respond_to?(:handle)
+            container = find_container(request.handle)
+            process_container_request(request, container)
           else
-            raise WardenError.new("unknown command #{request.first.inspect}")
+            raise WardenError.new("Unknown request: #{request.class.name.split("::").last}")
           end
-
-          send_response(result)
-        rescue WardenError => e
-          send_error e.message
         end
+      rescue WardenError => e
+        send_error e
+      end
+
+      def process_container_request(request, container)
+        response = container.dispatch(request)
+        send_response(response)
       end
 
       def process_ping(_)
@@ -224,13 +254,10 @@ module Warden
 
       def process_create(request)
         request.require_arguments { |n| (n == 1) || (n == 2) }
-        container = Server.container_klass.new(self, request[1] || {})
-        container.create
       end
 
       def process_stop(request)
         request.require_arguments { |n| n == 2 }
-        container = find_container(request[1])
         container.stop
       end
 
@@ -313,7 +340,6 @@ module Warden
       end
 
       def process_list(request)
-        Server.container_klass.registry.keys
       end
 
       protected

@@ -9,5 +9,5 @@ gem "warden-protocol", :path => "../warden-protocol"
 
 group :spec do
   gem "rspec"
-  gem "warden-client", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '3e94ec2e'
+  gem "warden-client", :path => "../warden-client" #:git => 'https://github.com/cloudfoundry/warden.git', :ref => '3e94ec2e'
 end
