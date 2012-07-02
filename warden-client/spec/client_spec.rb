@@ -159,5 +159,10 @@ describe Warden::Client do
       response = client.echo(:message => "hello")
       response.message.should == "hello"
     end
+
+    it "should work when called with the old API" do
+      response = client.call(["echo", "hello"])
+      response.should == "hello"
+    end
   end
 end
