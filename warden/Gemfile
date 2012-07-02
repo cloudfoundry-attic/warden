@@ -2,9 +2,9 @@ source "http://rubygems.org"
 
 gem "rake"
 gem "vcap_common", :git => 'https://github.com/cloudfoundry/vcap-common.git', :ref => '72b230b6'
-gem "vcap_logging", :git => 'https://github.com/cloudfoundry/common.git', :ref => '309a39e1'
+gem "vcap_logging", :git => 'https://github.com/cloudfoundry/common.git', :ref => '3f6636fc'
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
-gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => '309a39e1'
+gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => '3f6636fc'
 gem "warden-protocol", :path => "../warden-protocol"
 
 group :spec do
