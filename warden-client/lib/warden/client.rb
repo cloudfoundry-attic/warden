@@ -1,5 +1,6 @@
 require "socket"
 require "warden/protocol"
+require "warden/client/v1"
 
 module Warden
 
@@ -12,6 +13,7 @@ module Warden
 
     def initialize(path)
       @path = path
+      @v1mode = false
     end
 
     def connected?
@@ -59,10 +61,23 @@ module Warden
         raise Warden::Client::ServerError.new(response.message)
       end
 
+      if @v1mode
+        response = V1.response_to_v1(response)
+      end
+
       response
     end
 
     def write(request)
+      if request.kind_of?(Array)
+        @v1mode = true
+        request = V1.request_from_v1(request.dup)
+      end
+
+      unless request.kind_of?(Warden::Protocol::BaseRequest)
+        raise "Expected #kind_of? Warden::Protocol::BaseRequest"
+      end
+
       data = request.wrap.encode.to_s
       @sock.write data.length.to_s + "\r\n"
       @sock.write data + "\r\n"
