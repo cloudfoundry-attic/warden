@@ -13,8 +13,12 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = EventMachine::Warden::Client::VERSION
 
+  gem.add_dependency('eventmachine')
+  gem.add_dependency('warden-protocol')
+
+  # Only needed for backwards API compatibility.
+  gem.add_dependency('warden-client')
+
   gem.add_development_dependency('rake')
   gem.add_development_dependency('rspec')
-  gem.add_dependency('eventmachine')
-  gem.add_dependency('yajl-ruby')
 end
