@@ -30,14 +30,18 @@ class EventMachine::Warden::FiberAwareClient
     @connection.connected?
   end
 
-  def method_missing(method, *args, &blk)
+  def call(*args, &blk)
     raise EventMachine::Warden::Client::Error.new("Not connected") unless @connection.connected?
 
     f = Fiber.current
-    @connection.call(method, *args) {|res| f.resume(res) }
+    @connection.call(*args) {|res| f.resume(res) }
     result = Fiber.yield
 
     result.get
+  end
+
+  def method_missing(method, *args, &blk)
+    call(method, *args, &blk)
   end
 
   def disconnect(close_after_writing=true)
