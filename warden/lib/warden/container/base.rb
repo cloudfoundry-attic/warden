@@ -380,6 +380,16 @@ module Warden
         response.stderr = stderr
       end
 
+      def do_stream(request, response, &blk)
+        job = jobs[request.job_id]
+
+        unless job
+          raise WardenError.new("no such job")
+        end
+
+        job.stream(&blk)
+      end
+
       def do_run(request, response)
         spawn_request = Protocol::SpawnRequest.new \
           :handle => request.handle,
@@ -488,9 +498,10 @@ module Warden
         attr_reader :container
         attr_reader :job_id
 
-        def initialize(container)
+        def initialize(container, child)
           @container = container
           @job_id = container.class.generate_job_id
+          @child = child
 
           @status = nil
           @yielded = []
@@ -505,6 +516,18 @@ module Warden
         def resume(status)
           @status = status
           @yielded.each { |f| f.resume(@status) }
+        end
+
+        def stream(&block)
+          fiber = Fiber.current
+          listeners = @child.add_streams_listener do |listener, data|
+            fiber.resume(listener, data) if fiber.alive?
+          end
+
+          while !listeners.all?(&:closed?)
+            listener, data = Fiber.yield
+            block.call(listener.name, data) unless data.empty?
+          end
         end
       end
     end

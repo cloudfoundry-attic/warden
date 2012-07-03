@@ -37,11 +37,16 @@ Run the setup routine, which compiles the C code bundled with Warden and
 sets up the base file system for Linux containers.
 
 ```
-sudo bundle exec rake setup
+sudo bundle exec rake setup[config/linux.yml]
 ```
 
-**NOTE**: if `sudo` complains that `bundle` cannot be found, try `sudo
+**NOTE**:
+If `sudo` complains that `bundle` cannot be found, try `sudo
 env PATH=$PATH` to pass your current `PATH` to the `sudo` environment.
+
+The setup routine sets up the file system for the containers at the directory
+path specified under the key: server -> container_rootfs_path in the
+config file: config/linux.yml.
 
 #### Run Warden
 
@@ -251,6 +256,16 @@ Returns a 3-element tuple containing the integer exit status, a string
 containing its `STDOUT` and a string containing its `STDERR`. These
 elements may be `null` when they cannot be determined (e.g. the
 script couldn't be executed, was killed, etc.).
+
+### `stream HANDLE JOB_ID`
+
+Stream `STDOUT` and `STDERR` of scripts identified by `JOB_ID`, running
+in the container identified by `HANDLE`.
+
+Returns a 2-element tuple containing the type of stream viz. `STDOUT`
+or `STDERR` as the first element, and a chunk of the stream as the
+second element. Returns an empty tuple when no more data is available
+in the stream.
 
 ### `limit HANDLE (mem) [VALUE]`
 
