@@ -1,75 +1,92 @@
-require 'spec_helper'
-require 'support/mock_warden_server'
+require "spec_helper"
+require "support/mock_warden_server"
 
 describe EventMachine::Warden::Client do
   describe "events" do
-    it 'should emit the "connected" event upon connection completion' do
-      server = MockWardenServer.new(nil)
+    it "should emit the 'connected' event upon connection completion" do
+      server = MockWardenServer.new
       received_connected = false
+
       em do
         server.start
         conn = server.create_connection
         conn.on(:connected) { received_connected = true }
         EM.stop
       end
+
       received_connected.should be_true
     end
 
-    it 'should emit the "disconnected" event upon connection termination' do
-      server = MockWardenServer.new(nil)
-      received_disconnected =false
+    it "should emit the 'disconnected' event upon connection termination" do
+      server = MockWardenServer.new
+      received_disconnected = false
+
       em do
         server.start
         conn = server.create_connection
         conn.on(:disconnected) { received_disconnected = true }
         EM.stop
       end
+
       received_disconnected.should be_true
     end
   end
 
   describe "when connected" do
-    it 'should return non-error payloads' do
-      args = {"foo" => "bar"}
-      expected_result = ["test_result"]
-      handler = create_mock_handler(:test, :args => args, :result => expected_result)
+    it "should return non-error payloads" do
+      request = Warden::Protocol::EchoRequest.new(:message => "hello")
+      expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
+
+      handler = mock()
+      handler.should_receive(request.type_underscored).and_return(expected_response)
       server = MockWardenServer.new(handler)
-      result = nil
+      actual_response = nil
+
       em do
         server.start
         conn = server.create_connection
-        conn.test(args) do |res|
-          result = res.get
+        conn.call(request) do |r|
+          actual_response = r.get
           EM.stop
         end
       end
-      result.should == expected_result
+
+      actual_response.should == expected_response
     end
 
-    it 'should raise error payloads' do
-      handler = create_mock_handler(:test, :result => MockWardenServer::Error.new("test error"))
+    it "should raise error payloads" do
+      request = Warden::Protocol::EchoRequest.new(:message => "hello world")
+      expected_response = MockWardenServer::Error.new("test error")
+
+      handler = mock()
+      handler.should_receive(request.type_underscored).and_raise(expected_response)
       server = MockWardenServer.new(handler)
+
       em do
         server.start
         conn = server.create_connection
-        conn.test do |res|
+        conn.call(request) do |r|
           expect do
-            res.get
+            r.get
           end.to raise_error(/test error/)
           EM.stop
         end
       end
     end
 
-    it 'should queue subsequent requests' do
-      handler = create_mock_handler(:test1)
-      handler.should_receive(:test2)
+    it "should queue subsequent requests" do
+      request = Warden::Protocol::EchoRequest.new(:message => "hello")
+      expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
+
+      handler = mock()
+      handler.should_receive(request.type_underscored).twice.and_return(expected_response)
       server = MockWardenServer.new(handler)
+
       em do
         server.start
         conn = server.create_connection
-        conn.test1
-        conn.test2 {|res| EM.stop }
+        conn.call(request)
+        conn.call(request) { |r| EM.stop }
       end
     end
   end

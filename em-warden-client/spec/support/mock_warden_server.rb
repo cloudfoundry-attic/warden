@@ -1,64 +1,60 @@
-require 'eventmachine'
-require 'yajl'
-require 'tmpdir'
-
-require 'em/warden/client'
+require "eventmachine"
+require "tmpdir"
+require "warden/protocol/buffer"
+require "em/warden/client"
 
 class MockWardenServer
   class Error < StandardError
   end
 
   class ClientConnection < ::EM::Connection
-    include EM::Protocols::LineText2
+    def initialize(handler = nil)
+      super()
 
-    class << self
-      attr_accessor :handler
+      @handler = handler
+      @buffer  = ::Warden::Protocol::Buffer.new
     end
 
-    def receive_line(line)
-      method, args = Yajl::Parser.parse(line)
-      begin
-        result = self.class.handler.send(method, *args)
-        send_data(encode(result))
-      rescue MockWardenServer::Error => e
-        send_data(encode(e))
-      end
+    def send_response(response)
+      send_data ::Warden::Protocol::Buffer.response_to_wire(response)
     end
 
-    private
+    def send_error(err)
+      send_response ::Warden::Protocol::ErrorResponse.new(:message => err.message)
+    end
 
-    def encode(payload)
-      raw = nil
-      if payload.kind_of?(StandardError)
-        raw = {'payload' => payload.to_s, 'type' => 'error'}
-      else
-        raw = {'payload' => payload}
+    def receive_data(data = nil)
+      @buffer << data if data
+      @buffer.each_request do |request|
+        begin
+          response = @handler.send(request.type_underscored, request)
+          send_response(response)
+        rescue MockWardenServer::Error => err
+          send_error(err)
+        end
       end
-
-      Yajl::Encoder.encode(raw) + "\n"
     end
   end
 
-  attr_accessor :handler_class
   attr_reader :socket_path
 
-  def initialize(handler=nil)
-    @handler_class = Class.new(ClientConnection) { self.handler = handler }
-    @server_sig    = nil
-    @tmpdir        = Dir.mktmpdir
-    @socket_path   = File.join(@tmpdir, "warden.sock")
+  def initialize(handler = nil)
+    @handler     = handler
+    @server_sig  = nil
+    @tmpdir      = Dir.mktmpdir
+    @socket_path = File.join(@tmpdir, "warden.sock")
   end
 
   def start
-    @server_sig = ::EM.start_unix_domain_server(@socket_path, @handler_class)
+    @server_sig = ::EM.start_unix_domain_server(@socket_path, ClientConnection, @handler)
   end
 
   def create_connection
-    EM.connect_unix_domain(@socket_path, EM::Warden::Client::Connection)
+    ::EM.connect_unix_domain(@socket_path, EM::Warden::Client::Connection)
   end
 
   def create_fiber_aware_client
-    EM::Warden::FiberAwareClient.new(@socket_path)
+    ::EM::Warden::FiberAwareClient.new(@socket_path)
   end
 
   def stop
@@ -67,20 +63,19 @@ class MockWardenServer
   end
 end
 
-def create_mock_handler(method, opts={})
+def create_mock_handler(request, response = nil)
   handler = mock()
-  mock_cont = handler.should_receive(method)
+  mock_cont = handler.should_receive(request.type_underscored)
+  mock_cont = mock_cont.with(request)
 
-  if opts[:args]
-    mock_cont = mock_cont.with(opts[:args])
-  end
-
-  if result = opts[:result]
-    if result.kind_of?(StandardError)
-      mock_cont.and_raise(result)
-    else
-      mock_cont.and_return(result)
+  if response
+    if response.kind_of?(StandardError)
+      mock_cont.and_raise(response)
+    else response
+      mock_cont.and_return(response)
     end
+  else
+    mock_cont.and_return(request.create_response)
   end
 
   handler

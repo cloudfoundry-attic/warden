@@ -2,3 +2,6 @@ source 'https://rubygems.org'
 
 # Specify your gem's dependencies in em-warden-client.gemspec
 gemspec
+
+gem "warden-client", :path => "../warden-client"
+gem "warden-protocol", :path => "../warden-protocol"

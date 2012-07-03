@@ -1,8 +1,9 @@
-require 'eventmachine'
-require 'yajl'
-
-require 'em/warden/client/error'
-require 'em/warden/client/event_emitter'
+require "eventmachine"
+require "warden/client"
+require "warden/client/v1"
+require "warden/protocol/buffer"
+require "em/warden/client/error"
+require "em/warden/client/event_emitter"
 
 module EventMachine
   module Warden
@@ -13,7 +14,6 @@ end
 
 class EventMachine::Warden::Client::Connection < ::EM::Connection
   include EM::Warden::Client::EventEmitter
-  include EM::Protocols::LineText2
 
   class CommandResult
     def initialize(value)
@@ -33,6 +33,7 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
     @request_queue   = []
     @current_request = nil
     @connected       = false
+    @buffer          = ::Warden::Protocol::Buffer.new
   end
 
   def connected?
@@ -44,35 +45,51 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
     emit(:connected)
   end
 
-  def call(method, *args, &blk)
-    @request_queue << {:data => [method, *args], :callback => blk}
+  def call(*args, &blk)
+    if args.first.kind_of?(::Warden::Protocol::BaseRequest)
+      request = args.first
+    else
+      # Use array when single array is passed
+      if args.length == 1 && args.first.is_a?(::Array)
+        args = args.first
+      end
+
+      # Create request from array
+      request = ::Warden::Client::V1.request_from_v1(args.dup)
+      @v1mode = true
+    end
+
+    @request_queue << { :request => request, :callback => blk }
+
     process_queue
   end
 
   def method_missing(method, *args, &blk)
-    call(method, *args, &blk)
+    call(*([method] + args), &blk)
   end
 
-  def receive_line(line)
-    obj = Yajl::Parser.parse(line)
-
-    unless @current_request
-      # Should never happen
-      raise "Logic error! Received reply without a corresponding request"
-    end
-
-    if @current_request[:callback]
-      payload =
-        if obj['type'] == 'error'
-          EventMachine::Warden::Client::Error.new(obj['payload'])
-        else
-          obj['payload']
+  def receive_data(data = nil)
+    @buffer << data if data
+    @buffer.each_response do |response|
+      # Transform response if needed
+      if response.is_a?(Warden::Protocol::ErrorResponse)
+        response = EventMachine::Warden::Client::Error.new(response.message)
+      else
+        if @v1mode
+          response = Warden::Client::V1.response_to_v1(response)
         end
-      result = CommandResult.new(payload)
-      @current_request[:callback].call(result)
-    end
+      end
 
-    @current_request = nil
+      unless @current_request
+        raise "Logic error! Received reply without a corresponding request"
+      end
+
+      if @current_request[:callback]
+        @current_request[:callback].call(CommandResult.new(response))
+      end
+
+      @current_request = nil
+    end
 
     process_queue
   end
@@ -87,6 +104,6 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
 
     @current_request = @request_queue.shift
 
-    send_data(Yajl::Encoder.encode(@current_request[:data]) + "\n")
+    send_data(::Warden::Protocol::Buffer.request_to_wire(@current_request[:request]))
   end
 end
