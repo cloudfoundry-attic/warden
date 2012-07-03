@@ -8,6 +8,9 @@ describe Warden::Protocol::InfoRequest do
     described_class.new(:handle => "handle")
   end
 
+  its(:type_camelized) { should == "Info" }
+  its(:type_underscored) { should == "info" }
+
   field :handle do
     it_should_be_required
     it_should_be_typed_as_string
@@ -20,6 +23,9 @@ end
 
 describe Warden::Protocol::InfoResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "Info" }
+  its(:type_underscored) { should == "info" }
 
   it { should be_ok }
   it { should_not be_error }

@@ -63,12 +63,22 @@ module Warden
         self.class.decode(encode)
       end
 
-      private
-
       def type
-        klass_name = self.class.name.gsub(/(Request|Response)$/, "")
-        klass_name = klass_name.split("::").last
-        Type.const_get(klass_name)
+        Type.const_get(type_name)
+      end
+
+      def type_camelized
+        type_name
+      end
+
+      def type_underscored
+        type_name.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+      end
+
+      def type_name
+        type_name = self.class.name.gsub(/(Request|Response)$/, "")
+        type_name = type_name.split("::").last
+        type_name
       end
     end
 

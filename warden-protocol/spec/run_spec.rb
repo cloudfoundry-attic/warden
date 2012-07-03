@@ -8,6 +8,9 @@ describe Warden::Protocol::RunRequest do
     described_class.new(:handle => "handle", :script => "echo foo")
   end
 
+  its(:type_camelized) { should == "Run" }
+  its(:type_underscored) { should == "run" }
+
   field :handle do
     it_should_be_required
   end
@@ -28,6 +31,9 @@ end
 
 describe Warden::Protocol::RunResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "Run" }
+  its(:type_underscored) { should == "run" }
 
   it { should be_ok }
   it { should_not be_error }

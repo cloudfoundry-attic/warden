@@ -8,6 +8,9 @@ describe Warden::Protocol::LinkRequest do
     described_class.new(:handle => "handle", :job_id => 1)
   end
 
+  its(:type_camelized) { should == "Link" }
+  its(:type_underscored) { should == "link" }
+
   field :handle do
     it_should_be_required
     it_should_be_typed_as_string
@@ -25,6 +28,9 @@ end
 
 describe Warden::Protocol::LinkResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "Link" }
+  its(:type_underscored) { should == "link" }
 
   it { should be_ok }
   it { should_not be_error }
