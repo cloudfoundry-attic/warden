@@ -4,6 +4,9 @@ require "warden/protocol/create"
 describe Warden::Protocol::CreateRequest do
   it_should_behave_like "wrappable request"
 
+  its(:type_camelized) { should == "Create" }
+  its(:type_underscored) { should == "create" }
+
   field :bind_mounts do
     it_should_be_optional
 
@@ -30,6 +33,9 @@ end
 
 describe Warden::Protocol::CreateResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "Create" }
+  its(:type_underscored) { should == "create" }
 
   it { should be_ok }
   it { should_not be_error }

@@ -12,6 +12,9 @@ describe Warden::Protocol::CopyOutRequest do
     )
   end
 
+  its(:type_camelized) { should == "CopyOut" }
+  its(:type_underscored) { should == "copy_out" }
+
   field :handle do
     it_should_be_required
     it_should_be_typed_as_string
@@ -39,6 +42,9 @@ end
 
 describe Warden::Protocol::CopyOutResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "CopyOut" }
+  its(:type_underscored) { should == "copy_out" }
 
   it { should be_ok }
   it { should_not be_error }

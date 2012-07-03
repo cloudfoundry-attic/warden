@@ -8,6 +8,9 @@ describe Warden::Protocol::NetInRequest do
     described_class.new(:handle => "handle")
   end
 
+  its(:type_camelized) { should == "NetIn" }
+  its(:type_underscored) { should == "net_in" }
+
   field :handle do
     it_should_be_required
     it_should_be_typed_as_string
@@ -25,6 +28,9 @@ end
 
 describe Warden::Protocol::NetInResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "NetIn" }
+  its(:type_underscored) { should == "net_in" }
 
   it { should be_ok }
   it { should_not be_error }

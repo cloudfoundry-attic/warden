@@ -8,6 +8,9 @@ describe Warden::Protocol::LimitDiskRequest do
     described_class.new(:handle => "handle")
   end
 
+  its(:type_camelized) { should == "LimitDisk" }
+  its(:type_underscored) { should == "limit_disk" }
+
   field :handle do
     it_should_be_required
     it_should_be_typed_as_string
@@ -30,6 +33,9 @@ end
 
 describe Warden::Protocol::LimitDiskResponse do
   it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "LimitDisk" }
+  its(:type_underscored) { should == "limit_disk" }
 
   it { should be_ok }
   it { should_not be_error }
