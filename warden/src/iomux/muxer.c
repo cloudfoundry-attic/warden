@@ -171,7 +171,6 @@ static uint8_t muxer_pump(muxer_t *muxer, uint8_t stopped) {
  */
 void *muxer_acceptor(void *data) {
   muxer_t      *muxer    = NULL;
-  size_t        buf_size = 0;
   uint8_t       events   = 0;
   int           sink_fd  = -1;
   muxer_sink_t *sink     = NULL;
@@ -196,13 +195,10 @@ void *muxer_acceptor(void *data) {
     /* Prevent the reader/writer thread from reading any new data */
     checked_lock(&(muxer->lock));
 
-    buf_size = ring_buffer_size(muxer->buf);
-    if (buf_size > 0) {
-      if (-1 == muxer_catchup_sink(muxer, sink_fd)) {
-        /* Other side closed conn */
-        checked_unlock(&(muxer->lock));
-        continue;
-      }
+    if (-1 == muxer_catchup_sink(muxer, sink_fd)) {
+      /* Other side closed conn */
+      checked_unlock(&(muxer->lock));
+      continue;
     }
 
     sink = muxer_sink_alloc(sink_fd);
