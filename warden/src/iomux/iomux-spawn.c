@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
   pthread_t        sw_thread, muxer_threads[2];
   char             socket_paths[3][PATH_MAX + 1];
   char             *socket_names[3] = { "stdout.sock", "stderr.sock", "status.sock" };
+  barrier_t        *barrier = NULL;
 
   if (argc < 3) {
     fprintf(stderr, "Usage: %s <socket directory> <cmd>\n", argv[0]);
@@ -83,12 +84,15 @@ int main(int argc, char *argv[]) {
   }
 
   /* Status writer */
-  sw = status_writer_alloc(fds[2]);
+  barrier = barrier_alloc();
+  sw = status_writer_alloc(fds[2], barrier);
   if (pthread_create(&sw_thread, NULL, run_status_writer, sw)) {
     fprintf(stderr, "Failed creating status writer thread:\n");
     exit_status = 1;
     goto cleanup;
   }
+
+  barrier_wait(barrier);
 
   child_continue(child);
 
@@ -112,6 +116,10 @@ int main(int argc, char *argv[]) {
 cleanup:
   if (NULL != child) {
     child_free(child);
+  }
+
+  if (NULL != barrier) {
+    barrier_free(barrier);
   }
 
   if (NULL != sw) {

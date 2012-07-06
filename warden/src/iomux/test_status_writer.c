@@ -99,7 +99,7 @@ void test_status_writer(void) {
   listen_sock = create_unix_domain_listener(domain_path, 10);
   assert(-1 != listen_sock);
 
-  sw = status_writer_alloc(listen_sock);
+  sw = status_writer_alloc(listen_sock, NULL);
 
   if (pthread_create(&sw_thread, NULL, run_status_writer, sw)) {
     perror("pthread_create");
