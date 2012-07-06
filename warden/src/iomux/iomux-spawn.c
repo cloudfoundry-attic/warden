@@ -71,6 +71,9 @@ int main(int argc, char *argv[]) {
 
   child = child_create(argv + 2, argc - 2);
 
+  printf("child_pid=%d\n", child->pid);
+  fflush(stdout);
+
   /* Muxer for stdout/stderr */
   muxers[0] = muxer_alloc(fds[0], child->stdout[0], ring_buffer_size);
   muxers[1] = muxer_alloc(fds[1], child->stderr[0], ring_buffer_size);
