@@ -69,7 +69,7 @@ child_t *child_create(char **argv, size_t argv_size) {
       exit(1);
     }
 
-    execv(argv[0], argv + 1);
+    execv(argv[0], argv);
 
     /* NOTREACHED */
     exit(0);
