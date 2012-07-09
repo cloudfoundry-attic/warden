@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
+#include <linux/limits.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
