@@ -4,5 +4,6 @@ default: all
 %:
 	cd clone && $(MAKE) $@
 	cd oom && $(MAKE) $@
+	cd iomux && $(MAKE) $@
 
 .PHONY: default
