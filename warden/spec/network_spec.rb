@@ -1,4 +1,5 @@
 require "spec_helper"
+require "warden/network"
 
 describe Warden::Network do
   describe Warden::Network::Netmask do

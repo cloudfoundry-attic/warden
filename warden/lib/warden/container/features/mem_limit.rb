@@ -49,58 +49,47 @@ module Warden
         end
 
         def oomed
-          self.warn "OOM condition occurred inside container #{self.handle}"
+          warn "OOM happened for #{handle}"
 
-          self.events << 'oom'
-          if self.state == State::Active
-            self.stop
+          events << 'oom'
+          if state == State::Active
+            dispatch(Protocol::StopRequest.new)
           end
         end
 
-        def get_limit_mem
-          self.limits['mem'] ||= 0
-          self.limits['mem']
-        end
+        def do_limit_memory(request, response)
+          if request.limit_in_bytes
+            begin
 
-        def set_limit_mem(args)
-          unless args.length == 1
-            raise WardenError.new("Invalid number of arguments: expected 1, got #{args.length}")
-          end
-
-          begin
-            mem_limit = Integer(args[0])
-          rescue
-            raise WardenError.new("Invalid limit")
-          end
-
-          begin
-
-            # Need to set up the oom notifier before we set the memory limit to
-            # avoid a race between when the limit is set and when the oom
-            # notifier is registered.
-            unless @oom_notifier
-              @oom_notifier = OomNotifier.new(self)
-              on(:after_stop) do
-                if @oom_notifier
-                  self.debug "Unregistering OOM Notifier for container '#{self.handle}'"
-                  @oom_notifier.unregister
-                  @oom_notifier = nil
+              # Need to set up the oom notifier before we set the memory limit
+              # to avoid a race between when the limit is set and when the oom
+              # notifier is registered.
+              unless @oom_notifier
+                @oom_notifier = OomNotifier.new(self)
+                on(:after_stop) do
+                  if @oom_notifier
+                    debug "Unregistering OOM notifier for #{handle}"
+                    @oom_notifier.unregister
+                    @oom_notifier = nil
+                  end
                 end
               end
-            end
 
-            ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
-              File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
-                f.write(mem_limit.to_s)
+              ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
+                File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
+                  f.write(request.limit_in_bytes.to_s)
+                end
               end
-            end
 
-            self.limits['mem'] = mem_limit
-          rescue => e
-            raise WardenError.new("Failed setting memory limit: #{e}")
+            rescue => e
+              raise WardenError.new("Failed setting memory limit: #{e}")
+            end
           end
 
-          "ok"
+          limit_in_bytes = File.read(File.join(cgroup_path(:memory), "memory.limit_in_bytes"))
+          response.limit_in_bytes = limit_in_bytes.to_i
+
+          nil
         end
       end
     end

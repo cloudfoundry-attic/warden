@@ -1,0 +1,36 @@
+require "spec_helper"
+require "warden/protocol/list"
+
+describe Warden::Protocol::ListRequest do
+  it_should_behave_like "wrappable request"
+
+  its(:type_camelized) { should == "List" }
+  its(:type_underscored) { should == "list" }
+
+  it "should respond to #create_response" do
+    subject.create_response.should be_a(Warden::Protocol::ListResponse)
+  end
+end
+
+describe Warden::Protocol::ListResponse do
+  it_should_behave_like "wrappable response"
+
+  its(:type_camelized) { should == "List" }
+  its(:type_underscored) { should == "list" }
+
+  it { should be_ok }
+  it { should_not be_error }
+
+  subject do
+    described_class.new
+  end
+
+  field :handles do
+    it_should_be_optional
+
+    it "should allow one or more handles" do
+      subject.handles = ["a", "b"]
+      subject.should be_valid
+    end
+  end
+end

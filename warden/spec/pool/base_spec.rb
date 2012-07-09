@@ -20,7 +20,6 @@ describe Warden::Pool::Base do
       # It should not be possible to immediately acquire the entry again
       pool.acquire.should be_nil
       sleep 0.02
-      puts pool.inspect
       pool.acquire.should_not be_nil
     end
   end

@@ -6,7 +6,7 @@ require "warden/util"
 
 require "eventmachine"
 require "set"
-require "shellwords"
+require "warden/protocol"
 
 module Warden
 
@@ -63,45 +63,6 @@ module Warden
         attr_accessor :port_pool
         attr_accessor :uid_pool
 
-        # Acquire resources required for every container instance.
-        def acquire(resources)
-          unless resources[:network]
-            network = network_pool.acquire
-            unless network
-              raise WardenError.new("could not acquire network")
-            end
-
-            resources[:network] = network
-          end
-
-          resources[:uid] ||= uid_pool.acquire
-        end
-
-        # Release resources required for every container instance.
-        def release(resources)
-          if network = resources.delete(:network)
-            network_pool.release(network)
-          end
-
-          uid = resources.delete(:uid)
-          uid_pool.release(uid) if uid
-        end
-
-        # Override #new to make sure that acquired resources are released when
-        # one of the pooled resourced can not be required. Acquiring the
-        # necessary resources must be atomic to prevent leakage.
-        def new(conn, config = {})
-          resources = {}
-          acquire(resources)
-          instance = super(resources, config)
-          instance.register_connection(conn)
-          instance
-
-        rescue WardenError
-          release(resources)
-          raise
-        end
-
         # Called before the server starts.
         def setup(config = {})
           @root_path = File.join(Warden::Util.path("root"),
@@ -130,74 +91,17 @@ module Warden
       attr_reader :jobs
       attr_reader :events
       attr_reader :limits
+      attr_reader :state
+      attr_accessor :grace_time
 
-      def initialize(resources, config = {})
-        @resources   = resources
+      def initialize
+        @resources   = Hash.new { |h,k| raise WardenError.new("Unknown resource: #{k}") }
         @connections = ::Set.new
         @jobs        = {}
-        @state       = State::Born
         @events      = Set.new
         @limits      = {}
-
-        grace_time = Server.container_grace_time
-        grace_time = config.delete("grace_time") if config.has_key?("grace_time")
-
-        begin
-          grace_time = Float(grace_time) unless grace_time.nil?
-        rescue ArgumentError => err
-          raise WardenError.new("Cannot parse grace time from %s." % grace_time.inspect)
-        end
-
-        @config = { :grace_time => grace_time }
-
-        on(:before_create) {
-          check_state_in(State::Born)
-
-          self.state = State::Active
-        }
-
-        on(:after_create) {
-          # Clients should be able to look this container up
-          self.class.registry[handle] = self
-        }
-
-        on(:before_stop) {
-          check_state_in(State::Active)
-
-          self.state = State::Stopped
-        }
-
-        on(:after_stop) {
-          # Here for symmetry
-        }
-
-        on(:before_destroy) {
-          check_state_in(State::Active, State::Stopped)
-
-          # Clients should no longer be able to look this container up
-          self.class.registry.delete(handle)
-
-          unless self.state == State::Stopped
-            begin
-              self.stop
-
-            rescue WardenError
-              # Ignore, stopping before destroy is a best effort
-            end
-          end
-
-          self.state = State::Destroyed
-        }
-
-        on(:after_destroy) {
-          # Here for symmetry
-        }
-
-        on(:finalize) {
-          # Release all resources after the container has been destroyed and
-          # the after_destroy have executed.
-          self.class.release(resources)
-        }
+        @state       = State::Born
+        @grace_time  = Server.container_grace_time
       end
 
       def network
@@ -218,10 +122,6 @@ module Warden
 
       def uid
         @uid ||= resources[:uid]
-      end
-
-      def grace_time
-        @config[:grace_time]
       end
 
       def cancel_grace_timer
@@ -249,7 +149,7 @@ module Warden
           debug "grace timer: destroy"
 
           begin
-            destroy
+            dispatch(Protocol::DestroyRequest.new)
 
           rescue WardenError => err
             # Ignore, destroying after grace time is a best effort
@@ -293,274 +193,281 @@ module Warden
         @container_path ||= File.join(container_depot_path, handle)
       end
 
-      def create
-        debug "entry"
+      def hook(name, request, response, &blk)
+        if respond_to?(name)
+          m = method(name)
+          if m.arity == 2
+            m.call(request, response, &blk)
+          else
+            m.call(&blk)
+          end
+        else
+          blk.call(request, response) if blk
+        end
+      end
+
+      def dispatch(request, &blk)
+        klass_name = request.class.name.split("::").last
+        klass_name = klass_name.gsub(/Request$/, "")
+        klass_name = klass_name.gsub(/(.)([A-Z])/) { |m| "#{m[0]}_#{m[1]}" }
+        klass_name = klass_name.downcase
+
+        response = request.create_response
+
+        before_method = "before_%s" % klass_name
+        hook(before_method, request, response)
+        emit(before_method.to_sym)
+
+        around_method = "around_%s" % klass_name
+        hook(around_method, request, response) do
+          do_method = "do_%s" % klass_name
+          send(do_method, request, response, &blk)
+        end
+
+        after_method = "after_%s" % klass_name
+        emit(after_method.to_sym)
+        hook(after_method, request, response)
+
+        response
+      end
+
+      def method_missing(sym, *args, &blk)
+        if args.first.kind_of?(Protocol::BaseRequest)
+          dispatch(args.first, &blk)
+        else
+          super
+        end
+      end
+
+      # Acquire resources required for every container instance.
+      def acquire
+        @acquired ||= {}
+
+        unless @resources.has_key?(:network)
+          network = self.class.network_pool.acquire
+          unless network
+            raise WardenError.new("Could not acquire network")
+          end
+
+          @acquired[:network] = network
+          @resources[:network] = network
+        end
+
+        unless @resources.has_key?(:uid)
+          uid = self.class.uid_pool.acquire
+          unless uid
+            raise WardenError.new("Could not acquire UID")
+          end
+
+          @acquired[:uid] = uid
+          @resources[:uid] = uid
+        end
+      end
+
+      # Release resources required for every container instance.
+      def release
+        @acquired ||= {}
+
+        if network = @acquired.delete(:network)
+          self.class.network_pool.release(network)
+        end
+
+        if uid = @acquired.delete(:uid)
+          self.class.uid_pool.release(uid)
+        end
+      end
+
+      def before_create(request, response)
+        check_state_in(State::Born)
 
         begin
-          emit(:before_create)
-          do_create
-          emit(:after_create)
+          acquire
 
-          handle
+          self.state = State::Active
 
+        rescue
+          release
+          raise
+        end
+      end
+
+      def after_create(request, response)
+        # Clients should be able to look this container up
+        self.class.registry[handle] = self
+
+        # Pass handle back to client
+        response.handle = handle
+      end
+
+      def around_create
+        begin
+          yield
         rescue WardenError
           begin
-            destroy
-
+            dispatch(Protocol::DestroyRequest.new)
           rescue WardenError
+            # Make sure that resources are released
+            release
+
             # Ignore, raise original error
           end
 
           raise
         end
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
       end
 
-      def do_create
+      def do_create(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def stop
-        debug "entry"
-
-        emit(:before_stop)
-        do_stop
-        emit(:after_stop)
-
-        "ok"
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
-      end
-
-      def do_stop
-        raise WardenError.new("not implemented")
-      end
-
-      def destroy
-        debug "entry"
-
-        emit(:before_destroy)
-        do_destroy
-        emit(:after_destroy)
-
-        # Trigger separate "finalize" event so hooks in "after_destroy" still
-        # have access to the allocated resources (e.g. the container's handle
-        # via the network allocation)
-        emit(:finalize)
-
-        "ok"
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
-      end
-
-      def do_destroy
-        raise WardenError.new("not implemented")
-      end
-
-      def spawn(script, opts = {})
-        debug "entry"
-
+      def before_stop
         check_state_in(State::Active)
 
-        job = create_job(script, opts)
-        jobs[job.job_id.to_s] = job
-
-        # Return job id to caller
-        job.job_id
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
+        self.state = State::Stopped
       end
 
-      def link(job_id)
-        debug "entry"
+      def do_stop(request, response)
+        raise WardenError.new("not implemented")
+      end
 
-        job = jobs[job_id.to_s]
+      def before_destroy
+        check_state_in(State::Active, State::Stopped)
+
+        # Clients should no longer be able to look this container up
+        self.class.registry.delete(handle)
+
+        unless self.state == State::Stopped
+          begin
+            self.stop(Protocol::StopRequest.new)
+          rescue WardenError
+            # Ignore, stopping before destroy is a best effort
+          end
+        end
+
+        self.state = State::Destroyed
+      end
+
+      def after_destroy
+        release
+      end
+
+      def do_destroy(request, response)
+        raise WardenError.new("not implemented")
+      end
+
+      def before_spawn
+        check_state_in(State::Active)
+      end
+
+      def do_spawn(request, response)
+        job = create_job(request)
+        jobs[job.job_id] = job
+
+        response.job_id = job.job_id
+      end
+
+      def do_link(request, response)
+        job = jobs[request.job_id]
+
         unless job
           raise WardenError.new("no such job")
         end
 
-        job.yield
+        exit_status, stdout, stderr = job.yield
 
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
+        response.exit_status = exit_status
+        response.stdout = stdout
+        response.stderr = stderr
       end
 
-      def stream(job_id, &block)
-        debug "entry"
+      def do_stream(request, response, &blk)
+        job = jobs[request.job_id]
 
-        unless block
-          raise WardenError.new("empty block is disallowed")
-        end
-
-        job = jobs[job_id.to_s]
         unless job
           raise WardenError.new("no such job")
         end
 
-        job.stream(&block)
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
+        job.stream(&blk)
       end
 
-      def run(script, opts = {})
-        debug "entry"
+      def do_run(request, response)
+        spawn_request = Protocol::SpawnRequest.new \
+          :handle => request.handle,
+          :script => request.script,
+          :privileged => request.privileged
 
-        link(spawn(script, opts))
+        spawn_response = dispatch(spawn_request)
 
-      rescue => err
-        warn "error: #{err.message}"
-        raise
+        link_request = Protocol::LinkRequest.new \
+          :handle => handle,
+          :job_id => spawn_response.job_id
 
-      ensure
-        debug "exit"
+        link_response = dispatch(link_request)
+
+        response.exit_status = link_response.exit_status
+        response.stdout = link_response.stdout
+        response.stderr = link_response.stderr
       end
 
-      def net_in(port = nil)
-        debug "entry"
-
+      def before_net_in
         check_state_in(State::Active)
-
-        do_net_in(port)
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
       end
 
-      def net_out(spec)
-        debug "entry"
+      def do_net_in(request, response)
+        raise WardenError.new("not implemented")
+      end
 
+      def before_net_out
         check_state_in(State::Active)
-
-        do_net_out(spec)
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
       end
 
-      def copy(direction, src_path, dst_path, owner=nil)
-        debug "entry"
+      def do_net_out(request, response)
+        raise WardenError.new("not implemented")
+      end
 
+      def before_copy_in
         check_state_in(State::Active)
-
-        if owner && (direction == "in")
-          raise WardenError.new("You can only supply a target owner when copying out")
-        end
-
-        src_path = Shellwords.shellescape(src_path)
-        dst_path = Shellwords.shellescape(dst_path)
-
-        if direction == "in"
-          do_copy_in(src_path, dst_path)
-        else
-          chown_opts = Shellwords.shellescape(owner) if owner
-          do_copy_out(src_path, dst_path, owner)
-        end
-
-      ensure
-        debug "exit"
       end
 
-      def get_limit(limit_name)
-        debug "entry"
+      def do_copy_in(request, response)
+        raise WardenError.new("not implemented")
+      end
 
+      def before_copy_out
+        check_state_in(State::Active)
+      end
+
+      def do_copy_out(request, response)
+        raise WardenError.new("not implemented")
+      end
+
+      def before_limit_memory
         check_state_in(State::Active, State::Stopped)
-
-        getter = "get_limit_#{limit_name}"
-        if respond_to?(getter)
-          self.send(getter)
-        else
-          raise WardenError.new("Unknown limit #{limit_name}")
-        end
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
       end
 
-      def set_limit(limit_name, args)
-        debug "entry"
-
-        check_state_in(State::Active)
-
-        setter = "set_limit_#{limit_name}"
-        if respond_to?(setter)
-          self.send(setter, args)
-        else
-          raise WardenError.new("Unknown limit #{limit_name}")
-        end
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
+      def do_limit_memory(request, response)
+        raise WardenError.new("not implemented")
       end
 
-      def info
-        debug "entry"
-
+      def before_limit_disk
         check_state_in(State::Active, State::Stopped)
-
-        get_info
-
-      rescue => err
-        warn "error: #{err.message}"
-        raise
-
-      ensure
-        debug "exit"
       end
 
-      def get_info
-        { 'state'  => self.state.to_s,
-          'events' => self.events.to_a,
-          'limits' => self.limits,
-          'stats'  => {},
-          'host_ip' => self.host_ip.to_human,
-          'container_ip' => self.container_ip.to_human,
-        }
+      def do_limit_disk(request, response)
+        raise WardenError.new("not implemented")
+      end
+
+      def before_info
+        check_state_in(State::Active, State::Stopped)
+      end
+
+      def do_info(request, response)
+        response.state = self.state.to_s
+        response.events = self.events.to_a
+        response.host_ip = self.host_ip.to_human
+        response.container_ip = self.container_ip.to_human
+
+        nil
       end
 
       protected
@@ -612,7 +519,6 @@ module Warden
         end
 
         def stream(&block)
-
           fiber = Fiber.current
           listeners = @child.add_streams_listener do |listener, data|
             fiber.resume(listener, data) if fiber.alive?
@@ -627,4 +533,3 @@ module Warden
     end
   end
 end
-

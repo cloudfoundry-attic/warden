@@ -1,5 +1,6 @@
 require "socket"
-require "yajl"
+require "warden/protocol"
+require "warden/client/v1"
 
 module Warden
 
@@ -12,6 +13,7 @@ module Warden
 
     def initialize(path)
       @path = path
+      @v1mode = false
     end
 
     def connected?
@@ -34,36 +36,64 @@ module Warden
       connect
     end
 
-    def read
-      line = @sock.gets
-      if line.nil?
+    def io
+      rv = yield
+      if rv.nil?
         disconnect
         raise ::EOFError
       end
 
-      object = ::Yajl::Parser.parse(line)
-      payload = object["payload"]
+      rv
+    end
+
+    def read
+      length = io { @sock.gets }
+      data = io { @sock.read(length.to_i) }
+
+      # Discard \r\n
+      io { @sock.read(2) }
+
+      wrapped_response = Warden::Protocol::WrappedResponse.decode(data)
+      response = wrapped_response.response
 
       # Raise error replies
-      if object["type"] == "error"
-        raise Warden::Client::ServerError.new(payload)
+      if response.is_a?(Warden::Protocol::ErrorResponse)
+        raise Warden::Client::ServerError.new(response.message)
       end
 
-      payload
+      if @v1mode
+        response = V1.response_to_v1(response)
+      end
+
+      response
     end
 
-    def write(args)
-      json = ::Yajl::Encoder.encode(args, :pretty => false)
-      @sock.write(json + "\n")
+    def write(request)
+      if request.kind_of?(Array)
+        @v1mode = true
+        request = V1.request_from_v1(request.dup)
+      end
+
+      unless request.kind_of?(Warden::Protocol::BaseRequest)
+        raise "Expected #kind_of? Warden::Protocol::BaseRequest"
+      end
+
+      data = request.wrap.encode.to_s
+      @sock.write data.length.to_s + "\r\n"
+      @sock.write data + "\r\n"
     end
 
-    def call(args)
-      write(args)
+    def call(request)
+      write(request)
       read
     end
 
     def method_missing(sym, *args, &blk)
-      call([sym, *args])
+      klass_name = sym.to_s.gsub(/(^|_)([a-z])/) { $2.upcase }
+      klass_name += "Request"
+      klass = Warden::Protocol.const_get(klass_name)
+
+      call(klass.new(*args))
     end
   end
 end

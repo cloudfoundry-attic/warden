@@ -3,6 +3,7 @@ source "http://rubygems.org"
 gemspec
 
 gem "rake"
+gem "warden-protocol", :path => "../warden-protocol"
 
 group :spec do
   gem "rspec"

@@ -15,23 +15,23 @@ module Warden
         # noop
       end
 
-      def do_create
+      def do_create(request, response)
         sh File.join(root_path, "create.sh"), container_path
         debug "insecure container created"
       end
 
-      def do_stop
+      def do_stop(request, response)
         sh File.join(container_path, "stop.sh")
         debug "insecure container stopped"
       end
 
-      def do_destroy
+      def do_destroy(request, response)
         sh File.join(root_path, "destroy.sh"), container_path
         debug "insecure container destroyed"
       end
 
-      def create_job(script, opts = {})
-        child = DeferredChild.new(File.join(container_path, "run.sh"), :input => script)
+      def create_job(request)
+        child = DeferredChild.new(File.join(container_path, "run.sh"), :input => request.script)
 
         job = Job.new(self, child)
 
@@ -46,7 +46,7 @@ module Warden
         job
       end
 
-      def do_net_in(container_port = nil)
+      def do_net_in(request, response)
         host_port = self.class.port_pool.acquire
 
         # Ignore the container port, since there is nothing we can do
@@ -57,23 +57,32 @@ module Warden
           self.class.port_pool.release(port)
         }
 
-        { :host_port => host_port, :container_port => container_port }
+        response.host_port      = host_port
+        response.container_port = container_port
+
+        nil
       end
 
-      def do_copy_in(src_path, dst_path)
+      def do_copy_in(request, response)
+        src_path = request.src_path
+        dst_path = request.dst_path
+
         perform_rsync(src_path, container_relative_path(dst_path))
 
-        "ok"
+        nil
       end
 
-      def do_copy_out(src_path, dst_path, owner=nil)
+      def do_copy_out(request, response)
+        src_path = request.src_path
+        dst_path = request.dst_path
+
         perform_rsync(container_relative_path(src_path), dst_path)
 
-        if owner
-          sh "chown", "-R", owner, dst_path
+        if request.owner
+          sh "chown", "-R", request.owner, dst_path
         end
 
-        "ok"
+        nil
       end
 
       private
@@ -93,9 +102,8 @@ module Warden
       end
 
       def container_relative_path(path)
-        File.join(container_path, 'root', path.slice(1, path.length - 1))
+        File.join(container_path, "root", path[1..-1])
       end
-
     end
   end
 end
