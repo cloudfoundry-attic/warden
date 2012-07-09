@@ -11,7 +11,7 @@ clean:
 test: test.o ring_buffer.o util.o test_ring_buffer.o test_muxer.o muxer.o barrier.o status_writer.o test_status_writer.o
 		$(CC) -lpthread -o $@ $^
 
-iomux-spawn: iomux-spawn.o ring_buffer.o muxer.o status_writer.o child.o util.o
+iomux-spawn: iomux-spawn.o ring_buffer.o muxer.o status_writer.o child.o util.o barrier.o
 		$(CC) -lpthread -o $@ $^
 
 iomux-link: iomux-link.o pump.o util.o

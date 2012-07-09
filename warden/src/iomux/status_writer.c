@@ -33,6 +33,8 @@ struct status_writer_s {
   status_writer_state_t state;
   pthread_mutex_t       state_lock;
 
+  barrier_t *barrier;
+
   int accept_fd;                /* where new connections are created */
   int acceptor_stop_pipe[2];
 
@@ -74,7 +76,7 @@ static void status_writer_free_sinks(status_writer_t *sw) {
   }
 }
 
-status_writer_t *status_writer_alloc(int accept_fd) {
+status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier) {
   status_writer_t *sw = NULL;
   int err = 0;
 
@@ -82,6 +84,8 @@ status_writer_t *status_writer_alloc(int accept_fd) {
 
   sw = calloc(1, sizeof(*sw));
   assert(NULL != sw);
+
+  sw->barrier = barrier;
 
   sw->accept_fd = accept_fd;
   err = set_nonblocking(sw->accept_fd);
@@ -128,6 +132,10 @@ void status_writer_run(status_writer_t *sw) {
       } else {
         sink = status_sink_alloc(sink_fd);
         LIST_INSERT_HEAD(&(sw->sinks), sink, next_sink);
+
+        if (NULL != sw->barrier) {
+          barrier_lift(sw->barrier);
+        }
       }
     }
 

@@ -3,9 +3,18 @@
 
 #include <stdint.h>
 
+#include "barrier.h"
+
 typedef struct status_writer_s status_writer_t;
 
-status_writer_t *status_writer_alloc(int accept_fd);
+/**
+ * Allocates a new status writer.
+ *
+ * @param accept_fd
+ * @param barrier   If supplied, this barrier will be lifted once a client has
+ *                  connected.
+ */
+status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier);
 
 /**
  * Starts the status writer. This blocks until someone calls
