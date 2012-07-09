@@ -32,6 +32,12 @@
           }                                                             \
           done = 1;                                                     \
           break;                                                        \
+        case ECONNRESET:                                                \
+          if (NULL != hup) {                                            \
+            *(hup) = 1;                                                 \
+          }                                                             \
+          done = 1;                                                     \
+          break;                                                        \
         default:                                                        \
           perror("atomic_io");                                          \
           assert(0);                                                    \
