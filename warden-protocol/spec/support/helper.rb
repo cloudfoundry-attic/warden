@@ -79,5 +79,17 @@ module Helper
         subject.should be_valid
       end
     end
+
+    def it_should_be_typed_as_boolean
+      it "should allow false" do
+        subject.send("#{field.name}=", false)
+        subject.should be_valid
+      end
+
+      it "should allow true" do
+        subject.send("#{field.name}=", true)
+        subject.should be_valid
+      end
+    end
   end
 end

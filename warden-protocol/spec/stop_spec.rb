@@ -15,6 +15,16 @@ describe Warden::Protocol::StopRequest do
     it_should_be_required
   end
 
+  field :background do
+    it_should_be_optional
+    it_should_be_typed_as_boolean
+  end
+
+  field :kill do
+    it_should_be_optional
+    it_should_be_typed_as_boolean
+  end
+
   it "should respond to #create_response" do
     subject.create_response.should be_a(Warden::Protocol::StopResponse)
   end
