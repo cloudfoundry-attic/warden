@@ -1,9 +1,11 @@
 #!/bin/bash
 
+[ -n "$DEBUG" ] && set -o xtrace
 set -o nounset
 set -o errexit
 shopt -s nullglob
-cd $(dirname "${0}")
+
+cd $(dirname "$0")
 
 if [ -z "${1}" ]; then
   echo "Usage: ${0} <instance_path>"

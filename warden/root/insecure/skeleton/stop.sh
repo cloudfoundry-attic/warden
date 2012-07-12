@@ -1,5 +1,6 @@
 #!/bin/bash
 
+[ -n "$DEBUG" ] && set -o xtrace
 set -o nounset
 set -o errexit
 shopt -s nullglob
@@ -28,7 +29,7 @@ do
   esac
 done
 
-cd $(dirname "${0}")
+cd $(dirname "$0")
 
 function pids() {
   echo pids/* | xargs -r -n1 basename | xargs -r echo
