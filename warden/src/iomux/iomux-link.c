@@ -182,21 +182,33 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  for (ii = 0; ii < 3; ++ii) {
-    nfds = MAX(nfds, fds[ii]) + 1;
-  }
-
-  while (!done) {
+  /* Loop until all connections are broken or an error occurs */
+  while (1) {
     FD_ZERO(&readable_fds);
+
+    done = 1;
+
     for (ii = 0; ii < 3; ++ii) {
-      FD_SET(fds[ii], &readable_fds);
+      if (-1 != fds[ii]) {
+        nfds = MAX(nfds, fds[ii]) + 1;
+        FD_SET(fds[ii], &readable_fds);
+        done = 0;
+      }
+    }
+
+    if (done) {
+      break;
     }
 
     if (-1 != select(nfds, &readable_fds, NULL, NULL, NULL)) {
       /* Pump stderr/stdout */
       for (ii = 0; ii < 2; ++ii) {
         if (FD_ISSET(fds[ii], &readable_fds)) {
-          done |= pump_run(&pumps[ii]);
+          /* Stop watching for reads if a hup occurred */
+          if (pump_run(&pumps[ii])) {
+            close(fds[ii]);
+            fds[ii] = -1;
+          }
         }
       }
 
@@ -204,12 +216,13 @@ int main(int argc, char *argv[]) {
       if (FD_ISSET(fds[2], &readable_fds)) {
         atomic_read(fds[2], &child_status, sizeof(uint8_t), NULL);
         exit_status = child_status;
-        done = 1;
+        close(fds[2]);
+        fds[2] = -1;
       }
     } else {
       if (EINTR != errno) {
         perror("select()");
-        done = 1;
+        break;
       }
     }
   }
