@@ -23,7 +23,7 @@ struct child_s {
  * Forks off a child process that will execute the command specified by _argv_.
  *
  * NB: stdout/stderr of the child will be redirected to the pipes _stdout_ and
- *     _stderr_. The child's stdin will be closed.
+ *     _stderr_.
  */
 child_t *child_create(char **argv, size_t argv_size);
 
