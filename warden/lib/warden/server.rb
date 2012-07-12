@@ -245,6 +245,25 @@ module Warden
 
       def process_container_request(request, container)
         case request
+        when Protocol::StopRequest
+          if request.background
+            # Dispatch request out of band when the `background` flag is set
+            ::EM.next_tick do
+              f = Fiber.new do
+                # Ignore response
+                container.dispatch(request)
+              end
+
+              f.resume
+            end
+
+            response = request.create_response
+            send_response(response)
+          else
+            response = container.dispatch(request)
+            send_response(response)
+          end
+
         when Protocol::StreamRequest
           container.dispatch(request) do |name, data|
             response = request.create_response

@@ -24,6 +24,40 @@ shared_examples "lifecycle" do
     end.to raise_error(/unknown handle/i)
   end
 
+  describe "stop" do
+    attr_reader :handle
+    attr_reader :job_id
+
+    before do
+      @handle = client.create.handle
+
+      response = client.spawn \
+        :handle => handle,
+        :script => "trap 'sleep 0.5; exit 37;' SIGTERM; while true; do sleep 0.1; done"
+
+      @job_id = response.job_id
+    end
+
+    it "can run in the background" do
+      client.stop(:handle => handle, :background => true)
+
+      t1 = Time.now
+      response = client.link(:handle => handle, :job_id => job_id)
+      t2 = Time.now
+
+      # Test that linking still took some time after stop had already returned
+      (t2 - t1).should be_within(0.25).of(0.5)
+    end
+
+    it "can kill everything ungracefully" do
+      client.stop(:handle => handle, :kill => true)
+
+      # Test that no exit status is returned (because of SIGKILL)
+      response = client.link(:handle => handle, :job_id => job_id)
+      response.exit_status.should == nil
+    end
+  end
+
   describe "cleanup" do
     attr_reader :handle
 

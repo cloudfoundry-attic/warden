@@ -64,7 +64,13 @@ module Warden
       end
 
       def do_stop(request, response)
-        sh File.join(container_path, "stop.sh")
+        args  = [File.join(container_path, "stop.sh")]
+        args += ["-w", "0"] if request.kill
+
+        # Add option hash
+        args << { :timeout => nil }
+
+        sh *args
 
         nil
       end

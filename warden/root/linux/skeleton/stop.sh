@@ -12,19 +12,4 @@ if [ ! -f started ]; then
   exit 1
 fi
 
-# Disallow new logins for the vcap user and kill running processes
-ssh -F ssh/ssh_config root@container <<EOS
-chsh -s /bin/false vcap
-
-# Wait for processes to exit
-for i in \$(seq 10); do
-  # Send SIGTERM
-  pkill -TERM -U vcap || true
-
-  [ \$(pgrep -U vcap | wc -l) -eq 0 ] && break
-  sleep 1
-done
-
-# Send SIGKILL
-pkill -KILL -U vcap || true
-EOS
+ssh -F ssh/ssh_config root@container /sbin/warden-stop.sh "$@"

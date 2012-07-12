@@ -68,6 +68,7 @@ EOS
 
 # Copy override directory
 cp -r override/* ${target}/
+chmod 700 ${target}/sbin/warden-*
 
 # Remove things we don't use
 rm -rf ${target}/etc/init.d
