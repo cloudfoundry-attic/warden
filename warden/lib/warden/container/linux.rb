@@ -29,12 +29,17 @@ module Warden
 
           super(config)
 
-          sh File.join(root_path, "setup.sh"), :env => {
-            "ALLOW_NETWORKS" => allow_networks.join(" "),
-            "DENY_NETWORKS" => deny_networks.join(" "),
-            "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
-            "CONTAINER_DEPOT_PATH" => container_depot_path,
+          options = {
+            :env => {
+              "ALLOW_NETWORKS" => allow_networks.join(" "),
+              "DENY_NETWORKS" => deny_networks.join(" "),
+              "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
+              "CONTAINER_DEPOT_PATH" => container_depot_path,
+            },
+            :timeout => nil
           }
+
+          sh File.join(root_path, "setup.sh"), options
         end
       end
 
@@ -51,13 +56,18 @@ module Warden
       end
 
       def do_create(request, response)
-        sh File.join(root_path, "create.sh"), container_path, :env => env, :timeout => nil
+        options = {
+          :env => env,
+          :timeout => nil
+        }
+
+        sh File.join(root_path, "create.sh"), container_path, options
         debug "container created"
 
         write_bind_mount_commands(request)
         debug "wrote bind mount commands"
 
-        sh File.join(container_path, "start.sh"), :env => env, :timeout => nil
+        sh File.join(container_path, "start.sh"), options
         debug "container started"
 
         nil
