@@ -5,9 +5,7 @@ set -o errexit
 shopt -s nullglob
 cd $(dirname "${0}")
 
-# Store PID of this process while subshell runs
-touch pids/${$}
-trap "rm -f pids/${$}" EXIT
+touch pids/$$
 
 # Run script with PWD=root
 cd root
