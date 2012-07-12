@@ -1,5 +1,6 @@
 #!/bin/bash
 
+[ -n "$DEBUG" ] && set -o xtrace
 set -o nounset
 set -o errexit
 shopt -s nullglob
@@ -28,10 +29,17 @@ do
   esac
 done
 
-cd $(dirname "${0}")
+# Disallow new logins for the vcap user and kill running processes
+chsh -s /bin/false vcap
 
 function pids() {
-  echo pids/* | xargs -n1 basename
+  (
+    # processes with uid=vcap
+    pgrep -u vcap
+
+    # processes not parented by sshd with uid=root
+    pgrep -v -P $(pgrep -d ',' -u root sshd)
+  ) | sort | uniq -d
 }
 
 # Wait for processes to exit
