@@ -4,5 +4,6 @@ default: all
 %:
 	cd clone && $(MAKE) $@
 	cd oom && $(MAKE) $@
+	cd repquota && $(MAKE) $@
 
 .PHONY: default
