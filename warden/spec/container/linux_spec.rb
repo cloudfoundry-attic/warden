@@ -174,6 +174,48 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "limit_disk" do
+    attr_reader :handle
+
+    def limit_disk(options = {})
+      response = client.limit_disk(options.merge(:handle => handle))
+      response.should be_ok
+      response
+    end
+
+    def run(script)
+      response = client.run(:handle => handle, :script => script)
+      response.should be_ok
+      response
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should allow the disk quota to be changed" do
+      response = limit_disk(:block_limit => 12345)
+      response.block_limit.should == 12345
+    end
+
+    it "should set the block quota to 0 on creation" do
+      # When every test is run in full isolation and even the file
+      # system is recreated, this is impossible to test unless we create
+      # and destroy containers until we have exhausted the UID pool and
+      # re-use an UID for the first time. The test is kept as a reminder.
+      response = limit_disk()
+      response.block_limit.should == 0
+    end
+
+    it "should enforce the quota" do
+      limit_disk(:block_limit => 2048) # 1k blocks
+
+      response = run("dd if=/dev/zero of=/tmp/test bs=4MB count=1")
+      response.exit_status.should == 1
+      response.stderr.should =~ /quota exceeded/i
+    end
+  end
+
   describe "net_out", :netfilter => true do
     attr_reader :handle
 
