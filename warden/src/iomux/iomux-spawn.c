@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
   printf("child_pid=%d\n", child->pid);
   fflush(stdout);
 
-  /* Muxer for stdout/stderr */
+  /* Muxers for stdout/stderr */
   muxers[0] = muxer_alloc(fds[0], child->stdout[0], ring_buffer_size);
   muxers[1] = muxer_alloc(fds[1], child->stderr[0], ring_buffer_size);
   for (ii = 0; ii < 2; ++ii) {
@@ -100,6 +100,10 @@ int main(int argc, char *argv[]) {
     goto cleanup;
   }
 
+  /* Wait for clients on stdout, stderr, and status */
+  for (ii = 0; ii < 2; ++ii) {
+    muxer_wait_for_client(muxers[ii]);
+  }
   barrier_wait(barrier);
 
   child_continue(child);
