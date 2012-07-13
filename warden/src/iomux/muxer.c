@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "dlog.h"
 #include "muxer.h"
 #include "ring_buffer.h"
 #include "util.h"
@@ -98,12 +99,16 @@ static int muxer_catchup_sink(const muxer_t *muxer, int sink_fd) {
   assert(NULL != muxer);
   assert(sink_fd >= 0);
 
+  DLOG("catching sink up, fd=%d", sink_fd);
+
   buf_size = ring_buffer_size(muxer->buf);
   pos = muxer->source_pos - buf_size;
   pos = htonl(pos);
 
   atomic_write(sink_fd, &pos, sizeof(uint32_t), &hup);
   if (hup) {
+    DLOG("hup on fd=%d", sink_fd);
+
     /* Sink closed conn */
     return -1;
   }
@@ -125,13 +130,19 @@ static void muxer_write_to_sinks(muxer_t *muxer, uint8_t *data, size_t count) {
   assert(NULL != muxer);
   assert(NULL != data);
 
+  DLOG("writing %zu bytes to all sinks", count);
+
   cur = LIST_FIRST(&(muxer->sinks));
 
   while (NULL != cur) {
     nwritten = atomic_write(cur->fd, data, count, &hup);
 
+    DLOG("wrote nbytes=%zu to fd=%d", nwritten, cur->fd);
+
     if (hup) {
       /* Other side closed conn */
+      DLOG("hup on fd=%d", cur->fd);
+
       prev = cur;
       cur = LIST_NEXT(cur, next_sink);
       LIST_REMOVE(prev, next_sink);
@@ -140,6 +151,8 @@ static void muxer_write_to_sinks(muxer_t *muxer, uint8_t *data, size_t count) {
       cur = LIST_NEXT(cur, next_sink);
     }
   }
+
+  DLOG("done writing to sinks");
 }
 
 /**
@@ -152,6 +165,8 @@ static uint8_t muxer_pump(muxer_t *muxer, uint8_t stopped) {
   uint8_t hup = 0;
 
   nread = atomic_read(muxer->source_fd, read_buf, READ_BUF_SIZE, &hup);
+
+  DLOG("read nbytes=%zu from fd=%d", nread, muxer->source_fd);
 
   checked_lock(&(muxer->lock));
 
@@ -179,10 +194,13 @@ void *muxer_acceptor(void *data) {
 
   muxer = (muxer_t *) data;
 
+  DLOG("accepting connections on fd=%d", muxer->accept_fd);
+
   while (1) {
     events = wait_readable_or_stop(muxer->accept_fd, muxer->acceptor_stop_pipe[0]);
 
     if (events & MUXER_STOP) {
+      DLOG("received stop for accept_fd=%d", muxer->accept_fd);
       break;
     }
 
@@ -191,6 +209,10 @@ void *muxer_acceptor(void *data) {
       perror("accept()");
       continue;
     }
+
+    DLOG("accepted connection on fd=%d, client_fd=%d\n",
+         muxer->accept_fd,
+         sink_fd);
 
     /* Prevent the reader/writer thread from reading any new data */
     checked_lock(&(muxer->lock));
@@ -260,6 +282,9 @@ void muxer_run(muxer_t *muxer) {
 
   assert(NULL != muxer);
 
+  DLOG("running muxer for accept_fd=%d source_fd=%d",
+        muxer->accept_fd, muxer->source_fd);
+
   checked_lock(&(muxer->lock));
 
   assert(STATE_CREATED == muxer->state);
@@ -276,6 +301,8 @@ void muxer_run(muxer_t *muxer) {
     events = wait_readable_or_stop(muxer->source_fd, muxer->rw_stop_pipe[0]);
 
     if (events & MUXER_READABLE) {
+      DLOG("data ready on source_fd=%d", muxer->source_fd);
+
       hup = muxer_pump(muxer, (events & MUXER_STOP));
 
       if (hup) {
@@ -284,6 +311,7 @@ void muxer_run(muxer_t *muxer) {
     }
 
     if (events & MUXER_STOP) {
+      DLOG("received stop event for source_fd=%d", muxer->source_fd);
       break;
     }
   }
@@ -298,12 +326,18 @@ void muxer_run(muxer_t *muxer) {
   LIST_FOREACH(sink, &(muxer->sinks), next_sink) {
     close(sink->fd);
   }
+
+  DLOG("muxer done, accept_fd=%d, source_fd=%d",
+       muxer->accept_fd, muxer->source_fd);
 }
 
 void muxer_stop(muxer_t *muxer) {
   uint8_t hup = 0;
 
   assert(NULL != muxer);
+
+  DLOG("stopping muxer, accept_fd=%d source_fd=%d",
+       muxer->accept_fd, muxer->source_fd);
 
   checked_lock(&(muxer->lock));
 

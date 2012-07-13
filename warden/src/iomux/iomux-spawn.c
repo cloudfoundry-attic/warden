@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "child.h"
+#include "dlog.h"
 #include "muxer.h"
 #include "status_writer.h"
 #include "util.h"
@@ -61,6 +62,8 @@ int main(int argc, char *argv[]) {
 
     fds[ii] = create_unix_domain_listener(socket_paths[ii], backlog);
 
+    DLOG("created listener, path=%s fd=%d", socket_paths[ii], fds[ii]);
+
     if (-1 == fds[ii]) {
       fprintf(stderr, "Failed creating socket at %s:\n", socket_paths[ii]);
       perror("");
@@ -84,6 +87,8 @@ int main(int argc, char *argv[]) {
       exit_status = 1;
       goto cleanup;
     }
+
+    DLOG("created muxer thread for socket=%s", socket_paths[ii]);
   }
 
   /* Status writer */
@@ -106,6 +111,8 @@ int main(int argc, char *argv[]) {
     goto cleanup;
   }
 
+  DLOG("child exited, status = %d", WEXITSTATUS(child_status));
+
   /* Wait for status writer */
   status_writer_finish(sw, WEXITSTATUS(child_status));
   pthread_join(sw_thread, NULL);
@@ -115,6 +122,8 @@ int main(int argc, char *argv[]) {
     muxer_stop(muxers[ii]);
     pthread_join(muxer_threads[ii], NULL);
   }
+
+  DLOG("all done, cleaning up and exiting");
 
 cleanup:
   if (NULL != child) {
