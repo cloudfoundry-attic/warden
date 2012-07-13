@@ -199,34 +199,36 @@ void *muxer_acceptor(void *data) {
   while (1) {
     events = wait_readable_or_stop(muxer->accept_fd, muxer->acceptor_stop_pipe[0]);
 
+    if (events & MUXER_READABLE) {
+      sink_fd = accept(muxer->accept_fd, NULL, NULL);
+      if (-1 == sink_fd) {
+        perror("accept()");
+        continue;
+      }
+
+      DLOG("accepted connection on fd=%d, client_fd=%d\n",
+           muxer->accept_fd,
+           sink_fd);
+
+      /* Prevent the reader/writer thread from reading any new data */
+      checked_lock(&(muxer->lock));
+
+      if (-1 == muxer_catchup_sink(muxer, sink_fd)) {
+        /* Other side closed conn */
+        checked_unlock(&(muxer->lock));
+        continue;
+      }
+
+      sink = muxer_sink_alloc(sink_fd);
+      LIST_INSERT_HEAD(&(muxer->sinks), sink, next_sink);
+
+      checked_unlock(&(muxer->lock));
+    }
+
     if (events & MUXER_STOP) {
       DLOG("received stop for accept_fd=%d", muxer->accept_fd);
       break;
     }
-
-    sink_fd = accept(muxer->accept_fd, NULL, NULL);
-    if (-1 == sink_fd) {
-      perror("accept()");
-      continue;
-    }
-
-    DLOG("accepted connection on fd=%d, client_fd=%d\n",
-         muxer->accept_fd,
-         sink_fd);
-
-    /* Prevent the reader/writer thread from reading any new data */
-    checked_lock(&(muxer->lock));
-
-    if (-1 == muxer_catchup_sink(muxer, sink_fd)) {
-      /* Other side closed conn */
-      checked_unlock(&(muxer->lock));
-      continue;
-    }
-
-    sink = muxer_sink_alloc(sink_fd);
-    LIST_INSERT_HEAD(&(muxer->sinks), sink, next_sink);
-
-    checked_unlock(&(muxer->lock));
   }
 
   close(muxer->accept_fd);
