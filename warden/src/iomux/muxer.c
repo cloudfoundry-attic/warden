@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "barrier.h"
 #include "dlog.h"
 #include "muxer.h"
 #include "ring_buffer.h"
@@ -41,6 +42,7 @@ struct muxer_s {
   uint32_t                source_pos; /* number of bytes read from the source */
   struct muxer_sink_head  sinks;      /* where data is written to */
 
+  barrier_t               *client_barrier; /* lifted once a client has connected */
   pthread_mutex_t         lock;
 
   int                     accept_fd;  /* where new connections are created */
@@ -223,6 +225,9 @@ void *muxer_acceptor(void *data) {
       LIST_INSERT_HEAD(&(muxer->sinks), sink, next_sink);
 
       checked_unlock(&(muxer->lock));
+
+      /* Allow anyone waiting for a client to continue */
+      barrier_lift(muxer->client_barrier);
     }
 
     if (events & MUXER_STOP) {
@@ -273,6 +278,8 @@ muxer_t *muxer_alloc(int accept_fd, int source_fd, size_t ring_buf_size) {
     perror("pipe()");
     assert(0);
   }
+
+  muxer->client_barrier = barrier_alloc();
 
   return muxer;
 }
@@ -333,6 +340,12 @@ void muxer_run(muxer_t *muxer) {
        muxer->accept_fd, muxer->source_fd);
 }
 
+void muxer_wait_for_client(muxer_t *muxer) {
+  assert(NULL != muxer);
+
+  barrier_wait(muxer->client_barrier);
+}
+
 void muxer_stop(muxer_t *muxer) {
   uint8_t hup = 0;
 
@@ -368,6 +381,8 @@ void muxer_free(muxer_t *muxer) {
   }
 
   muxer_free_sinks(muxer);
+
+  barrier_free(muxer->client_barrier);
 
   free(muxer);
 }

@@ -18,6 +18,8 @@ muxer_t *muxer_alloc(int accept_fd, int source_fd, size_t ring_buf_size);
 
 void muxer_run(muxer_t *muxer);
 
+void muxer_wait_for_client(muxer_t *muxer);
+
 void muxer_stop(muxer_t *muxer);
 
 void muxer_free(muxer_t *muxer);
