@@ -65,13 +65,10 @@ if [ -x /etc/init.d/apparmor ]; then
   /etc/init.d/apparmor teardown
 fi
 
-# Figure out mount point of container depot path
-container_depot_mount_point=$(stat -c "%m" $CONTAINER_DEPOT_PATH)
-
 # quotaon(8) exits with non-zero status when quotas are ENABLED
-if quotaon -p $container_depot_mount_point > /dev/null
+if quotaon -p $CONTAINER_DEPOT_MOUNT_POINT_PATH > /dev/null
 then
-  mount -o remount,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0 $container_depot_mount_point
-  quotacheck -ugmb -F vfsv0 $container_depot_mount_point
-  quotaon $container_depot_mount_point
+  mount -o remount,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0 $CONTAINER_DEPOT_MOUNT_POINT_PATH
+  quotacheck -ugmb -F vfsv0 $CONTAINER_DEPOT_MOUNT_POINT_PATH
+  quotaon $CONTAINER_DEPOT_MOUNT_POINT_PATH
 fi

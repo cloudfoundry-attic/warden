@@ -6,6 +6,7 @@ gem "vcap_logging", :git => 'https://github.com/cloudfoundry/common.git', :ref =
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
 gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => '3f6636fc'
 gem "warden-protocol", :path => "../warden-protocol"
+gem "sys-filesystem"
 
 group :spec do
   gem "rspec"

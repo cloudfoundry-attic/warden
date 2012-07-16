@@ -1,6 +1,8 @@
 require "warden/errors"
 require "warden/container/spawn"
 
+require "sys/filesystem"
+
 module Warden
 
   module Container
@@ -63,18 +65,9 @@ module Warden
 
           include Spawn
 
-          attr_reader :container_depot_mount_point_path
-
-          def setup(config = {})
-            super(config)
-
-            args  = ["stat"]
-            args += ["-c", "%m"]
-            args += [container_depot_path]
-
-            stdout = sh *args
-
-            @container_depot_mount_point_path = stdout.chomp
+          def container_depot_mount_point_path
+            @container_depot_mount_point_path ||=
+              Sys::Filesystem.mount_point(container_depot_path)
           end
 
           def repquota(uids)
@@ -84,7 +77,7 @@ module Warden
 
             repquota_path = Warden::Util.path("src/repquota/repquota")
             args  = [repquota_path]
-            args += [@container_depot_mount_point_path]
+            args += [container_depot_mount_point_path]
             args += uids.map(&:to_s)
 
             output = sh *args
