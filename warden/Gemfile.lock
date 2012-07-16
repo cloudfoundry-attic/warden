@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/cloudfoundry/common.git
-  revision: 3f6636fca4fcba81c85db74ff647e15ed3743a81
-  ref: 3f6636fc
+  revision: f96f540a0b6d6a56e451dc92bbd3055234e92ee9
+  ref: f96f540a
   specs:
-    em-posix-spawn (0.1.0)
+    em-posix-spawn (0.1.2)
       eventmachine
       posix-spawn
     vcap_logging (1.0.2)
