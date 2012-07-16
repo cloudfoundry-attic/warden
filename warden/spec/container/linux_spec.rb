@@ -40,11 +40,11 @@ describe "linux", :platform => "linux", :needs_root => true do
     tries = 0
 
     begin
-      `umount #{container_depot_path} 2>/dev/null`
-      raise unless $?.success?
+      out = `umount #{container_depot_path} 2>&1`
+      raise "Failed unmounting #{container_depot_path}: #{out}" unless $?.success?
     rescue
       tries += 1
-      if tries >= 3
+      if tries >= 100
         raise
       else
         sleep 0.01
