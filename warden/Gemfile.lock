@@ -29,15 +29,13 @@ GIT
       thin (~> 1.3.1)
       yajl-ruby (~> 0.8.3)
 
-PATH
-  remote: ../warden-client
+GIT
+  remote: https://github.com/cloudfoundry/warden.git
+  revision: 0c2ab7eaabf92be686f967b47eb181172f14f2f3
+  ref: 0c2ab7ea
   specs:
     warden-client (0.0.2)
       warden-protocol
-
-PATH
-  remote: ../warden-protocol
-  specs:
     warden-protocol (0.0.2)
       beefcake
 
