@@ -33,6 +33,7 @@ task :setup, :config_path do |t, args|
 
   sh "cp src/clone/clone root/linux/skeleton/bin"
 
+  sh "mkdir -p #{File.dirname(rootfs_path)}"
   sh "sudo -E root/linux/base/setup.sh #{rootfs_path}"
 end
 
