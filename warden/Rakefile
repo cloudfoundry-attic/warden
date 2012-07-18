@@ -32,9 +32,13 @@ task :setup, :config_path do |t, args|
   end
 
   sh "cp src/clone/clone root/linux/skeleton/bin"
+  ["linux", "insecure"].each do |ct|
+    sh "cp src/iomux/iomux-spawn root/#{ct}/skeleton/bin"
+    sh "cp src/iomux/iomux-link root/#{ct}/skeleton/bin"
+  end
 
   sh "mkdir -p #{File.dirname(rootfs_path)}"
-  sh "sudo -E root/linux/base/setup.sh #{rootfs_path}"
+  sh "sudo -E root/linux/base/setup.sh #{rootfs_dir}"
 end
 
 namespace :warden do
