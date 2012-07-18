@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "pump.h"
+#include "status_reader.h"
 #include "util.h"
 
 #define INTERNAL_ERROR_STATUS 255
@@ -126,11 +127,12 @@ int main(int argc, char *argv[]) {
   char    *socket_names[3] = { "stdout.sock", "stderr.sock", "status.sock" };
   char     socket_paths[3][PATH_MAX + 1];
   int      fds[3]          = {-1, -1, -1}, nfds = 0, ii = 0, nwritten = 0;
-  uint8_t  child_status    = 0, done = 0;
+  uint8_t  done            = 0, hup = 0;
   fd_set   readable_fds;
   uint32_t saved_posns[2]  = {0, 0};
   char    *sockets_dir = NULL;
   int      signals[2] = {SIGTERM, SIGINT};
+  status_reader_t status_reader;
   struct sigaction sa;
 
   if (parse_args(argc, argv, &saved_posns_path, &sockets_dir)) {
@@ -171,6 +173,7 @@ int main(int argc, char *argv[]) {
 
   pump_setup(&pumps[0], fds[0], STDOUT_FILENO, saved_posns[0]);
   pump_setup(&pumps[1], fds[1], STDERR_FILENO, saved_posns[1]);
+  status_reader_init(&status_reader, fds[2]);
 
   for (ii = 0; ii < 2; ++ii) {
     sa.sa_flags = 0;
@@ -214,10 +217,16 @@ int main(int argc, char *argv[]) {
 
       /* Handle status */
       if (FD_ISSET(fds[2], &readable_fds)) {
-        atomic_read(fds[2], &child_status, sizeof(uint8_t), NULL);
-        exit_status = child_status;
-        close(fds[2]);
-        fds[2] = -1;
+        if (status_reader_run(&status_reader, &hup)) {
+          if (!hup) {
+            if (WIFEXITED(status_reader.status)) {
+              exit_status = WEXITSTATUS(status_reader.status);
+            }
+          }
+
+          close(fds[2]);
+          fds[2] = -1;
+        }
       }
     } else {
       if (EINTR != errno) {
