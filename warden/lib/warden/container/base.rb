@@ -522,17 +522,33 @@ module Warden
         # invoked, causing the linker to exit with status 255 (the desired
         # behavior).
         f = Fiber.current
-        resumed = false
-        spawner.add_streams_listener do |_, _|
-          if !resumed
-            resumed = true
+        out = ""
+        state = :wait_ready
+        spawner.add_streams_listener do |_, data|
+          out << data
+
+          case state
+          when :wait_ready
+            state = :wait_child_active
             f.resume
+          when :wait_child_active
+            if out =~ /child active/
+              state = :done
+              f.resume
+            end
+          when :done
+            # no-op
           end
         end
 
+        # Wait for the spawner to be ready to receive connections
         Fiber.yield
 
-        Job.new(self, job_id, job_root, spawner)
+        # Wait for the spawned child to be continued
+        job = Job.new(self, job_id, job_root, spawner)
+        Fiber.yield
+
+        job
       end
 
       class Job
