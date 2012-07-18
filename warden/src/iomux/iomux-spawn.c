@@ -108,6 +108,9 @@ int main(int argc, char *argv[]) {
 
   child_continue(child);
 
+  printf("child active\n");
+  fflush(stdout);
+
   if (-1 == waitpid(child->pid, &child_status, 0)) {
     fprintf(stderr, "Waitpid for child failed: ");
     perror("waitpid()");
