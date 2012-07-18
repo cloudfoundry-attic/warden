@@ -29,6 +29,7 @@ fi
 # Check if /sys/fs/cgroup is mounted with a cgroup mount, and umount if so
 if grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q cgroup
 then
+  find $cgroup_path -mindepth 1 -type d | sort | tac | xargs rmdir
   umount $cgroup_path
 fi
 
