@@ -113,24 +113,7 @@ module Warden
                 "#{user}@container"]
         args << { :input => request.script }
 
-        child = DeferredChild.new("ssh", *args)
-
-        job = Job.new(self, child)
-
-        child.callback do
-          if child.exit_status == 255
-            # SSH error, the remote end was probably killed or something
-            job.resume [nil, nil, nil]
-          else
-            job.resume [child.exit_status, child.stdout, child.stderr]
-          end
-        end
-
-        child.errback do |err|
-          job.resume [nil, nil, nil]
-        end
-
-        job
+        spawn_job("ssh", *args)
       end
 
       def do_copy_in(request, response)
