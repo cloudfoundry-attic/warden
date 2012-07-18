@@ -27,9 +27,9 @@ void status_writer_run(status_writer_t *sw);
  * writer in turn writes out the supplied child status to any connected clients.
  *
  * @param sw
- * @param status Exit status of the child. Typically WEXITSTATUS(status).
+ * @param status Exit status of the child.
  */
-void status_writer_finish(status_writer_t *sw, uint8_t status);
+void status_writer_finish(status_writer_t *sw, int status);
 
 void status_writer_free(status_writer_t *sw);
 #endif

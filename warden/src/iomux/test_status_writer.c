@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "barrier.h"
+#include "status_reader.h"
 #include "status_writer.h"
 #include "test_util.h"
 #include "util.h"
@@ -17,6 +18,7 @@ typedef struct {
   barrier_t *barrier;
   char       domain_path[256];
   pthread_t  thread;
+  status_reader_t reader;
 } sink_t;
 
 static sink_t *sink_alloc(const char *domain_path) {
@@ -67,8 +69,12 @@ static void *run_sink(void *data) {
     return NULL;
   }
 
-  atomic_read(fd, &(s->status), sizeof(int), &hup);
-  s->got_status = 1;
+  status_reader_init(&(s->reader), fd);
+  status_reader_run(&(s->reader), &hup);
+  if (!hup) {
+    s->got_status = 1;
+    s->status = s->reader.status;
+  }
 
   close(fd);
 

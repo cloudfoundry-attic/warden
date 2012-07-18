@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
   DLOG("child exited, status = %d", WEXITSTATUS(child_status));
 
   /* Wait for status writer */
-  status_writer_finish(sw, WEXITSTATUS(child_status));
+  status_writer_finish(sw, child_status);
   pthread_join(sw_thread, NULL);
 
   /* Wait for muxers */

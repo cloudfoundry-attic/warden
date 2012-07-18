@@ -3,6 +3,7 @@
 
 #include <linux/limits.h>
 #include <pthread.h>
+#include <sys/types.h>
 #include <stddef.h>
 #include <stdint.h>
 

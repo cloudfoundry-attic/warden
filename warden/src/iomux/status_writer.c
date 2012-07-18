@@ -29,7 +29,7 @@ struct status_sink_s {
 LIST_HEAD(status_sink_head, status_sink_s);
 
 struct status_writer_s {
-  uint8_t               status;
+  int                   status;
   status_writer_state_t state;
   pthread_mutex_t       state_lock;
 
@@ -110,7 +110,8 @@ status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier) {
 
 void status_writer_run(status_writer_t *sw) {
   uint8_t events, hup;
-  uint8_t status, sink_fd;
+  int sink_fd;
+  uint32_t out_status;
   status_sink_t *sink = NULL;
 
   assert(NULL != sw);
@@ -147,13 +148,13 @@ void status_writer_run(status_writer_t *sw) {
 
   checked_lock(&(sw->state_lock));
 
-  status = sw->status;
+  out_status = htonl((uint32_t) sw->status);
 
   checked_unlock(&(sw->state_lock));
 
   /* Write out the status to each sink */
   LIST_FOREACH(sink, &(sw->sinks), next_sink) {
-    atomic_write(sink->fd, &(status), sizeof(uint8_t), &hup);
+    atomic_write(sink->fd, &(out_status), sizeof(out_status), NULL);
     close(sink->fd);
   }
 
@@ -161,7 +162,7 @@ void status_writer_run(status_writer_t *sw) {
   close(sw->acceptor_stop_pipe[1]);
 }
 
-void status_writer_finish(status_writer_t *sw, uint8_t status) {
+void status_writer_finish(status_writer_t *sw, int status) {
   uint8_t hup;
 
   checked_lock(&(sw->state_lock));
