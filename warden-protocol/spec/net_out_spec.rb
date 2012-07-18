@@ -4,11 +4,11 @@ require "spec_helper"
 require "warden/protocol/net_out"
 
 describe Warden::Protocol::NetOutRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "NetOut" }
   its(:type_underscored) { should == "net_out" }
@@ -34,6 +34,10 @@ describe Warden::Protocol::NetOutRequest do
 end
 
 describe Warden::Protocol::NetOutResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "NetOut" }

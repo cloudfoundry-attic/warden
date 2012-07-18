@@ -4,6 +4,10 @@ require "spec_helper"
 require "warden/protocol/create"
 
 describe Warden::Protocol::CreateRequest do
+  subject(:request) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Create" }
@@ -34,6 +38,10 @@ describe Warden::Protocol::CreateRequest do
 end
 
 describe Warden::Protocol::CreateResponse do
+  subject(:response) do
+    described_class.new(:handle => "handle")
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Create" }
@@ -41,10 +49,6 @@ describe Warden::Protocol::CreateResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new(:handle => "handle")
-  end
 
   field :handle do
     it_should_be_required

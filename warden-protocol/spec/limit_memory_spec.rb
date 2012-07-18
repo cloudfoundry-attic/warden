@@ -4,11 +4,11 @@ require "spec_helper"
 require "warden/protocol/limit_memory"
 
 describe Warden::Protocol::LimitMemoryRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "LimitMemory" }
   its(:type_underscored) { should == "limit_memory" }
@@ -29,6 +29,10 @@ describe Warden::Protocol::LimitMemoryRequest do
 end
 
 describe Warden::Protocol::LimitMemoryResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "LimitMemory" }
@@ -36,10 +40,6 @@ describe Warden::Protocol::LimitMemoryResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new
-  end
 
   field :limit_in_bytes do
     it_should_be_optional

@@ -4,11 +4,11 @@ require "spec_helper"
 require "warden/protocol/run"
 
 describe Warden::Protocol::RunRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle", :script => "echo foo")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Run" }
   its(:type_underscored) { should == "run" }
@@ -32,6 +32,10 @@ describe Warden::Protocol::RunRequest do
 end
 
 describe Warden::Protocol::RunResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Run" }
@@ -39,10 +43,6 @@ describe Warden::Protocol::RunResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new
-  end
 
   field :exit_status do
     it_should_be_optional

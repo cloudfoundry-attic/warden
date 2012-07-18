@@ -4,11 +4,11 @@ require "spec_helper"
 require "warden/protocol/limit_disk"
 
 describe Warden::Protocol::LimitDiskRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "LimitDisk" }
   its(:type_underscored) { should == "limit_disk" }
@@ -34,6 +34,10 @@ describe Warden::Protocol::LimitDiskRequest do
 end
 
 describe Warden::Protocol::LimitDiskResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "LimitDisk" }
@@ -41,10 +45,6 @@ describe Warden::Protocol::LimitDiskResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new
-  end
 
   field :block_limit do
     it_should_be_optional

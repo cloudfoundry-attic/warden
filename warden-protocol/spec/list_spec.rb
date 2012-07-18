@@ -4,6 +4,10 @@ require "spec_helper"
 require "warden/protocol/list"
 
 describe Warden::Protocol::ListRequest do
+  subject(:request) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "List" }
@@ -15,6 +19,10 @@ describe Warden::Protocol::ListRequest do
 end
 
 describe Warden::Protocol::ListResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "List" }
@@ -22,10 +30,6 @@ describe Warden::Protocol::ListResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new
-  end
 
   field :handles do
     it_should_be_optional

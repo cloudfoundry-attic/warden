@@ -4,6 +4,10 @@ require "spec_helper"
 require "warden/protocol/ping"
 
 describe Warden::Protocol::PingRequest do
+  subject(:request) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Ping" }
@@ -15,6 +19,10 @@ describe Warden::Protocol::PingRequest do
 end
 
 describe Warden::Protocol::PingResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Ping" }

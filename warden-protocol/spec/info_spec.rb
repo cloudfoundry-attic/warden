@@ -4,11 +4,11 @@ require "spec_helper"
 require "warden/protocol/info"
 
 describe Warden::Protocol::InfoRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Info" }
   its(:type_underscored) { should == "info" }
@@ -24,6 +24,10 @@ describe Warden::Protocol::InfoRequest do
 end
 
 describe Warden::Protocol::InfoResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Info" }
@@ -31,10 +35,6 @@ describe Warden::Protocol::InfoResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new
-  end
 
   field :state do
     it_should_be_optional
