@@ -1,3 +1,7 @@
+## 0.0.3
+
+* Ignore string encoding when a request or response is encoded
+
 ## 0.0.2
 
 ### `StopRequest`
