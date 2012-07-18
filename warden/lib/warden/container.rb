@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 # Insecure container should be available on all platforms
 require "warden/container/insecure"
 

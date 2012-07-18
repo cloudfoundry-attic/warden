@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "warden/event_emitter"
 require "warden/logger"
 require "warden/errors"
@@ -462,10 +464,10 @@ module Warden
       end
 
       def do_info(request, response)
-        response.state = self.state.to_s.force_encoding("BINARY")
-        response.events = self.events.to_a.map { |e| e.force_encoding("BINARY") }
-        response.host_ip = self.host_ip.to_human.force_encoding("BINARY")
-        response.container_ip = self.container_ip.to_human.force_encoding("BINARY")
+        response.state = self.state.to_s
+        response.events = self.events.to_a
+        response.host_ip = self.host_ip.to_human
+        response.container_ip = self.container_ip.to_human
 
         nil
       end

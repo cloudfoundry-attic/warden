@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 shared_examples "file transfer" do
   attr_reader :handle
 

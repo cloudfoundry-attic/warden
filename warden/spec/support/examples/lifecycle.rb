@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 shared_examples "lifecycle" do
   it "should allow to create a container" do
     response = client.create

@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "readline"
 require "shellwords"
 require "warden/client"

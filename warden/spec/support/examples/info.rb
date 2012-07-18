@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 shared_examples "info" do
   attr_reader :handle
 

@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "warden/errors"
 require "warden/container/spawn"
 

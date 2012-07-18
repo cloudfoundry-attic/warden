@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 # Imported from the MIT licensed em-hiredis gem by Martyn Loughran.
 # https://github.com/mloughran/em-hiredis
 

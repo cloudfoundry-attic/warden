@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "warden/container/spawn"
 
 module Warden

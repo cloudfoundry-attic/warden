@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "warden/network"
 require "warden/event_emitter"
 require "warden/logger"
