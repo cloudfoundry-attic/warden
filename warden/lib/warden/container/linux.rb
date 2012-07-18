@@ -29,6 +29,14 @@ module Warden
 
           super(config)
 
+          unless File.directory?(container_rootfs_path)
+            raise WardenError.new("container_rootfs_path does not exist #{container_rootfs_path}")
+          end
+
+          unless File.directory?(container_depot_path)
+            raise WardenError.new("container_depot_path does not exist #{container_depot_path}")
+          end
+
           options = {
             :env => {
               "ALLOW_NETWORKS" => allow_networks.join(" "),
