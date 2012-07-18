@@ -38,19 +38,7 @@ module Warden
       end
 
       def create_job(request)
-        child = DeferredChild.new(File.join(container_path, "run.sh"), :input => request.script)
-
-        job = Job.new(self, child)
-
-        child.callback do
-          job.resume [child.exit_status, child.stdout, child.stderr]
-        end
-
-        child.errback do |err|
-          job.resume [nil, nil, nil]
-        end
-
-        job
+        spawn_job(File.join(container_path, "run.sh"), :input => request.script)
       end
 
       def do_net_in(request, response)

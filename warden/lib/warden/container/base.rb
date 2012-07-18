@@ -206,6 +206,20 @@ module Warden
         end
       end
 
+      def bin_path
+        File.join(container_path, "bin")
+      end
+
+      # Path to directory housing all job directories.
+      def jobs_root_path
+        @jobs_root_path ||= File.join(container_path, "jobs")
+      end
+
+      # Path to directory housing the control sockets for the job
+      def job_path(job_id)
+        File.join(jobs_root_path, job_id.to_s)
+      end
+
       def dispatch(request, &blk)
         klass_name = request.class.name.split("::").last
         klass_name = klass_name.gsub(/Request$/, "")
@@ -491,20 +505,56 @@ module Warden
         end
       end
 
+      def spawn_job(*args)
+        job_id = self.class.generate_job_id
+
+        job_root = job_path(job_id)
+        FileUtils.mkdir_p(job_root)
+
+        spawn_path = File.join(bin_path, "iomux-spawn")
+        spawner = DeferredChild.new(spawn_path, job_root, *args)
+
+        # iomux-spawn indicates it is ready to receive connections by writing
+        # the child's pid to stdout. Wait for that before attempting to
+        # link. In the event that the spawner fails this code will still be
+        # invoked, causing the linker to exit with status 255 (the desired
+        # behavior).
+        f = Fiber.current
+        resumed = false
+        spawner.add_streams_listener do |_, _|
+          if !resumed
+            resumed = true
+            f.resume
+          end
+        end
+
+        Fiber.yield
+
+        Job.new(self, job_id, job_root, spawner)
+      end
+
       class Job
 
-        include Logger
+        include Spawn
 
         attr_reader :container
         attr_reader :job_id
 
-        def initialize(container, child)
+        def initialize(container, job_id, job_root_path, spawner = nil)
           @container = container
-          @job_id = container.class.generate_job_id
-          @child = child
+          @job_id = job_id
+          @job_root_path = job_root_path
+
+          @cursors_path = File.join(@job_root_path, "cursors")
 
           @status = nil
           @yielded = []
+
+          @spawner = spawner
+          @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
+                                     "-w", @cursors_path, @job_root_path)
+
+          setup_child_handlers
         end
 
         def yield
@@ -516,6 +566,7 @@ module Warden
         def resume(status)
           @status = status
           @yielded.each { |f| f.resume(@status) }
+          FileUtils.rm_rf(@job_root_path)
         end
 
         def stream(&block)
@@ -527,6 +578,23 @@ module Warden
           while !listeners.all?(&:closed?)
             listener, data = Fiber.yield
             block.call(listener.name, data) unless data.empty?
+          end
+        end
+
+        protected
+
+        def setup_child_handlers
+          @child.callback do
+            if @child.exit_status == 255
+              # Link error
+              resume [nil, nil, nil]
+            else
+              resume [@child.exit_status, @child.stdout, @child.stderr]
+            end
+          end
+
+          @child.errback do |err|
+            resume [nil, nil, nil]
           end
         end
       end
