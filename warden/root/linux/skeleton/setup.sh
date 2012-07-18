@@ -17,7 +17,6 @@ network_host_iface="veth-${id}-0"
 network_container_ip=${network_container_ip:-10.0.0.2}
 network_container_iface="veth-${id}-1"
 user_uid=${user_uid:-10000}
-disk_size_mb=${disk_size_mb:-512}
 rootfs_path=${rootfs_path:-../../base/rootfs}
 
 # Write configuration
@@ -29,7 +28,6 @@ network_host_iface=${network_host_iface}
 network_container_ip=${network_container_ip}
 network_container_iface=${network_container_iface}
 user_uid=${user_uid}
-disk_size_mb=${disk_size_mb}
 EOS
 
 setup_fs ${rootfs_path}
