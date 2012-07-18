@@ -5,6 +5,17 @@ module Helper
     base.extend(ClassMethods)
   end
 
+  # Compare strings in hashes regardless of their encoding
+  def compare_without_encoding(a, b)
+    (a.keys + b.keys).uniq.each do |key|
+      if a[key].respond_to?(:encoding)
+        a[key].should == b[key].force_encoding(a[key].encoding)
+      else
+        a[key].should == b[key]
+      end
+    end
+  end
+
   module ClassMethods
     def field(field, &blk)
       describe field do

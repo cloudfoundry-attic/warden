@@ -16,6 +16,11 @@ shared_examples "wrappable response" do
   end
 
   it "should retain properties when unwrapped" do
-    wrapped.response.to_hash.should == subject.to_hash
+    compare_without_encoding(wrapped.response.to_hash, subject.to_hash)
+  end
+
+  it "should retain properties when encoded and decoded" do
+    freshly_wrapped = Warden::Protocol::WrappedResponse.decode(wrapped.encode.to_s)
+    compare_without_encoding(freshly_wrapped.response.to_hash, subject.to_hash)
   end
 end
