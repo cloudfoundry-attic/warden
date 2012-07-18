@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "warden/protocol/base"
 
 module Warden

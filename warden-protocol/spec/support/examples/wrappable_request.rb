@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 shared_examples "wrappable request" do
   let(:wrapped) { subject.wrap }
 

@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 module Helper
   def self.included(base)
     base.extend(ClassMethods)

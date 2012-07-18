@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "rspec"
 require "rspec/autorun"
 require "warden/protocol"
