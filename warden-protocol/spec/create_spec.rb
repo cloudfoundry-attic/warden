@@ -33,7 +33,7 @@ describe Warden::Protocol::CreateRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::CreateResponse)
+    request.create_response.should be_a(Warden::Protocol::CreateResponse)
   end
 end
 

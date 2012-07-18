@@ -27,7 +27,7 @@ describe Warden::Protocol::SpawnRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::SpawnResponse)
+    request.create_response.should be_a(Warden::Protocol::SpawnResponse)
   end
 end
 

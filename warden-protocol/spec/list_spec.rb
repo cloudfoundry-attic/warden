@@ -14,7 +14,7 @@ describe Warden::Protocol::ListRequest do
   its(:type_underscored) { should == "list" }
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::ListResponse)
+    request.create_response.should be_a(Warden::Protocol::ListResponse)
   end
 end
 

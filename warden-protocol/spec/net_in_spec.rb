@@ -24,7 +24,7 @@ describe Warden::Protocol::NetInRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::NetInResponse)
+    request.create_response.should be_a(Warden::Protocol::NetInResponse)
   end
 end
 

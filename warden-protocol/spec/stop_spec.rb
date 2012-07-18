@@ -28,7 +28,7 @@ describe Warden::Protocol::StopRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::StopResponse)
+    request.create_response.should be_a(Warden::Protocol::StopResponse)
   end
 end
 

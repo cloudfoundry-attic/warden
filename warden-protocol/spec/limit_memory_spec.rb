@@ -24,7 +24,7 @@ describe Warden::Protocol::LimitMemoryRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::LimitMemoryResponse)
+    request.create_response.should be_a(Warden::Protocol::LimitMemoryResponse)
   end
 end
 

@@ -19,7 +19,7 @@ describe Warden::Protocol::InfoRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::InfoResponse)
+    request.create_response.should be_a(Warden::Protocol::InfoResponse)
   end
 end
 

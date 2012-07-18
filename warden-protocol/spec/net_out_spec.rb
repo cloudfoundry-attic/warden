@@ -29,7 +29,7 @@ describe Warden::Protocol::NetOutRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::NetOutResponse)
+    request.create_response.should be_a(Warden::Protocol::NetOutResponse)
   end
 end
 

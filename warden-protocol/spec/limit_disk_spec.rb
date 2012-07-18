@@ -29,7 +29,7 @@ describe Warden::Protocol::LimitDiskRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::LimitDiskResponse)
+    request.create_response.should be_a(Warden::Protocol::LimitDiskResponse)
   end
 end
 

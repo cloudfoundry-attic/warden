@@ -33,7 +33,7 @@ describe Warden::Protocol::CopyInRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::CopyInResponse)
+    request.create_response.should be_a(Warden::Protocol::CopyInResponse)
   end
 end
 

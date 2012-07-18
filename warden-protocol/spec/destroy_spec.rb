@@ -18,7 +18,7 @@ describe Warden::Protocol::DestroyRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::DestroyResponse)
+    request.create_response.should be_a(Warden::Protocol::DestroyResponse)
   end
 end
 
