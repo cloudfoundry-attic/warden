@@ -88,6 +88,7 @@ describe "insecure" do
   it_should_behave_like "streaming commands"
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
+  it_should_behave_like "drain"
 
   describe "net_in", :netfilter => true do
     attr_reader :handle

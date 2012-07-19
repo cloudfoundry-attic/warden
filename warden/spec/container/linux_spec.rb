@@ -126,6 +126,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   it_should_behave_like "streaming commands"
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
+  it_should_behave_like "drain"
 
   describe "limit_memory" do
     attr_reader :handle
