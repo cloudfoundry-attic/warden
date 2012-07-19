@@ -14,10 +14,106 @@ require "warden/protocol"
 
 require "fileutils"
 require "fiber"
+require "set"
 
 module Warden
 
   module Server
+
+    class Drainer
+      module State
+        INACTIVE             = 0 # Drain not yet initiated
+        START                = 1 # Drain initiated, closing accept socket
+        WAIT_ACCEPTOR_CLOSED = 2 # Waiting for the accept socket to be closed
+        ACCEPTOR_CLOSED      = 3 # Accept socket closed, notifying active conns
+        DRAINING             = 4 # Accept socket closed, waiting for conns to finish
+        DONE                 = 5 # Accept socket closed, no active conns
+      end
+
+      include Logger
+
+      def initialize(server)
+        @server = server
+        @connections = Set.new
+        @state = State::INACTIVE
+        @on_complete_callbacks = []
+      end
+
+      def drain
+        return if @state != State::INACTIVE
+
+        info "Drain initiated"
+
+        @state = State::START
+
+        run_machine
+      end
+
+      def register_connection(conn)
+        debug "Connection registered: #{conn}"
+
+        @connections.add(conn)
+        run_machine
+      end
+
+      def unregister_connection(conn)
+        debug "Connection unregistered: #{conn}"
+
+        @connections.delete(conn)
+        run_machine
+      end
+
+      def on_complete(&blk)
+        @on_complete_callbacks << blk
+        run_machine
+      end
+
+      private
+
+      def run_machine
+        loop do
+          case @state
+          when State::INACTIVE, State::WAIT_ACCEPTOR_CLOSED
+            break
+
+          when State::START
+            # Stop accepting new connections. There is no
+            # stop_unix_domain_server.
+            ::EM.stop_tcp_server(@server)
+
+            # The accept socket is closed at the end of the current tick.
+            ::EM.next_tick do
+              @state = State::ACCEPTOR_CLOSED
+              run_machine
+            end
+            @state = State::WAIT_ACCEPTOR_CLOSED
+
+          when State::ACCEPTOR_CLOSED
+            # Place existing connections into a "drain" state. This terminates
+            # linked jobs.
+            @connections.each { |c| c.drain }
+            @state = State::DRAINING
+
+          when State::DRAINING
+            if @connections.empty?
+              @state = State::DONE
+            else
+              break
+            end
+
+          when State::DONE
+            @on_complete_callbacks.each { |blk| blk.call }
+            @on_complete_callbacks = []
+            break
+
+          else
+            raise WardenError.new("Invalid state!")
+          end
+        end
+
+        nil
+      end
+    end
 
     def self.config
       @config
@@ -53,6 +149,10 @@ module Warden
 
     def self.container_grace_time
       @container_grace_time
+    end
+
+    def self.drainer
+      @drainer
     end
 
     def self.setup_server(config = nil)
@@ -91,7 +191,6 @@ module Warden
 
     def self.setup(config = {})
       @config = config
-
       setup_server config["server"]
       setup_logger config["logging"]
       setup_network config["network"]
@@ -105,7 +204,15 @@ module Warden
           container_klass.setup(self.config)
 
           FileUtils.rm_f(unix_domain_path)
-          ::EM.start_unix_domain_server(unix_domain_path, ClientConnection)
+          server = ::EM.start_unix_domain_server(unix_domain_path, ClientConnection)
+
+          @drainer = Drainer.new(server)
+          @drainer.on_complete do
+            Logger.logger.info("Drain complete")
+            # Serialize container state
+            EM.stop
+          end
+          Signal.trap("USR2") { @drainer.drain }
 
           # This is intentionally blocking. We do not want to start accepting
           # connections before permissions have been set on the socket.
@@ -121,21 +228,29 @@ module Warden
 
     class ClientConnection < ::EM::Connection
 
+      PREEMPTIVELY_CLOSE_ON_DRAIN = [NilClass, Protocol::StreamRequest,
+                                     Protocol::LinkRequest, Protocol::RunRequest]
       CRLF = "\r\n"
 
       include EventEmitter
       include Logger
 
       def post_init
+        @draining = false
+        @current_request = nil
         @blocked = false
         @closing = false
         @requests = []
         @buf = ""
+
+        Server.drainer.register_connection(self)
       end
 
       def unbind
         f = Fiber.new { emit(:close) }
         f.resume
+
+        Server.drainer.unregister_connection(self)
       end
 
       def close
@@ -145,6 +260,19 @@ module Warden
 
       def closing?
         !! @closing
+      end
+
+      def drain
+        debug "Draining connection"
+
+        @draining = true
+
+        if PREEMPTIVELY_CLOSE_ON_DRAIN.include?(@current_request.class)
+          debug "Current request is #{@current_request.class}, closing connection"
+          close
+        else
+          debug "Current request is #{@current_request.class}, waiting for completion"
+        end
       end
 
       def send_response(obj)
@@ -198,13 +326,20 @@ module Warden
         f = Fiber.new {
           begin
             @blocked = true
+            @current_request = request
             process(request)
 
           ensure
+            @current_request = nil
             @blocked = false
 
-            # Resume processing the input buffer
-            ::EM.next_tick { receive_request }
+            if @draining
+              debug "Finished processing request, closing."
+              close
+            else
+              # Resume processing the input buffer
+              ::EM.next_tick { receive_request }
+            end
           end
         }
 
