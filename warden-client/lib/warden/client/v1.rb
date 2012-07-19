@@ -41,6 +41,11 @@ module Warden
               bind_mount = Protocol::CreateRequest::BindMount.new
               bind_mount.src_path = src_path
               bind_mount.dst_path = dst_path
+
+              if mode.kind_of?(Hash)
+                mode = mode["mode"]
+              end
+
               bind_mount.mode = Protocol::CreateRequest::BindMount::Mode.const_get(mode.to_s.upcase)
               bind_mount
             end

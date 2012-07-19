@@ -26,37 +26,43 @@ describe Warden::Client::V1 do
           bind_mount.dst_path.should == "/dst"
         end
 
-        it "should convert ro mode" do
-          request = to_request [
-            "create",
-            { "bind_mounts" => [["/src", "/dst", "ro"]] },
-          ]
-
-          request.bind_mounts.should have(1).bind_mount
-
-          bind_mount = request.bind_mounts.first
-          bind_mount.src_path.should == "/src"
-          bind_mount.dst_path.should == "/dst"
-          bind_mount.mode.should == Warden::Protocol::CreateRequest::BindMount::Mode::RO
-        end
-
-        it "should convert rw mode" do
-          request = to_request [
-            "create",
-            { "bind_mounts" => [["/src", "/dst", "rw"]] },
-          ]
-
-          request.bind_mounts.first.mode.should ==
-            Warden::Protocol::CreateRequest::BindMount::Mode::RW
-        end
-
-        it "should raise on an invalid mode" do
-          expect do
-            to_request [
+        ["ro", { "mode" => "ro" }].each do |mode|
+          it "should convert ro mode when passed as #{mode.inspect}"  do
+            request = to_request [
               "create",
-              { "bind_mounts" => [["/src", "/dst", "rx"]] },
+              { "bind_mounts" => [["/src", "/dst", mode]] },
             ]
-          end.to raise_error
+
+            request.bind_mounts.should have(1).bind_mount
+
+            bind_mount = request.bind_mounts.first
+            bind_mount.src_path.should == "/src"
+            bind_mount.dst_path.should == "/dst"
+            bind_mount.mode.should == Warden::Protocol::CreateRequest::BindMount::Mode::RO
+          end
+        end
+
+        ["rw", { "mode" => "rw" }].each do |mode|
+          it "should convert rw mode when passed as #{mode.inspect}" do
+            request = to_request [
+              "create",
+              { "bind_mounts" => [["/src", "/dst", "rw"]] },
+            ]
+
+            request.bind_mounts.first.mode.should ==
+              Warden::Protocol::CreateRequest::BindMount::Mode::RW
+          end
+        end
+
+        ["rx", { "mode" => "rx" }].each do |mode|
+          it "should raise on an invalid mode when passed as #{mode.inspect}" do
+            expect do
+              to_request [
+                "create",
+                { "bind_mounts" => [["/src", "/dst", "rx"]] },
+              ]
+            end.to raise_error
+          end
         end
       end
 
