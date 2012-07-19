@@ -1,12 +1,14 @@
+# coding: UTF-8
+
 require "spec_helper"
 require "warden/protocol/net_in"
 
 describe Warden::Protocol::NetInRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "NetIn" }
   its(:type_underscored) { should == "net_in" }
@@ -22,11 +24,15 @@ describe Warden::Protocol::NetInRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::NetInResponse)
+    request.create_response.should be_a(Warden::Protocol::NetInResponse)
   end
 end
 
 describe Warden::Protocol::NetInResponse do
+  subject(:response) do
+    described_class.new(:host_port => 1234, :container_port => 1234)
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "NetIn" }
@@ -34,10 +40,6 @@ describe Warden::Protocol::NetInResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new(:host_port => 1234, :container_port => 1234)
-  end
 
   field :host_port do
     it_should_be_required

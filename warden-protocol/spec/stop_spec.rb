@@ -1,12 +1,14 @@
+# coding: UTF-8
+
 require "spec_helper"
 require "warden/protocol/stop"
 
 describe Warden::Protocol::StopRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Stop" }
   its(:type_underscored) { should == "stop" }
@@ -26,11 +28,15 @@ describe Warden::Protocol::StopRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::StopResponse)
+    request.create_response.should be_a(Warden::Protocol::StopResponse)
   end
 end
 
 describe Warden::Protocol::StopResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Stop" }

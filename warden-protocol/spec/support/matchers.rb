@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 RSpec::Matchers.define :be_valid do
   error = nil
 

@@ -1,12 +1,14 @@
+# coding: UTF-8
+
 require "spec_helper"
 require "warden/protocol/destroy"
 
 describe Warden::Protocol::DestroyRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Destroy" }
   its(:type_underscored) { should == "destroy" }
@@ -16,11 +18,15 @@ describe Warden::Protocol::DestroyRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::DestroyResponse)
+    request.create_response.should be_a(Warden::Protocol::DestroyResponse)
   end
 end
 
 describe Warden::Protocol::DestroyResponse do
+  subject(:response) do
+    described_class.new
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Destroy" }

@@ -1,4 +1,20 @@
+# coding: UTF-8
+
 require "beefcake"
+
+module Beefcake
+  class Buffer
+    # Patch beefcake to be encoding-agnostic
+    def append_string(s)
+      if s.respond_to?(:force_encoding)
+        s = s.dup.force_encoding("binary")
+      end
+
+      append_uint64(s.length)
+      self << s
+    end
+  end
+end
 
 module Warden
   module Protocol

@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require "spec_helper"
 require "warden/protocol/buffer"
 require "warden/protocol/echo"

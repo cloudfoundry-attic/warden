@@ -1,12 +1,14 @@
+# coding: UTF-8
+
 require "spec_helper"
 require "warden/protocol/spawn"
 
 describe Warden::Protocol::SpawnRequest do
-  it_should_behave_like "wrappable request"
-
-  subject do
+  subject(:request) do
     described_class.new(:handle => "handle", :script => "echo foo")
   end
+
+  it_should_behave_like "wrappable request"
 
   its(:type_camelized) { should == "Spawn" }
   its(:type_underscored) { should == "spawn" }
@@ -25,11 +27,15 @@ describe Warden::Protocol::SpawnRequest do
   end
 
   it "should respond to #create_response" do
-    subject.create_response.should be_a(Warden::Protocol::SpawnResponse)
+    request.create_response.should be_a(Warden::Protocol::SpawnResponse)
   end
 end
 
 describe Warden::Protocol::SpawnResponse do
+  subject(:response) do
+    described_class.new(:job_id => 1)
+  end
+
   it_should_behave_like "wrappable response"
 
   its(:type_camelized) { should == "Spawn" }
@@ -37,10 +43,6 @@ describe Warden::Protocol::SpawnResponse do
 
   it { should be_ok }
   it { should_not be_error }
-
-  subject do
-    described_class.new(:job_id => 1)
-  end
 
   field :job_id do
     it_should_be_required
