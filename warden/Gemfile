@@ -5,10 +5,10 @@ gem "vcap_common", :git => 'https://github.com/cloudfoundry/vcap-common.git', :r
 gem "vcap_logging", :git => 'https://github.com/cloudfoundry/common.git', :ref => 'f96f540a'
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
 gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => 'f96f540a'
-gem "warden-protocol", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '0c2ab7ea'
+gem "warden-protocol", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '83dd1e4a'
 gem "sys-filesystem"
 
 group :spec do
   gem "rspec"
-  gem "warden-client", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '0c2ab7ea'
+  gem "warden-client", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '83dd1e4a'
 end
