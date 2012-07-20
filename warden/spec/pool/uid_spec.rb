@@ -42,4 +42,14 @@ describe Warden::Pool::Uid do
       end.to raise_error Warden::Pool::Uid::NoUidAvailable
     end
   end
+
+  context "release" do
+
+    it "should ignore uids that don't belong to the pool" do
+      pool = Warden::Pool::Uid.new(2000, 5)
+      pool.release(3000)
+
+      pool.size.should == 5
+    end
+  end
 end

@@ -35,7 +35,15 @@ module Warden
       end
 
       def release(entry)
+        return unless belongs?(entry)
+
         @pool.push [Time.now + @release_delay, entry]
+      end
+
+      private
+
+      def belongs?(entry)
+        true
       end
     end
   end

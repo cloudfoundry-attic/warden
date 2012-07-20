@@ -23,6 +23,9 @@ module Warden
       def initialize(start, count, options = {})
         local_uids = self.class.local_uids
 
+        @start_uid = start
+        @end_uid = start + (count - 1)
+
         super(count) do |i|
           uid = start + i
 
@@ -38,6 +41,12 @@ module Warden
         super.tap do |uid|
           raise NoUidAvailable unless uid
         end
+      end
+
+      private
+
+      def belongs?(uid)
+        (uid >= @start_uid) && (uid <= @end_uid)
       end
     end
   end
