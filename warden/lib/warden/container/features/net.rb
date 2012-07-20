@@ -24,9 +24,8 @@ module Warden
           container_port = request.container_port || host_port
 
           # Port may be re-used after this container has been destroyed
-          on(:after_destroy) {
-            self.class.port_pool.release(host_port)
-          }
+          @resources["ports"] << host_port
+          @acquired["ports"] << host_port
 
           sh File.join(container_path, "net.sh"), "in", :env => {
             "HOST_PORT"      => host_port,
@@ -46,6 +45,25 @@ module Warden
             "NETWORK" => request.network,
             "PORT"    => request.port,
           }
+        end
+
+        def acquire
+          if !@resources.has_key?("ports")
+            @resources["ports"] = []
+            @acquired["ports"] = []
+          else
+            @acquired["ports"] = @resources["ports"].dup
+          end
+
+          super
+        end
+
+        def release
+          if ports = @acquired.delete("ports")
+            ports.each { |port| self.class.port_pool.release(port) }
+          end
+
+          super
         end
 
         module ClassMethods

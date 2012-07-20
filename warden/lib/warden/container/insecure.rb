@@ -11,7 +11,7 @@ module Warden
 
     class Insecure < Base
 
-      def self.setup(config={})
+      def self.setup(config={}, drained = false)
         super
 
         # noop
@@ -50,14 +50,32 @@ module Warden
         container_port = host_port
 
         # Port may be re-used after this container has been destroyed
-        on(:after_destroy) {
-          self.class.port_pool.release(port)
-        }
+        @resources["ports"] << host_port
+        @acquired["ports"] << host_port
 
         response.host_port      = host_port
         response.container_port = container_port
 
         nil
+      end
+
+      def acquire
+        if !@resources.has_key?("ports")
+          @resources["ports"] = []
+          @acquired["ports"] = []
+        else
+          @acquired["ports"] = @resources["ports"].dup
+        end
+
+        super
+      end
+
+      def release
+        if ports = @acquired.delete("ports")
+          ports.each { |port| self.class.port_pool.release(port) }
+        end
+
+        super
       end
 
       def do_copy_in(request, response)

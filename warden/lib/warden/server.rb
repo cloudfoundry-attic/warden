@@ -197,20 +197,83 @@ module Warden
       setup_user config["user"]
     end
 
+    # Must be called after pools are setup
+    def self.recover_containers
+      max_job_id = 0
+
+      Dir.glob(File.join(container_klass.container_depot_path, "*")) do |path|
+        next unless File.exist?(container_klass.snapshot_path(path))
+
+        c = container_klass.from_snapshot(path)
+        Logger.logger.info("Recovered container from #{path}")
+        Logger.logger.debug("Container resources: #{c.resources}")
+
+        if c.resources.has_key?("ports")
+          container_klass.port_pool.delete(*c.resources["ports"])
+        end
+        container_klass.uid_pool.delete(c.resources["uid"])
+        container_klass.network_pool.delete(c.resources["network"])
+
+        c.jobs.each do |job_id, job|
+          max_job_id = job_id > max_job_id ? job_id : max_job_id
+        end
+
+        container_klass.registry[c.handle] = c
+      end
+
+      container_klass.job_id = max_job_id
+
+      nil
+    end
+
+    def self.drained_sentinel_path
+      File.join(@config["server"]["container_depot_path"], "drained")
+    end
+
+    def self.write_drained_sentinel
+      File.open(drained_sentinel_path, "w+") do |f|
+        f.write(Time.now.to_i)
+      end
+    end
+
+    def self.read_drained_sentinel
+      sentinel = false
+
+      if File.exist?(drained_sentinel_path)
+        sentinel = true
+        FileUtils.rm(drained_sentinel_path)
+      end
+
+      sentinel
+    end
+
     def self.run!
       ::EM.epoll
       ::EM.run {
         f = Fiber.new do
-          container_klass.setup(self.config)
+          drained = read_drained_sentinel
+
+          container_klass.setup(self.config, drained)
+
+          if drained
+            recover_containers
+          end
 
           FileUtils.rm_f(unix_domain_path)
           server = ::EM.start_unix_domain_server(unix_domain_path, ClientConnection)
 
           @drainer = Drainer.new(server)
           @drainer.on_complete do
-            Logger.logger.info("Drain complete")
-            # Serialize container state
-            EM.stop
+            Fiber.new do
+              Logger.logger.info("Drain complete")
+              # Serialize container state
+              container_klass.registry.each { |_, c| c.write_snapshot }
+
+              # Write out sentinel so we know to recover on next startup
+              write_drained_sentinel
+
+              EM.stop
+            end.resume
           end
           Signal.trap("USR2") { @drainer.drain }
 
@@ -377,6 +440,7 @@ module Warden
           end
         end
       rescue WardenError => e
+        error("OH NOES: #{e}, #{e.backtrace.join(", ")}")
         send_error e
       end
 
