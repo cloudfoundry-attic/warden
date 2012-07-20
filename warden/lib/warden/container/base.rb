@@ -7,6 +7,7 @@ require "warden/container/spawn"
 require "warden/util"
 
 require "eventmachine"
+require "json"
 require "set"
 require "warden/protocol"
 
@@ -15,6 +16,10 @@ module Warden
   module Container
 
     module State
+      def self.from_s(state)
+        const_get(state.capitalize)
+      end
+
       class Base
         def self.to_s
           self.name.split("::").last.downcase
@@ -66,7 +71,7 @@ module Warden
         attr_accessor :uid_pool
 
         # Called before the server starts.
-        def setup(config = {})
+        def setup(config = {}, drained = false)
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
 
@@ -81,10 +86,38 @@ module Warden
           FileUtils.mkdir_p(@container_depot_path)
         end
 
+        def job_id=(job_id)
+          @job_id = job_id
+        end
+
         # Generates process-wide unique job IDs
         def generate_job_id
           @job_id ||= 0
           @job_id += 1
+        end
+
+        def snapshot_path(container_path)
+          File.join(container_path, "snapshot.json")
+        end
+
+        def empty_snapshot
+          { "events"     => [],
+            "grace_time" => Server.container_grace_time,
+            "jobs"       => {},
+            "limits"     => {},
+            "resources"  => {},
+            "state"      => "born",
+          }
+        end
+
+        def from_snapshot(container_path)
+          snapshot = JSON.parse(File.read(snapshot_path(container_path)))
+          snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
+
+          c = new(snapshot)
+          c.acquire
+
+          c
         end
       end
 
@@ -96,18 +129,21 @@ module Warden
       attr_reader :state
       attr_accessor :grace_time
 
-      def initialize
+      def initialize(snapshot = {}, jobs = {})
+        snapshot = self.class.empty_snapshot.merge(snapshot)
         @resources   = Hash.new { |h,k| raise WardenError.new("Unknown resource: #{k}") }
+        @resources.update(snapshot["resources"])
+        @acquired    = {}
         @connections = ::Set.new
-        @jobs        = {}
-        @events      = Set.new
-        @limits      = {}
-        @state       = State::Born
-        @grace_time  = Server.container_grace_time
+        @jobs        = recover_jobs(snapshot["jobs"])
+        @events      = Set.new(snapshot["events"])
+        @limits      = snapshot["limits"]
+        @state       = State.from_s(snapshot["state"])
+        @grace_time  = snapshot["grace_time"]
       end
 
       def network
-        @network ||= resources[:network]
+        @network ||= resources["network"]
       end
 
       def handle
@@ -123,7 +159,7 @@ module Warden
       end
 
       def uid
-        @uid ||= resources[:uid]
+        @uid ||= resources["uid"]
       end
 
       def cancel_grace_timer
@@ -222,6 +258,10 @@ module Warden
         File.join(jobs_root_path, job_id.to_s)
       end
 
+      def snapshot_path
+        self.class.snapshot_path(container_path)
+      end
+
       def dispatch(request, &blk)
         klass_name = request.class.name.split("::").last
         klass_name = klass_name.gsub(/Request$/, "")
@@ -255,28 +295,52 @@ module Warden
         end
       end
 
+      def write_snapshot
+        info "Writing snapshot for container #{handle}"
+
+        jobs_snapshot = {}
+        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+
+        snapshot = {
+          "events"     => events.to_a,
+          "jobs"       => jobs_snapshot,
+          "limits"     => limits,
+          "grace_time" => grace_time,
+          "resources"  => resources,
+          "state"      => state,
+        }
+
+        File.open(snapshot_path, "w+") do |f|
+          f.write(JSON.dump(snapshot))
+        end
+
+        nil
+      end
+
       # Acquire resources required for every container instance.
       def acquire
-        @acquired ||= {}
-
-        unless @resources.has_key?(:network)
+        if @resources.has_key?("network")
+          @acquired["network"] = network
+        else
           network = self.class.network_pool.acquire
           unless network
             raise WardenError.new("Could not acquire network")
           end
 
-          @acquired[:network] = network
-          @resources[:network] = network
+          @acquired["network"] = network
+          @resources["network"] = network
         end
 
-        unless @resources.has_key?(:uid)
+        if @resources.has_key?("uid")
+          @acquired["uid"] = uid
+        else
           uid = self.class.uid_pool.acquire
           unless uid
             raise WardenError.new("Could not acquire UID")
           end
 
-          @acquired[:uid] = uid
-          @resources[:uid] = uid
+          @acquired["uid"] = uid
+          @resources["uid"] = uid
         end
       end
 
@@ -284,11 +348,11 @@ module Warden
       def release
         @acquired ||= {}
 
-        if network = @acquired.delete(:network)
+        if network = @acquired.delete("network")
           self.class.network_pool.release(network)
         end
 
-        if uid = @acquired.delete(:uid)
+        if uid = @acquired.delete("uid")
           self.class.uid_pool.release(uid)
         end
       end
@@ -545,10 +609,21 @@ module Warden
         Fiber.yield
 
         # Wait for the spawned child to be continued
-        job = Job.new(self, job_id, job_root, spawner)
+        job = Job.new(self, job_id, "spawner" => spawner)
         Fiber.yield
 
         job
+      end
+
+      def recover_jobs(jobs_snapshot)
+        jobs = {}
+
+        jobs_snapshot.each do |job_id, job_snapshot|
+          job_id = Integer(job_id)
+          jobs[job_id] = Job.new(self, job_id, job_snapshot)
+        end
+
+        jobs
       end
 
       class Job
@@ -557,22 +632,27 @@ module Warden
 
         attr_reader :container
         attr_reader :job_id
+        attr_reader :job_root_path
 
-        def initialize(container, job_id, job_root_path, spawner = nil)
+        def initialize(container, job_id, opts = {})
           @container = container
           @job_id = job_id
-          @job_root_path = job_root_path
+          @job_root_path = container.job_path(job_id)
 
           @cursors_path = File.join(@job_root_path, "cursors")
 
-          @status = nil
           @yielded = []
+          @spawner = opts["spawner"]
 
-          @spawner = spawner
-          @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
-                                     "-w", @cursors_path, @job_root_path)
-
-          setup_child_handlers
+          if opts["status"]
+            @status = opts["status"]
+          else
+            @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
+                                       "-w", @cursors_path, @job_root_path,
+                                       :prepend_stdout => opts["stdout"],
+                                       :prepend_stderr => opts["stderr"])
+            setup_child_handlers
+          end
         end
 
         def yield
@@ -584,10 +664,18 @@ module Warden
         def resume(status)
           @status = status
           @yielded.each { |f| f.resume(@status) }
-          FileUtils.rm_rf(@job_root_path)
         end
 
         def stream(&block)
+          # Handle the case where we are restarted after the job has completed.
+          # In this situation there will be no child, hence no stream listeners.
+          if @status
+            _, stdout, stderr = @status
+            block.call("stdout", stdout) unless stdout.empty?
+            block.call("stderr", stderr) unless stderr.empty?
+            return
+          end
+
           fiber = Fiber.current
           listeners = @child.add_streams_listener do |listener, data|
             fiber.resume(listener, data) if fiber.alive?
@@ -597,6 +685,27 @@ module Warden
             listener, data = Fiber.yield
             block.call(listener.name, data) unless data.empty?
           end
+        end
+
+        # This is only called during drain when it is guaranteed that there
+        # are no connections linked to the job.
+        def create_snapshot
+          if @status
+            return { "status" => @status }
+          end
+
+          # Tell the linker to exit in the next tick to avoid a race between
+          # yielding and signal delivery.
+          ::EM.next_tick do
+            begin
+              @child.kill("TERM")
+            rescue Errno::ESRCH
+            end
+          end
+
+          self.yield
+
+          { "stdout" => @child.stdout, "stderr" => @child.stderr }
         end
 
         protected
