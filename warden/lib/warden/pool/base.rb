@@ -1,5 +1,7 @@
 # coding: UTF-8
 
+require "set"
+
 module Warden
 
   module Pool
@@ -21,6 +23,12 @@ module Warden
 
       def size
         @pool.size
+      end
+
+      def delete(*entries)
+        entry_set = Set.new(entries)
+        @pool.delete_if { |e| entry_set.include?(e[1]) }
+        nil
       end
 
       def acquire

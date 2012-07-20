@@ -56,6 +56,10 @@ module Warden
         to_octets.join(".")
       end
 
+      def to_json(*args)
+        to_human.to_json(*args)
+      end
+
       protected
 
       def to_integer(octets)

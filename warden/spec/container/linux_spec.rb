@@ -22,6 +22,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let!(:container_klass) { Warden::Container::Linux }
   let!(:container_depot_path) { Dir.mktmpdir(nil, Warden::Util.path("tmp")) }
   let!(:container_depot_file) { container_depot_path + ".img" }
+  let (:have_uid_support) { true }
 
   before do
     `dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null`
@@ -62,6 +63,26 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   before do
+    start_warden
+  end
+
+  after do
+    `kill -9 -#{@pid}`
+    Process.waitpid(@pid)
+
+    # Destroy all artifacts
+    Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
+      `#{clear} #{container_depot_path} > /dev/null`
+    end
+  end
+
+  def create_client
+    client = ::Warden::Client.new(unix_domain_path)
+    client.connect
+    client
+  end
+
+  def start_warden
     FileUtils.rm_f(unix_domain_path)
 
     # Grab new network for every test to avoid resource contention
@@ -75,7 +96,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         "server" => {
           "unix_domain_path" => unix_domain_path,
           "container_klass" => container_klass,
-          "container_depot" => container_depot_path,
+          "container_depot_path" => container_depot_path,
           "container_grace_time" => 1 },
         "network" => {
           "pool_start_address" => start_address,
@@ -101,22 +122,6 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       sleep 0.01
     end
-  end
-
-  after do
-    `kill -9 -#{@pid}`
-    Process.waitpid(@pid)
-
-    # Destroy all artifacts
-    Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
-      `#{clear} #{container_depot_path} > /dev/null`
-    end
-  end
-
-  def create_client
-    client = ::Warden::Client.new(unix_domain_path)
-    client.connect
-    client
   end
 
   let(:client) { create_client }
