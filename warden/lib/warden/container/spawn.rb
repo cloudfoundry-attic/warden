@@ -85,6 +85,10 @@ module Warden
           @child.status.exitstatus
         end
 
+        def kill(signal = "KILL")
+          Process.kill(signal, @child.pid)
+        end
+
         def initialize(*args)
           @env, @argv, @options = extract_process_spawn_arguments(*args)
 

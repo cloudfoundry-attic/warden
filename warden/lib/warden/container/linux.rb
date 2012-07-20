@@ -24,7 +24,7 @@ module Warden
 
         attr_reader :bind_mount_script_template
 
-        def setup(config = {})
+        def setup(config = {}, drained = false)
           unless Process.uid == 0
             raise WardenError.new("linux containers require root privileges")
           end
@@ -39,18 +39,20 @@ module Warden
             raise WardenError.new("container_depot_path does not exist #{container_depot_path}")
           end
 
-          options = {
-            :env => {
-              "ALLOW_NETWORKS" => allow_networks.join(" "),
-              "DENY_NETWORKS" => deny_networks.join(" "),
-              "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
-              "CONTAINER_DEPOT_PATH" => container_depot_path,
-              "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
-            },
-            :timeout => nil
-          }
+          if !drained
+            options = {
+              :env => {
+                "ALLOW_NETWORKS" => allow_networks.join(" "),
+                "DENY_NETWORKS" => deny_networks.join(" "),
+                "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
+                "CONTAINER_DEPOT_PATH" => container_depot_path,
+                "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
+              },
+              :timeout => nil
+            }
 
-          sh File.join(root_path, "setup.sh"), options
+            sh File.join(root_path, "setup.sh"), options
+          end
         end
       end
 

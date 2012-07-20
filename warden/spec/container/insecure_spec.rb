@@ -22,8 +22,23 @@ describe "insecure" do
   let!(:container_klass) { Warden::Container::Insecure }
   let!(:container_depot_path) { Dir.mktmpdir(nil, Warden::Util.path("tmp")) }
   let!(:container_depot_file) { container_depot_path + ".img" }
+  let(:have_uid_support) { false }
 
   before do
+    start_warden
+  end
+
+  after do
+    `kill -9 -#{@pid}`
+    Process.waitpid(@pid)
+
+    # Destroy all artifacts
+    Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
+      `#{clear} #{container_depot_path} > /dev/null`
+    end
+  end
+
+  def start_warden
     FileUtils.rm_f(unix_domain_path)
 
     # Grab new network for every test to avoid resource contention
@@ -37,7 +52,7 @@ describe "insecure" do
         "server" => {
           "unix_domain_path" => unix_domain_path,
           "container_klass" => container_klass,
-          "container_depot" => container_depot_path,
+          "container_depot_path" => container_depot_path,
           "container_grace_time" => 1 },
         "network" => {
           "pool_start_address" => start_address,
@@ -62,16 +77,6 @@ describe "insecure" do
       end
 
       sleep 0.01
-    end
-  end
-
-  after do
-    `kill -9 -#{@pid}`
-    Process.waitpid(@pid)
-
-    # Destroy all artifacts
-    Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
-      `#{clear} #{container_depot_path} > /dev/null`
     end
   end
 
