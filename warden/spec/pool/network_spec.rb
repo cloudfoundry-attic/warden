@@ -19,4 +19,14 @@ describe Warden::Pool::Network do
       pool.release_delay.should >= 5
     end
   end
+
+  context "release" do
+
+    it "should ignore networks that don't belong to the pool" do
+      pool = Warden::Pool::Network.new("127.0.0.0", 2)
+      pool.release(Warden::Network::Address.new("10.10.10.10"))
+
+      pool.size.should == 2
+    end
+  end
 end

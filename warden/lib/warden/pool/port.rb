@@ -33,6 +33,9 @@ module Warden
             " (expected >= %d, got: %d)" % [1000, count]
         end
 
+        @start_port = start
+        @end_port = start + (count - 1)
+
         # The port range spanned by [start, stop) does not overlap with the
         # ephemeral port range and will therefore not conflict with ports
         # used by locally originated connection. It is safe to map these
@@ -46,6 +49,12 @@ module Warden
         super.tap do |port|
           raise NoPortAvailable unless port
         end
+      end
+
+      private
+
+      def belongs?(port)
+        (port >= @start_port) && (port <= @end_port)
       end
     end
   end

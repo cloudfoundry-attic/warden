@@ -39,4 +39,16 @@ describe Warden::Pool::Port do
       end.to raise_error Warden::Pool::Port::NoPortAvailable
     end
   end
+
+  context "release" do
+
+    it "should ignore ports that don't belong to the pool" do
+      Warden::Pool::Port.should_receive(:ip_local_port_range).and_return([32768, 61000])
+      pool = Warden::Pool::Port.new
+      old_size = pool.size
+      pool.release(32000)
+
+      pool.size.should == old_size
+    end
+  end
 end
