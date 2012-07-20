@@ -115,6 +115,20 @@ module Warden
         [response.exit_status, response.stdout, response.stderr]
       end
 
+      def self.convert_stream_request(args)
+        request = Protocol::StreamRequest.new
+        request.handle = args.shift
+        request.job_id = Integer(args.shift)
+        request
+      end
+
+      def self.convert_stream_response(response)
+        to_return = []
+        to_return << response.name if response.name
+        to_return << response.data if response.data
+        to_return
+      end
+
       def self.convert_run_request(args)
         request = Protocol::RunRequest.new
         request.handle = args.shift
