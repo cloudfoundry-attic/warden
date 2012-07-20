@@ -208,6 +208,34 @@ describe Warden::Client::V1 do
     end
   end
 
+  describe "stream" do
+    describe "request" do
+      subject { to_request ["stream", "handle", "1"] }
+
+      its(:class)  { should == Warden::Protocol::StreamRequest }
+      its(:handle) { should == "handle" }
+      its(:job_id) { should == 1 }
+    end
+
+    describe "response" do
+      it "should return a 2-element tuple" do
+        response = to_response \
+          Warden::Protocol::StreamResponse.new(
+            :name => "stdout",
+            :data => "data"
+          )
+
+        response[0].should == "stdout"
+        response[1].should == "data"
+      end
+    end
+
+    it "should return an empty tuple when streaming stops" do
+      response = to_response Warden::Protocol::StreamResponse.new
+      response.size.should == 0
+    end
+  end
+
   describe "run" do
     describe "request" do
       subject { to_request ["run", "handle", "echo foo"] }
