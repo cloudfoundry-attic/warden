@@ -10,5 +10,5 @@ gem "sys-filesystem"
 
 group :spec do
   gem "rspec"
-  gem "warden-client", :git => 'https://github.com/cloudfoundry/warden.git', :ref => 'c139f4cc'
+  gem "warden-client", :git => 'https://github.com/cloudfoundry/warden.git', :ref => 'e64cc7863'
 end
