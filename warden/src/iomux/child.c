@@ -14,7 +14,7 @@ child_t *child_create(char **argv, size_t argv_size) {
   pid_t cpid;
   int ii = 0;
   char buf;
-  uint8_t hup;
+  uint8_t hup = 0;
 
   signal(SIGPIPE, SIG_IGN);
 
