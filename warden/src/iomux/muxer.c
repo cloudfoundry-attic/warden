@@ -208,6 +208,8 @@ void *muxer_acceptor(void *data) {
         continue;
       }
 
+      set_cloexec(sink_fd);
+
       DLOG("accepted connection on fd=%d, client_fd=%d\n",
            muxer->accept_fd,
            sink_fd);
@@ -243,7 +245,7 @@ void *muxer_acceptor(void *data) {
 
 muxer_t *muxer_alloc(int accept_fd, int source_fd, size_t ring_buf_size) {
   muxer_t *muxer = NULL;
-  int err = 0;
+  int err = 0, ii = 0;
 
   assert(accept_fd >= 0);
   assert(source_fd >= 0);
@@ -255,12 +257,11 @@ muxer_t *muxer_alloc(int accept_fd, int source_fd, size_t ring_buf_size) {
   muxer->state = STATE_CREATED;
 
   muxer->accept_fd = accept_fd;
-  err = set_nonblocking(muxer->accept_fd);
-  assert(!err);
+  set_nonblocking(muxer->accept_fd);
+  set_cloexec(muxer->accept_fd);
 
   muxer->source_fd = source_fd;
-  err = set_nonblocking(muxer->source_fd);
-  assert(!err);
+  set_nonblocking(muxer->source_fd);
   muxer->source_pos = 0;
 
   muxer->buf = ring_buffer_alloc(ring_buf_size);
@@ -273,10 +274,16 @@ muxer_t *muxer_alloc(int accept_fd, int source_fd, size_t ring_buf_size) {
     perror("pipe()");
     assert(0);
   }
+  for (ii = 0; ii < 2; ++ii) {
+    set_cloexec(muxer->acceptor_stop_pipe[ii]);
+  }
 
   if (-1 == pipe(muxer->rw_stop_pipe)) {
     perror("pipe()");
     assert(0);
+  }
+  for (ii = 0; ii < 2; ++ii) {
+    set_cloexec(muxer->rw_stop_pipe[ii]);
   }
 
   muxer->client_barrier = barrier_alloc();

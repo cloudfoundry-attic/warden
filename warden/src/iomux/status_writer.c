@@ -79,7 +79,7 @@ static void status_writer_free_sinks(status_writer_t *sw) {
 
 status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier) {
   status_writer_t *sw = NULL;
-  int err = 0;
+  int err = 0, ii = 0;
 
   assert(accept_fd >= 0);
 
@@ -89,8 +89,8 @@ status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier) {
   sw->barrier = barrier;
 
   sw->accept_fd = accept_fd;
-  err = set_nonblocking(sw->accept_fd);
-  assert(!err);
+  set_nonblocking(sw->accept_fd);
+  set_cloexec(sw->accept_fd);
 
   LIST_INIT(&(sw->sinks));
 
@@ -98,8 +98,10 @@ status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier) {
     perror("pipe()");
     assert(0);
   }
-  err = set_nonblocking(sw->acceptor_stop_pipe[0]);
-  assert(!err);
+  set_nonblocking(sw->acceptor_stop_pipe[0]);
+  for (ii = 0; ii < 2; ++ii) {
+    set_cloexec(sw->acceptor_stop_pipe[ii]);
+  }
 
   sw->state = STATE_CREATED;
   err = pthread_mutex_init(&(sw->state_lock), NULL);

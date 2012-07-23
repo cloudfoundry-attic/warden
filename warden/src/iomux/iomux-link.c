@@ -164,11 +164,7 @@ int main(int argc, char *argv[]) {
       goto cleanup;
     }
 
-    if (-1 == set_nonblocking(fds[ii])) {
-      fprintf(stderr, "Failed setting socket to nonblocking mode\n");
-      perror("");
-      goto cleanup;
-    }
+    set_nonblocking(fds[ii]);
   }
 
   pump_setup(&pumps[0], fds[0], STDOUT_FILENO, saved_posns[0]);
