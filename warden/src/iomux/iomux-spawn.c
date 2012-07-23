@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
       exit_status = 1;
       goto cleanup;
     }
+
+    set_cloexec(fds[ii]);
   }
 
   child = child_create(argv + 2, argc - 2);

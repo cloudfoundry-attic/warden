@@ -48,6 +48,9 @@ child_t *child_create(char **argv, size_t argv_size) {
     perror("pipe()");
     assert(0);
   }
+  for (ii = 0; ii < 2; ++ii) {
+    set_cloexec(child->barrier[ii]);
+  }
 
   cpid = fork();
   if (-1 == cpid) {

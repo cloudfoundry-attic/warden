@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -64,21 +65,26 @@ ssize_t atomic_write(int fd, const void *buf, size_t count, uint8_t *hup) {
   ATOMIC_IO(write, fd, buf, count, hup);
 }
 
-int set_nonblocking(int fd) {
+void set_nonblocking(int fd) {
   int flags = 0;
 
   flags = fcntl(fd, F_GETFL, 0);
   if (flags == -1) {
     perror("fcntl");
-    return -1;
+    abort();
   }
 
   if (-1 == fcntl(fd, F_SETFL, flags | O_NONBLOCK)) {
     perror("fcntl");
-    return -1;
+    abort();
   }
+}
 
-  return 0;
+void set_cloexec(int fd) {
+  if (-1 == fcntl(fd, F_SETFD, FD_CLOEXEC)) {
+    perror("fcntl");
+    abort();
+  }
 }
 
 void checked_lock(pthread_mutex_t *lock) {

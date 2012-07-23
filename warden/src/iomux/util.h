@@ -23,10 +23,9 @@ ssize_t atomic_read(int fd, void *buf, size_t count, uint8_t *hup);
  */
 ssize_t atomic_write(int fd, const void *buf, size_t count, uint8_t *hup);
 
-/**
- * @return 0 on success, -1 otherwise
- */
-int set_nonblocking(int fd);
+void set_nonblocking(int fd);
+
+void set_cloexec(int fd);
 
 void checked_lock(pthread_mutex_t *lock);
 
