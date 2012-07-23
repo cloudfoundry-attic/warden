@@ -110,7 +110,7 @@ status_writer_t *status_writer_alloc(int accept_fd, barrier_t *barrier) {
 }
 
 void status_writer_run(status_writer_t *sw) {
-  uint8_t events, hup;
+  uint8_t events;
   int sink_fd;
   uint32_t out_status;
   status_sink_t *sink = NULL;
