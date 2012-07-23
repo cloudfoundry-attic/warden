@@ -27,6 +27,8 @@ child_t *child_create(char **argv, size_t argv_size) {
   child->argv = calloc(argv_size + 1, sizeof(char *));
   assert(NULL != child->argv);
 
+  child->argv_size = argv_size;
+
   for (ii = 0; ii < argv_size; ++ii) {
     child->argv[ii] = strdup(argv[ii]);
     assert(NULL != child->argv[ii]);
