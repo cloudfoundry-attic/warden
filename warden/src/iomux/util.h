@@ -37,4 +37,6 @@ int unix_domain_connect(const char *path);
 
 uint8_t wait_readable_or_stop(int read_fd, int stop_fd);
 
+void perrorf(const char *fmt, ...);
+
 #endif

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -192,4 +193,14 @@ uint8_t wait_readable_or_stop(int read_fd, int stop_fd) {
   } while (!done);
 
   return events;
+}
+
+void perrorf(const char *fmt, ...) {
+  va_list ap;
+
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+
+  fprintf(stderr, " %s\n", strerror(errno));
 }

@@ -159,8 +159,7 @@ int main(int argc, char *argv[]) {
 
     fds[ii] = unix_domain_connect(socket_paths[ii]);
     if (-1 == fds[ii]) {
-      fprintf(stderr, "Failed connecting to %s:\n", socket_paths[ii]);
-      perror("");
+      perrorf("Failed connecting to %s: ", socket_paths[ii]);
       goto cleanup;
     }
 
