@@ -35,9 +35,16 @@ shared_examples "lifecycle" do
 
       response = client.spawn \
         :handle => handle,
-        :script => "trap 'sleep 0.5; exit 37;' SIGTERM; while true; do sleep 0.1; done"
+        :script => "trap 'sleep 0.5; exit 37;' SIGTERM; while true; do echo x; sleep 0.1; done"
 
       @job_id = response.job_id
+
+      # Make sure that the process is actually running inside the container
+      stream_client = create_client
+      stream_client.write(Warden::Protocol::StreamRequest.new(:handle => handle,
+                                                              :job_id => @job_id))
+      stream_client.read
+      stream_client.disconnect
     end
 
     it "can run in the background" do
