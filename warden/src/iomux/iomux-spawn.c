@@ -65,8 +65,7 @@ int main(int argc, char *argv[]) {
     DLOG("created listener, path=%s fd=%d", socket_paths[ii], fds[ii]);
 
     if (-1 == fds[ii]) {
-      fprintf(stderr, "Failed creating socket at %s:\n", socket_paths[ii]);
-      perror("");
+      perrorf("Failed creating socket at %s:", socket_paths[ii]);
       exit_status = 1;
       goto cleanup;
     }
@@ -84,8 +83,7 @@ int main(int argc, char *argv[]) {
   muxers[1] = muxer_alloc(fds[1], child->stderr[0], ring_buffer_size);
   for (ii = 0; ii < 2; ++ii) {
     if (pthread_create(&muxer_threads[ii], NULL, run_muxer, muxers[ii])) {
-      fprintf(stderr, "Failed creating muxer thread:\n");
-      perror("pthread_create()");
+      perrorf("Failed creating muxer thread:");
       exit_status = 1;
       goto cleanup;
     }
@@ -97,7 +95,7 @@ int main(int argc, char *argv[]) {
   barrier = barrier_alloc();
   sw = status_writer_alloc(fds[2], barrier);
   if (pthread_create(&sw_thread, NULL, run_status_writer, sw)) {
-    fprintf(stderr, "Failed creating status writer thread:\n");
+    perrorf("Failed creating muxer thread:");
     exit_status = 1;
     goto cleanup;
   }
@@ -114,8 +112,7 @@ int main(int argc, char *argv[]) {
   fflush(stdout);
 
   if (-1 == waitpid(child->pid, &child_status, 0)) {
-    fprintf(stderr, "Waitpid for child failed: ");
-    perror("waitpid()");
+    perrorf("Waitpid for child failed: ");
     exit_status = 1;
     goto cleanup;
   }
