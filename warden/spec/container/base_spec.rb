@@ -500,7 +500,7 @@ describe Warden::Container::Base do
         @container.stub(:do_copy_out)
       end
 
-      include_examples "succeeds when active", Proc.new {
+      include_examples "succeeds when active or stopped", Proc.new {
         container.copy_out(Warden::Protocol::CopyOutRequest.new)
       }
     end

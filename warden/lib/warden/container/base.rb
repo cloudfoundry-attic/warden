@@ -514,7 +514,7 @@ module Warden
       end
 
       def before_copy_out
-        check_state_in(State::Active)
+        check_state_in(State::Active, State::Stopped)
       end
 
       def do_copy_out(request, response)
