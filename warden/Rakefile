@@ -14,8 +14,8 @@ desc "Run (or re-run) steps to setup warden"
 task :setup, :config_path do |t, args|
   rootfs_path = ENV["CONTAINER_ROOTFS_PATH"]
 
-  if args["config_path"]
-    config = YAML.load_file(args["config_path"])
+  if args[:config_path]
+    config = YAML.load_file(args[:config_path])
 
     if config["server"] && config["server"]["container_rootfs_path"]
       rootfs_path = config["server"]["container_rootfs_path"]
@@ -47,7 +47,7 @@ namespace :warden do
     require "warden/server"
 
     if args[:config_path]
-      config = YAML.load_file(args["config_path"])
+      config = YAML.load_file(args[:config_path])
       if config["server"] && config["server"]["container_klass"]
         klass = config["server"]["container_klass"]
         config["server"]["container_klass"] = klass.split("::").inject(Kernel) do |prev, cur|
@@ -55,7 +55,7 @@ namespace :warden do
         end
       end
     else
-      config = {:logging => {:level => :debug2}}
+      config = {"logging" => {"level" => "debug2"}}
     end
 
     Warden::Server.setup(config)

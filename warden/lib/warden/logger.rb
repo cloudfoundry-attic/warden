@@ -1,17 +1,38 @@
 # coding: UTF-8
 
-require "vcap/logging"
+require "steno"
 
 module Warden
 
   module Logger
 
     def self.setup_logger(config = {})
-      VCAP::Logging.reset
-      VCAP::Logging.setup_from_config(config)
+      steno_config = {}
+      steno_config[:context] = Steno::Context::ThreadLocal.new
+
+      if config["level"]
+        steno_config[:default_log_level] = config["level"]
+      end
+
+      sinks = []
+      if config["file"]
+        sinks << Steno::Sink::IO.for_file(config["file"])
+      end
+
+      if config["syslog"]
+        Steno::Sink::Syslog.instance.open(config["syslog"])
+        sinks << Steno::Sink::Syslog.instance
+      end
+
+      if sinks.empty?
+        sinks << Steno::Sink::IO.new(STDOUT)
+      end
+
+      steno_config[:sinks] = sinks
+      Steno.init(Steno::Config.new(steno_config))
 
       # Override existing logger instance
-      @logger = VCAP::Logging.logger("warden")
+      @logger = Steno.logger("warden")
     end
 
     def self.logger?
@@ -19,14 +40,15 @@ module Warden
     end
 
     def self.logger
-      @logger ||= setup_logger(:level => :info)
+      @logger ||= setup_logger("level" => "info")
     end
 
     def self.logger=(logger)
       @logger = logger
     end
 
-    VCAP::Logging::LOG_LEVELS.each_key do |level|
+
+    Steno::Logger::LEVELS.each_key do |level|
       define_method(level) do |*args|
         prefix = logger_prefix_from_stack caller(1).first
         fmt = args.shift
