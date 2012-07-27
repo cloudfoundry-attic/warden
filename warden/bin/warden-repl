@@ -57,5 +57,5 @@ if options[:command]
   exit(exit_status)
 else
   trap('INT') { exit }
-  repl.run
+  repl.start
 end
