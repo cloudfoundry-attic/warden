@@ -25,6 +25,7 @@ shared_examples "streaming commands" do
     end
 
     stdout.should == "AB"
+    response.exit_status.should == 0
   end
 
   it "works streaming a finished job" do
@@ -45,6 +46,7 @@ shared_examples "streaming commands" do
     end
 
     stdout.should == "AB"
+    response.exit_status.should == 0
   end
 
   context "on different connections" do
@@ -70,6 +72,7 @@ shared_examples "streaming commands" do
         end
 
         stdout.should == "AB"
+        response.exit_status.should == 0
       end
     end
 
@@ -92,6 +95,7 @@ shared_examples "streaming commands" do
         end
 
         stdout.should == "AB"
+        response.exit_status.should == 0
       end
     end
 
@@ -113,6 +117,7 @@ shared_examples "streaming commands" do
         end
 
         stdout.should == "AB"
+        response.exit_status.should == 0
       end
     end
   end

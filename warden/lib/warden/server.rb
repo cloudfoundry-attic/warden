@@ -465,17 +465,15 @@ module Warden
           end
 
         when Protocol::StreamRequest
-          container.dispatch(request) do |name, data|
+          response = container.dispatch(request) do |name, data|
             response = request.create_response
             response.name = name
             response.data = data
             send_response(response)
           end
 
-          # Terminate with empty response
-          response = request.create_response
+          # Terminate by sending exit status only.
           send_response(response)
-
         else
           response = container.dispatch(request)
           send_response(response)

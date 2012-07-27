@@ -467,7 +467,7 @@ module Warden
           raise WardenError.new("no such job")
         end
 
-        job.stream(&blk)
+        response.exit_status = job.stream(&blk)
       end
 
       def do_run(request, response)
@@ -670,10 +670,10 @@ module Warden
           # Handle the case where we are restarted after the job has completed.
           # In this situation there will be no child, hence no stream listeners.
           if @status
-            _, stdout, stderr = @status
+            exit_status, stdout, stderr = @status
             block.call("stdout", stdout) unless stdout.empty?
             block.call("stderr", stderr) unless stderr.empty?
-            return
+            return exit_status
           end
 
           fiber = Fiber.current
@@ -685,6 +685,15 @@ module Warden
             listener, data = Fiber.yield
             block.call(listener.name, data) unless data.empty?
           end
+
+          # Wait until we have the exit status.
+          unless @status
+            @yielded << Fiber.current
+            Fiber.yield
+          end
+
+          exit_status, _, _ = @status
+          exit_status
         end
 
         # This is only called during drain when it is guaranteed that there
