@@ -38,7 +38,7 @@ task :setup, :config_path do |t, args|
   end
 
   sh "mkdir -p #{File.dirname(rootfs_path)}"
-  sh "sudo -E root/linux/base/setup.sh #{rootfs_path}"
+  sh "sudo -E unshare -m root/linux/base/setup.sh #{rootfs_path}"
 end
 
 namespace :warden do
