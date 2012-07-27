@@ -34,6 +34,18 @@ function teardown_filter() {
     sed -e "s/-N/-X/" -e "s/\s\+\$//" |
     xargs --no-run-if-empty --max-lines=1 iptables
 
+  # Remove jump to dispatch from INPUT
+  iptables -S INPUT 2> /dev/null |
+    grep " -j ${filter_dispatch_chain}" |
+    sed -e "s/-A/-D/" -e "s/\s\+\$//" |
+    xargs --no-run-if-empty --max-lines=1 iptables
+
+  # Remove jump to dispatch from FORWARD
+  iptables -S FORWARD 2> /dev/null |
+    grep " -j ${filter_dispatch_chain}" |
+    sed -e "s/-A/-D/" -e "s/\s\+\$//" |
+    xargs --no-run-if-empty --max-lines=1 iptables
+
   # Flush dispatch chain
   iptables -F ${filter_dispatch_chain} 2> /dev/null || true
 
@@ -66,10 +78,8 @@ function setup_filter() {
   done
 
   # Bind chain
-  (iptables -S INPUT | grep -q "\-j ${filter_dispatch_chain}\b") ||
-    iptables -A INPUT -i veth-+ --jump ${filter_dispatch_chain}
-  (iptables -S FORWARD | grep -q "\-j ${filter_dispatch_chain}\b") ||
-    iptables -A FORWARD -i veth-+ --jump ${filter_dispatch_chain}
+  iptables -A INPUT -i w-+ --jump ${filter_dispatch_chain}
+  iptables -A FORWARD -i w-+ --jump ${filter_dispatch_chain}
 }
 
 function teardown_nat() {
