@@ -21,7 +21,7 @@ stop <handle>                 - stop all processes in <handle>
 spawn <handle> cmd            - spawns cmd inside container <handle>, returns #jobid
 link <handle> #jobid          - do blocking read on results from #jobid
 stream <handle> #jobid        - do blocking stream on results from #jobid
-run <handle>  cmd             - short hand for link(spawn(cmd)) i.e. runs cmd, blocks for result
+run <handle>  cmd             - short hand for stream(spawn(cmd)) i.e. spawns cmd, streams the result
 list                          - list containers
 info <handle>                 - show metadata for container <handle>
 limit <handle> mem  [<value>] - set or get the memory limit for the container (in bytes)
@@ -48,7 +48,7 @@ EOT
       @history_path = opts[:history_path] || File.join(ENV['HOME'], '.warden-history')
     end
 
-    def run
+    def start
       restore_history
 
       @client.connect unless @client.connected?
@@ -65,7 +65,7 @@ EOT
       Readline.completion_proc = comp
 
       while line = Readline.readline('warden> ', true)
-        if process_line(line)
+        if new_process_line(line)
           save_history
         end
       end
@@ -114,6 +114,86 @@ EOT
       config
     end
 
+    def create(args)
+      args = ['create', make_create_config(args)]
+      puts talk_to_warden(args)
+      nil
+    end
+
+    def link(args)
+      args.unshift('link')
+      status, stdout, stderr = talk_to_warden(args)
+      puts "exit status: #{status}"
+      puts
+      puts "stdout:"
+      puts stdout
+      puts
+      puts "stderr:"
+      puts stderr
+      puts
+      nil
+    end
+
+    def spawn(args, print = true)
+      if args.size > 2
+        tail = args.slice!(1..-1)
+        args.push(tail.join(' '))
+      end
+
+      args.unshift('spawn')
+      job_id = talk_to_warden(args)
+      puts job_id if print
+      [args[1], job_id]
+    end
+
+    def stream(args)
+      args.unshift('stream')
+      stream = talk_to_warden(args)
+      while stream.length > 0
+        stream[1].split(/\r?\n/).each do |line|
+          puts "#{stream[0]}:     #{line}"
+        end
+        stream = @client.read
+      end
+      nil
+    end
+
+    def help(args)
+      puts HELP_MESSAGE
+      nil
+    end
+
+    def run(args)
+      stream(spawn(args, false))
+    end
+
+    def talk_to_warden(args)
+      @client.connect() unless @client.connected?
+      @client.write(args)
+      @client.read
+    end
+
+    def new_process_line(line)
+      words = Shellwords.shellwords(line)
+      return nil if words.empty?
+
+      puts "+ #{line}" if @trace
+
+      begin
+        if respond_to? words[0].to_sym
+          send(words[0].to_sym, words.slice(1..-1))
+        else
+          pp talk_to_warden(words)
+        end
+      rescue => e
+        if e.message.match('unknown command')
+          puts "#{e.message}, try help for assistance."
+        else
+          puts e.message
+        end
+      end
+    end
+
     def process_line(line)
       words = Shellwords.shellwords(line)
       return nil if words.empty?
@@ -128,7 +208,7 @@ EOT
       case words[0]
       when 'run', 'spawn'
         #coalesce shell commands into a single string
-        if words.size > 3
+       if words.size > 3
           tail = words.slice!(2..-1)
           words.push(tail.join(' '))
         end
