@@ -69,7 +69,7 @@ describe Warden::Container::Base do
 
     it "should return the container handle" do
       response = container.dispatch(Warden::Protocol::CreateRequest.new)
-      response.handle.should == network.to_hex
+      response.handle.should_not be_nil
     end
 
     it "should acquire a network" do

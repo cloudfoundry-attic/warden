@@ -3,7 +3,7 @@
 shared_examples "lifecycle" do
   it "should allow to create a container" do
     response = client.create
-    response.handle.should match(/^[0-9a-f]{8}$/i)
+    response.handle.should_not be_nil
   end
 
   it "should allow to destroy a container" do

@@ -96,6 +96,22 @@ module Warden
           @job_id += 1
         end
 
+        def generate_handle
+          @handle ||= begin
+                        t = Time.now
+                        t.tv_sec * 1_000_000 + t.tv_usec
+                      end
+          @handle += 1
+
+          # Explicit loop because we MUST have 11 characters.
+          # This is required because we use the handle to name a network
+          # interface for the container, this name has a 2 character prefix and
+          # suffix, and has a maximum length of 15 characters (IFNAMSIZ).
+          11.times.map do |i|
+            ((@handle >> (55 - (i + 1) * 5)) & 31).to_s(32)
+          end.join
+        end
+
         def snapshot_path(container_path)
           File.join(container_path, "snapshot.json")
         end
@@ -147,7 +163,7 @@ module Warden
       end
 
       def handle
-        @handle ||= network.to_hex
+        @handle ||= resources["handle"]
       end
 
       def host_ip
@@ -319,6 +335,12 @@ module Warden
 
       # Acquire resources required for every container instance.
       def acquire
+        if @resources.has_key?("handle")
+          # Restored from snapshot
+        else
+          @resources["handle"] = self.class.generate_handle
+        end
+
         if @resources.has_key?("network")
           @acquired["network"] = network
         else
