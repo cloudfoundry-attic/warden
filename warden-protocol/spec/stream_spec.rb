@@ -50,4 +50,9 @@ describe Warden::Protocol::StreamResponse do
     it_should_be_optional
     it_should_be_typed_as_string
   end
+
+  field :exit_status do
+    it_should_be_optional
+    it_should_be_typed_as_uint
+  end
 end

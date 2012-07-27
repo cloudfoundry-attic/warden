@@ -12,6 +12,7 @@ module Warden
     class StreamResponse < BaseResponse
       optional :name, :string, 1
       optional :data, :string, 2
+      optional :exit_status, :uint32, 3
     end
   end
 end

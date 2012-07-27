@@ -218,21 +218,18 @@ describe Warden::Client::V1 do
     end
 
     describe "response" do
-      it "should return a 2-element tuple" do
+      it "should return a 3-element tuple" do
         response = to_response \
           Warden::Protocol::StreamResponse.new(
             :name => "stdout",
-            :data => "data"
+            :data => "data",
+            :exit_status => 25,
           )
 
         response[0].should == "stdout"
         response[1].should == "data"
+        response[2].should == 25
       end
-    end
-
-    it "should return an empty tuple when streaming stops" do
-      response = to_response Warden::Protocol::StreamResponse.new
-      response.size.should == 0
     end
   end
 
