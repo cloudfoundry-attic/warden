@@ -12,33 +12,44 @@ end
 
 desc "Run (or re-run) steps to setup warden"
 task :setup, :config_path do |t, args|
-  rootfs_path = ENV["CONTAINER_ROOTFS_PATH"]
+  Rake::Task["setup:bin"].invoke
+  Rake::Task["setup:rootfs"].invoke(args[:config_path])
+end
 
-  if args[:config_path]
-    config = YAML.load_file(args[:config_path])
+namespace :setup do
+  desc "Compile and install binaries"
+  task :bin do
+    Dir.chdir("src") do
+      sh "make clean all"
+    end
 
-    if config["server"] && config["server"]["container_rootfs_path"]
-      rootfs_path = config["server"]["container_rootfs_path"]
+    sh "cp src/clone/clone root/linux/skeleton/bin"
+    ["linux", "insecure"].each do |ct|
+      sh "cp src/iomux/iomux-spawn root/#{ct}/skeleton/bin"
+      sh "cp src/iomux/iomux-link root/#{ct}/skeleton/bin"
     end
   end
 
-  unless rootfs_path
-    STDERR.puts "Please specify path to config file, or CONTAINER_ROOTFS_PATH"
-    Process.exit(1)
-  end
+  desc "Setup root filesystem for Ubuntu containers"
+  task :rootfs, :config_path do |t, args|
+    rootfs_path = ENV["CONTAINER_ROOTFS_PATH"]
 
-  Dir.chdir("src") do
-    sh "make clean all"
-  end
+    if args[:config_path]
+      config = YAML.load_file(args[:config_path])
 
-  sh "cp src/clone/clone root/linux/skeleton/bin"
-  ["linux", "insecure"].each do |ct|
-    sh "cp src/iomux/iomux-spawn root/#{ct}/skeleton/bin"
-    sh "cp src/iomux/iomux-link root/#{ct}/skeleton/bin"
-  end
+      if config["server"] && config["server"]["container_rootfs_path"]
+        rootfs_path = config["server"]["container_rootfs_path"]
+      end
+    end
 
-  sh "mkdir -p #{File.dirname(rootfs_path)}"
-  sh "sudo -E unshare -m root/linux/base/setup.sh #{rootfs_path}"
+    unless rootfs_path
+      STDERR.puts "Please specify path to config file, or CONTAINER_ROOTFS_PATH"
+      Process.exit(1)
+    end
+
+    sh "mkdir -p #{File.dirname(rootfs_path)}"
+    sh "sudo -E unshare -m root/linux/base/setup.sh #{rootfs_path}"
+  end
 end
 
 namespace :warden do

@@ -33,6 +33,8 @@ EOS
 setup_fs ${rootfs_path}
 trap "teardown_fs" EXIT
 
+./prepare.sh
+
 write "etc/hostname" <<-EOS
 ${id}
 EOS
