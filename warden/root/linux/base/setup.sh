@@ -116,11 +116,6 @@ then
   ln -s /bin/true $target/sbin/initctl
 fi
 
-# Disable initctl again so that apt cannot start any daemons
-mv $target/sbin/initctl $target/sbin/initctl.real
-ln -s /bin/true $target/sbin/initctl
-trap "mv $target/sbin/initctl.real $target/sbin/initctl" EXIT
-
 # Upgrade everything
 chroot <<-EOS
 apt-get upgrade -y
