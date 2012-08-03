@@ -216,6 +216,9 @@ module Warden
         when "mem"
           request = Protocol::LimitMemoryRequest.new(attributes)
           request.limit_in_bytes = Integer(args.shift) unless args.empty?
+        when "disk"
+          request = Protocol::LimitDiskRequest.new(attributes)
+          request.byte = Integer(args.shift) unless args.empty?
         else
           raise "Unknown limit: #{limit}"
         end
@@ -225,6 +228,10 @@ module Warden
 
       def self.convert_limit_memory_response(response)
         response.limit_in_bytes
+      end
+
+      def self.convert_limit_disk_response(response)
+        response.byte
       end
 
       def self.convert_ping_request(args)

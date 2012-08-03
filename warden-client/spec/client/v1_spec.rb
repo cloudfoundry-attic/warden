@@ -362,6 +362,34 @@ describe Warden::Client::V1 do
         response.should == 1234
       end
     end
+
+    describe "request (disk)" do
+      describe "without limit" do
+        subject { to_request ["limit", "handle", "disk"] }
+
+        its(:class)          { should == Warden::Protocol::LimitDiskRequest }
+        its(:handle)         { should == "handle" }
+        its(:byte)           { should be_nil }
+      end
+
+      describe "with limit" do
+        subject { to_request ["limit", "handle", "disk", "1234"] }
+
+        its(:class)          { should == Warden::Protocol::LimitDiskRequest }
+        its(:handle)         { should == "handle" }
+        its(:byte)           { should == 1234 }
+      end
+    end
+
+    describe "response (disk)" do
+      it "should return #byte" do
+        response = to_response \
+          Warden::Protocol::LimitDiskResponse.new({
+            :byte => 1234
+          })
+        response.should == 1234
+      end
+    end
   end
 
   describe "ping" do
