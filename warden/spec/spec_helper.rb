@@ -56,6 +56,9 @@ RSpec.configure do |config|
         "file"  => '/dev/null',
       },
     }
-    Warden::Server.setup(config)
+
+    if defined?(Warden::Server)
+      Warden::Server.setup(config)
+    end
   end
 end

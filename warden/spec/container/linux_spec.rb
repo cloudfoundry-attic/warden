@@ -216,9 +216,9 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     it "should enforce the quota" do
-      limit_disk(:block_limit => 2048) # 1k blocks
+      limit_disk(:byte_limit => 2 * 1024 * 1024)
 
-      response = run("dd if=/dev/zero of=/tmp/test bs=4MB count=1")
+      response = run("dd if=/dev/zero of=/tmp/test bs=1MB count=4")
       response.exit_status.should == 1
       response.stderr.should =~ /quota exceeded/i
     end

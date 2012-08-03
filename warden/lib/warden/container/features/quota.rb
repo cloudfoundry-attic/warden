@@ -24,41 +24,82 @@ module Warden
           @container_depot_mount_point_path ||= self.class.container_depot_mount_point_path
         end
 
+        # Block size of the file system housing the container depot
+        def container_depot_block_size
+          @container_depot_block_size ||= self.class.container_depot_block_size
+        end
+
         def before_create(request, response)
           super
 
           # Reset quota limits
-          setquota(uid, [0, 0, 0, 0])
+          setquota(uid)
         end
 
         def do_limit_disk(request, response)
-          if request.block_limit || request.inode_limit
-            limits = []
+          limits = {}
 
-            limits << 0                        # soft block limit
-            limits << request.block_limit.to_i # hard block limit
-            limits << 0                        # soft inode limit
-            limits << request.inode_limit.to_i # hard inode limit
+          to_blocks = lambda do |bytes|
+            bytes = bytes.to_i + container_depot_block_size - 1
+            bytes / container_depot_block_size
+          end
 
-            if limits.any? { |e| e > 0 }
-              setquota(uid, limits)
-            end
+          to_bytes = lambda do |blocks|
+            blocks * container_depot_block_size
+          end
+
+          limits[:block_hard] = to_blocks.call(request.byte_limit) if request.byte_limit
+          limits[:block_hard] = to_blocks.call(request.byte)       if request.byte
+          limits[:block_soft] = to_blocks.call(request.byte_soft)  if request.byte_soft
+          limits[:block_hard] = to_blocks.call(request.byte_hard)  if request.byte_hard
+
+          limits[:block_hard] = request.block_limit.to_i if request.block_limit
+          limits[:block_hard] = request.block.to_i       if request.block
+          limits[:block_soft] = request.block_soft.to_i  if request.block_soft
+          limits[:block_hard] = request.block_hard.to_i  if request.block_hard
+
+          limits[:inode_hard] = request.inode_limit.to_i if request.inode_limit
+          limits[:inode_hard] = request.inode.to_i       if request.inode
+          limits[:inode_soft] = request.inode_soft.to_i  if request.inode_soft
+          limits[:inode_hard] = request.inode_hard.to_i  if request.inode_hard
+
+          unless limits.empty?
+            setquota(uid, limits)
           end
 
           # Return current limits
           repquota = self.class.repquota(uid)
+
+          response.byte_limit  = to_bytes.call(repquota[uid][:quota][:block][:hard])
+          response.byte        = to_bytes.call(repquota[uid][:quota][:block][:hard])
+          response.byte_soft   = to_bytes.call(repquota[uid][:quota][:block][:soft])
+          response.byte_hard   = to_bytes.call(repquota[uid][:quota][:block][:hard])
+
           response.block_limit = repquota[uid][:quota][:block][:hard]
+          response.block       = repquota[uid][:quota][:block][:hard]
+          response.block_soft  = repquota[uid][:quota][:block][:soft]
+          response.block_hard  = repquota[uid][:quota][:block][:hard]
+
           response.inode_limit = repquota[uid][:quota][:inode][:hard]
+          response.inode       = repquota[uid][:quota][:inode][:hard]
+          response.inode_soft  = repquota[uid][:quota][:inode][:soft]
+          response.inode_hard  = repquota[uid][:quota][:inode][:hard]
 
           nil
         end
 
         private
 
-        def setquota(uid, limits)
+        def setquota(uid, limits = {})
+          limits[:block_soft] ||= 0
+          limits[:block_hard] ||= 0
+          limits[:inode_soft] ||= 0
+          limits[:inode_hard] ||= 0
+
           args  = ["setquota"]
-          args += ["-u", uid.to_s]
-          args += limits.map(&:to_s)
+          args += ["-u", uid].map(&:to_s)
+          args += [limits[:block_soft], limits[:block_hard]].map(&:to_s)
+          args += [limits[:inode_soft], limits[:inode_hard]].map(&:to_s)
           args += [container_depot_mount_point_path]
           sh *args
         end
@@ -70,6 +111,11 @@ module Warden
           def container_depot_mount_point_path
             @container_depot_mount_point_path ||=
               Sys::Filesystem.mount_point(container_depot_path)
+          end
+
+          def container_depot_block_size
+            @container_depot_block_size ||=
+              Sys::Filesystem.stat(container_depot_mount_point_path).block_size
           end
 
           def repquota(uids)
