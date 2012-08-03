@@ -3,6 +3,68 @@
 require "spec_helper"
 require "warden/protocol/limit_disk"
 
+shared_examples "disk limiting" do
+  field :block_limit do
+    it_should_be_optional
+    it_should_be_typed_as_uint32
+  end
+
+  field :block do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :block_soft do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :block_hard do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :inode_limit do
+    it_should_be_optional
+    it_should_be_typed_as_uint32
+  end
+
+  field :inode do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :inode_soft do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :inode_hard do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :byte_limit do
+    it_should_be_optional
+    it_should_be_typed_as_uint32
+  end
+
+  field :byte do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :byte_soft do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :byte_hard do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+end
+
 describe Warden::Protocol::LimitDiskRequest do
   subject(:request) do
     described_class.new(:handle => "handle")
@@ -18,15 +80,7 @@ describe Warden::Protocol::LimitDiskRequest do
     it_should_be_typed_as_string
   end
 
-  field :block_limit do
-    it_should_be_optional
-    it_should_be_typed_as_uint
-  end
-
-  field :inode_limit do
-    it_should_be_optional
-    it_should_be_typed_as_uint
-  end
+  it_should_behave_like "disk limiting"
 
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LimitDiskResponse)
@@ -46,13 +100,5 @@ describe Warden::Protocol::LimitDiskResponse do
   it { should be_ok }
   it { should_not be_error }
 
-  field :block_limit do
-    it_should_be_optional
-    it_should_be_typed_as_uint
-  end
-
-  field :inode_limit do
-    it_should_be_optional
-    it_should_be_typed_as_uint
-  end
+  it_should_behave_like "disk limiting"
 end
