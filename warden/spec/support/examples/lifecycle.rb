@@ -71,7 +71,7 @@ shared_examples "lifecycle" do
     attr_reader :handle
 
     before do
-      @handle = client.create.handle
+      @handle = client.create(:grace_time => 1).handle
     end
 
     it "should destroy unreferenced container" do

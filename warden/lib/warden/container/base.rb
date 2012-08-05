@@ -385,6 +385,10 @@ module Warden
         begin
           acquire
 
+          if request.grace_time
+            self.grace_time = request.grace_time
+          end
+
           self.state = State::Active
 
         rescue

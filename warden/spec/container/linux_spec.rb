@@ -97,7 +97,7 @@ describe "linux", :platform => "linux", :needs_root => true do
           "unix_domain_path" => unix_domain_path,
           "container_klass" => container_klass,
           "container_depot_path" => container_depot_path,
-          "container_grace_time" => 1 },
+          "container_grace_time" => 5 },
         "network" => {
           "pool_start_address" => start_address,
           "pool_size" => 64,
