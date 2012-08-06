@@ -40,6 +40,12 @@ module Warden
         optional :total_unevictable, :uint64, 28
       end
 
+      class CpuStat < BaseMessage
+        optional :usage,  :uint64, 1 # Nanoseconds
+        optional :user,   :uint64, 2 # Hz (USER_HZ specifically)
+        optional :system, :uint64, 3 # Hz
+      end
+
       optional :state, :string, 10
 
       repeated :events, :string, 20
@@ -48,6 +54,7 @@ module Warden
       optional :container_ip, :string, 31
 
       optional :memory_stat, MemoryStat, 40
+      optional :cpu_stat, CpuStat, 41
     end
   end
 end

@@ -23,6 +23,23 @@ describe Warden::Protocol::InfoRequest do
   end
 end
 
+describe Warden::Protocol::InfoResponse::CpuStat do
+  field :usage do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :user do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :system do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+end
+
 describe Warden::Protocol::InfoResponse do
   subject(:response) do
     described_class.new
@@ -58,5 +75,14 @@ describe Warden::Protocol::InfoResponse do
   field :container_ip do
     it_should_be_optional
     it_should_be_typed_as_string
+  end
+
+  field :cpu_stat do
+    it_should_be_optional
+
+    it "should allow instances of CpuStat" do
+      subject.cpu_stat = Warden::Protocol::InfoResponse::CpuStat.new
+      subject.should be_valid
+    end
   end
 end
