@@ -85,4 +85,13 @@ describe Warden::Protocol::InfoResponse do
       subject.should be_valid
     end
   end
+
+  field :disk_stat do
+    it_should_be_optional
+
+    it "should allow instances of DiskStat" do
+      subject.disk_stat = Warden::Protocol::InfoResponse::DiskStat.new
+      subject.should be_valid
+    end
+  end
 end

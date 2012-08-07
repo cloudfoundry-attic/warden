@@ -46,6 +46,10 @@ module Warden
         optional :system, :uint64, 3 # Hz
       end
 
+      class DiskStat < BaseMessage
+        optional :bytes_used, :uint64, 1
+      end
+
       optional :state, :string, 10
 
       repeated :events, :string, 20
@@ -55,6 +59,7 @@ module Warden
 
       optional :memory_stat, MemoryStat, 40
       optional :cpu_stat, CpuStat, 41
+      optional :disk_stat, DiskStat, 42
     end
   end
 end
