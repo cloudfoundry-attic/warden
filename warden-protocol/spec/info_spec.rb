@@ -40,6 +40,18 @@ describe Warden::Protocol::InfoResponse::CpuStat do
   end
 end
 
+describe Warden::Protocol::InfoResponse::DiskStat do
+  field :bytes_used do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+
+  field :inodes_used do
+    it_should_be_optional
+    it_should_be_typed_as_uint64
+  end
+end
+
 describe Warden::Protocol::InfoResponse do
   subject(:response) do
     described_class.new
@@ -82,6 +94,15 @@ describe Warden::Protocol::InfoResponse do
 
     it "should allow instances of CpuStat" do
       subject.cpu_stat = Warden::Protocol::InfoResponse::CpuStat.new
+      subject.should be_valid
+    end
+  end
+
+  field :disk_stat do
+    it_should_be_optional
+
+    it "should allow instances of DiskStat" do
+      subject.disk_stat = Warden::Protocol::InfoResponse::DiskStat.new
       subject.should be_valid
     end
   end
