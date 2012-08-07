@@ -116,7 +116,7 @@ static int print_quota_usage(const char* filesystem, int uid) {
 
   /* Block info */
   printf("%llu %llu %llu %llu ",
-         (long long unsigned int) quota_info.dqb_curspace / 1024,
+         (long long unsigned int) quota_info.dqb_curspace,
          (long long unsigned int) quota_info.dqb_bsoftlimit,
          (long long unsigned int) quota_info.dqb_bhardlimit,
          (long long unsigned int) quota_info.dqb_btime);
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
   if (argc < 3) {
     printf("Usage: report_quota [filesystem] [uid]+\n");
     printf("Reports quota information for the supplied uids on the given filesystem\n");
-    printf("Format is: <uid> <blocks used> <soft> <hard> <grace> <inodes used> <soft> <hard> <grace>\n");
+    printf("Format is: <uid> <bytes used> <soft> <hard> <grace> <inodes used> <soft> <hard> <grace>\n");
     exit(1);
   }
 
