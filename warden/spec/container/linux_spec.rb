@@ -337,6 +337,20 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.cpu_stat.user.should >= 0
       response.cpu_stat.system.should >= 0
     end
+
+    it "should include disk stat" do
+      response = client.info(:handle => handle)
+      response.disk_stat.inodes_used.should > 0
+      bytes_used = response.disk_stat.bytes_used
+      bytes_used.should > 0
+
+      response = client.run(:handle => handle,
+                            :script => "dd if=/dev/urandom of=/tmp/foo bs=1MB count=1")
+      response.exit_status.should == 0
+
+      response = client.info(:handle => handle)
+      response.disk_stat.bytes_used.should be_within(32000).of(bytes_used + 1_000_000)
+    end
   end
 
   describe "bind mounts" do
