@@ -330,6 +330,13 @@ describe "linux", :platform => "linux", :needs_root => true do
       response = client.info(:handle => handle)
       response.memory_stat.rss.should > 0
     end
+
+    it "should include cpu stat" do
+      response = client.info(:handle => handle)
+      response.cpu_stat.usage.should > 0
+      response.cpu_stat.user.should >= 0
+      response.cpu_stat.system.should >= 0
+    end
   end
 
   describe "bind mounts" do
