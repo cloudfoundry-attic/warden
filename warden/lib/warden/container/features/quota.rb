@@ -88,6 +88,25 @@ module Warden
           nil
         end
 
+        def do_info(request, response)
+          super(request, response)
+
+          begin
+            usage = self.class.repquota(uid)[uid][:usage]
+
+            stats = {
+              :inodes_used => usage[:inode],
+              :bytes_used  => usage[:bytes],
+            }
+
+            response.disk_stat = Protocol::InfoResponse::DiskStat.new(stats)
+          rescue => e
+            raise WardenError.new("Failed getting disk usage: #{e}")
+          end
+
+          nil
+        end
+
         private
 
         def setquota(uid, limits = {})
@@ -133,7 +152,7 @@ module Warden
             usage = Hash.new do |h, k|
               h[k] = {
                 :usage => {
-                  :block => 0,
+                  :bytes => 0,
                   :inode => 0,
                 },
                 :quota => {
@@ -154,7 +173,7 @@ module Warden
               fields = fields.map {|f| f.to_i }
               uid = fields[0]
 
-              usage[uid][:usage][:block] = fields[1]
+              usage[uid][:usage][:bytes] = fields[1]
               usage[uid][:usage][:inode] = fields[5]
               usage[uid][:quota][:block][:soft] = fields[2]
               usage[uid][:quota][:block][:hard] = fields[3]
