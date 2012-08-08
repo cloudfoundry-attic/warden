@@ -572,6 +572,7 @@ module Warden
         response.events = self.events.to_a
         response.host_ip = self.host_ip.to_human
         response.container_ip = self.container_ip.to_human
+        response.container_path = self.container_path
 
         nil
       end
