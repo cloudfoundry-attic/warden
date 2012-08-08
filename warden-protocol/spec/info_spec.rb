@@ -89,6 +89,11 @@ describe Warden::Protocol::InfoResponse do
     it_should_be_typed_as_string
   end
 
+  field :container_path do
+    it_should_be_optional
+    it_should_be_typed_as_string
+  end
+
   field :cpu_stat do
     it_should_be_optional
 

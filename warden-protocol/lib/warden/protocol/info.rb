@@ -57,6 +57,7 @@ module Warden
 
       optional :host_ip,      :string, 30
       optional :container_ip, :string, 31
+      optional :container_path, :string, 32
 
       optional :memory_stat, MemoryStat, 40
       optional :cpu_stat, CpuStat, 41
