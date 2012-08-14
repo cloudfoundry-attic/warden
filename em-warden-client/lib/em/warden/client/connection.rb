@@ -34,6 +34,14 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
     @current_request = nil
     @connected       = false
     @buffer          = ::Warden::Protocol::Buffer.new
+
+    on(:connected) do
+      @connected = true
+    end
+
+    on(:disconnected) do
+      @connected = false
+    end
   end
 
   def connected?
@@ -41,8 +49,11 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
   end
 
   def connection_completed
-    @connected = true
     emit(:connected)
+  end
+
+  def unbind
+    emit(:disconnected)
   end
 
   def call(*args, &blk)
@@ -92,11 +103,6 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
     end
 
     process_queue
-  end
-
-  def unbind
-    @connected = false
-    emit(:disconnected)
   end
 
   def process_queue
