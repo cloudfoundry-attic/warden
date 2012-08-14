@@ -30,10 +30,9 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
   end
 
   def post_init
-    @request_queue   = []
-    @current_request = nil
-    @connected       = false
-    @buffer          = ::Warden::Protocol::Buffer.new
+    @requests  = []
+    @connected = false
+    @buffer    = ::Warden::Protocol::Buffer.new
 
     on(:connected) do
       @connected = true
@@ -70,9 +69,9 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
       @v1mode = true
     end
 
-    @request_queue << { :request => request, :callback => blk }
+    @requests << [request, blk]
 
-    process_queue
+    send_data(::Warden::Protocol::Buffer.request_to_wire(request))
   end
 
   def method_missing(method, *args, &blk)
@@ -91,25 +90,10 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
         end
       end
 
-      unless @current_request
-        raise "Logic error! Received reply without a corresponding request"
+      request, blk = @requests.shift
+      if blk
+        blk.call(CommandResult.new(response))
       end
-
-      if @current_request[:callback]
-        @current_request[:callback].call(CommandResult.new(response))
-      end
-
-      @current_request = nil
     end
-
-    process_queue
-  end
-
-  def process_queue
-    return if @current_request || @request_queue.empty?
-
-    @current_request = @request_queue.shift
-
-    send_data(::Warden::Protocol::Buffer.request_to_wire(@current_request[:request]))
   end
 end
