@@ -41,6 +41,17 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
     on(:disconnected) do
       @connected = false
     end
+
+    on(:disconnected) do
+      # Execute callback for pending requests
+      response = EventMachine::Warden::Client::Error.new("Disconnected")
+      while !@requests.empty?
+        _, blk = @requests.shift
+        if blk
+          blk.call(CommandResult.new(response))
+        end
+      end
+    end
   end
 
   def connected?

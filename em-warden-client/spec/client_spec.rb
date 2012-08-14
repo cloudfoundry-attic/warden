@@ -89,5 +89,32 @@ describe EventMachine::Warden::Client do
         conn.call(request) { |r| EM.stop }
       end
     end
+
+    it "should raise on disconnect" do
+      request = Warden::Protocol::EchoRequest.new(:message => "hello world")
+      expected_response = RuntimeError.new
+
+      handler = mock()
+      handler.should_receive(request.type_underscored).and_return(nil)
+      server = MockWardenServer.new(handler)
+
+      em do
+        server.start
+
+        conn = server.create_connection
+        conn.call(request) do |r|
+          expect do
+            r.get
+          end.to raise_error(/disconnected/i)
+
+          EM.stop
+        end
+
+        # Close server side of the connection
+        ::EM.add_timer(0.01) do
+          server.connections.first.close_connection
+        end
+      end
+    end
   end
 end
