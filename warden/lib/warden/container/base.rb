@@ -1,9 +1,9 @@
 # coding: UTF-8
 
+require "warden/container/spawn"
+require "warden/errors"
 require "warden/event_emitter"
 require "warden/logger"
-require "warden/errors"
-require "warden/container/spawn"
 require "warden/util"
 
 require "eventmachine"

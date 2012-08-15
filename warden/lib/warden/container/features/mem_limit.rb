@@ -1,8 +1,8 @@
 # coding: UTF-8
 
+require "warden/container/spawn"
 require "warden/errors"
 require "warden/logger"
-require "warden/container/spawn"
 require "warden/util"
 
 module Warden

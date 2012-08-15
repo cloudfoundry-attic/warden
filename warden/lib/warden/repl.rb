@@ -1,10 +1,10 @@
 # coding: UTF-8
 
+require "json"
+require "pp"
 require "readline"
 require "shellwords"
 require "warden/client"
-require "json"
-require "pp"
 
 module Warden
   class Repl

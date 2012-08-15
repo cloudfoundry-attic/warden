@@ -1,10 +1,10 @@
 # coding: UTF-8
 
-require "warden/logger"
 require "warden/errors"
+require "warden/logger"
 
-require "em/posix/spawn"
 require "em/deferrable"
+require "em/posix/spawn"
 require "fiber"
 
 module Warden
