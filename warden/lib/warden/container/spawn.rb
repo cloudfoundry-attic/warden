@@ -1,11 +1,12 @@
 # coding: UTF-8
 
 require "warden/errors"
-require "warden/logger"
 
 require "em/deferrable"
 require "em/posix/spawn"
 require "fiber"
+require "steno"
+require "steno/core_ext"
 
 module Warden
 
@@ -55,7 +56,6 @@ module Warden
 
         include ::EM::POSIX::Spawn
         include ::EM::Deferrable
-        include Logger
 
         attr_reader :env
         attr_reader :argv
@@ -114,11 +114,11 @@ module Warden
         # Helper to inject log message
         def set_deferred_success
           if !success?
-            warn "exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect]
-            warn "stdout: #{stdout}"
-            warn "stderr: #{stderr}"
+            logger.warn("Exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect])
+            logger.warn("Stdout: #{stdout}")
+            logger.warn("Stderr: #{stderr}")
           else
-            debug "exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect]
+            logger.debug("Exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect])
           end
 
           super
@@ -126,9 +126,9 @@ module Warden
 
         # Helper to inject log message
         def set_deferred_failure(err)
-          error "error running #{argv.inspect}: #{err.message}"
-          warn "stdout (maybe incomplete): #{stdout}"
-          warn "stderr (maybe incomplete): #{stderr}"
+          logger.error("Error running #{argv.inspect}: #{err.message}")
+          logger.warn("Stdout (maybe incomplete): #{stdout}")
+          logger.warn("Stderr (maybe incomplete): #{stderr}")
           super
         end
 

@@ -1,7 +1,13 @@
 # coding: UTF-8
 
-require "warden/container/base"
 require "spec_helper"
+
+require "warden/server"
+require "warden/client"
+require "warden/network"
+require "warden/util"
+
+require "warden/container/base"
 
 class SpecNetworkPool < Array
   alias :acquire :shift
@@ -32,10 +38,6 @@ describe Warden::Container::Base do
   let(:network)      { Warden::Network::Address.new("127.0.0.0") }
   let(:uid_pool)     { UidPool.new }
   let(:uid)          { 1 }
-
-  before(:all) do
-    Warden::Logger.logger = nil
-  end
 
   before(:each) do
     Container.reset!
