@@ -1,11 +1,11 @@
 # coding: UTF-8
 
-require "warden/errors"
 require "warden/container/base"
 require "warden/container/features/cgroup"
-require "warden/container/features/net"
 require "warden/container/features/mem_limit"
+require "warden/container/features/net"
 require "warden/container/features/quota"
+require "warden/errors"
 
 require "shellwords"
 

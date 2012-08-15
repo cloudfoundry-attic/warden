@@ -1,20 +1,19 @@
 # coding: UTF-8
 
-require "warden/network"
+require "warden/container"
+require "warden/errors"
 require "warden/event_emitter"
 require "warden/logger"
-require "warden/errors"
-require "warden/container"
+require "warden/network"
 require "warden/pool/network"
 require "warden/pool/port"
 require "warden/pool/uid"
 
 require "eventmachine"
-require "warden/protocol"
-
-require "fileutils"
 require "fiber"
+require "fileutils"
 require "set"
+require "warden/protocol"
 
 module Warden
 

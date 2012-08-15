@@ -1,9 +1,10 @@
 # coding: UTF-8
 
-require "warden/errors"
 require "warden/container/base"
-require "tempfile"
+require "warden/errors"
+
 require "socket"
+require "tempfile"
 
 module Warden
 

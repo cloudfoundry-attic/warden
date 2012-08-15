@@ -1,7 +1,7 @@
 # coding: UTF-8
 
-require "warden/pool/base"
 require "warden/errors"
+require "warden/pool/base"
 
 module Warden
 
