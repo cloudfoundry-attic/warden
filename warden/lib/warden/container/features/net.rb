@@ -17,6 +17,29 @@ module Warden
           base.extend(ClassMethods)
         end
 
+        def do_info(request, response)
+          super(request, response)
+          id = request.handle
+          in_info = sh "tc qdisc show dev w-#{id}-0 | grep rate | sed -r 's/.*: root refcnt [0-9]+ rate (\\S*) burst (\\S*) lat 25.0ms.*/\\1 \\2/'"
+          out_info = sh "tc filter show dev w-#{id}-0 parent ffff: | grep rate | sed -r 's/.*police 0x[0-9a-f]+ rate (\\S*) burst (\\S*) mtu [0-9]+[KM]?b action drop overhead [0-9]+b.*/\\1 \\2/'"
+          ret = {}
+          {"in" => in_info, "out" => out_info}.each do |k, v|
+            ret["#{k}_rate".to_sym], ret["#{k}_burst".to_sym] = (v.empty? ? ["Unlimited", "Unlimited"] : v.chomp.split(" ", 2))
+          end
+          response.bandwidth_stat = Protocol::InfoResponse::BandwidthStat.new(ret)
+          nil
+        end
+
+        def do_limit_bandwidth(request, response)
+          sh File.join(container_path, "net_rate.sh"), :env => {
+            "BURST"     => request.burst,
+						#bytes to bits
+            "RATE"      => request.rate * 8,
+          }
+          response.rate = request.rate
+          response.burst = request.burst
+        end
+
         def do_net_in(request, response)
           host_port = self.class.port_pool.acquire
 

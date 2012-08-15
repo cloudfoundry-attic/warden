@@ -221,6 +221,51 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "limit_bandwidth" do
+    attr_reader :handle
+
+    def limit_bandwidth(options = {})
+      response = client.limit_bandwidth(options.merge(:handle => handle))
+      response.should be_ok
+      response
+    end
+		
+    def get_bandwidth
+      ret = {}
+      in_info = `tc qdisc show dev w-#{handle}-0 | grep rate | sed -r 's/.*: root refcnt [0-9]+ rate (\\S*) burst (\\S*) lat 25.0ms.*/\\1 \\2/'`
+      out_info = `tc filter show dev w-#{handle}-0 parent ffff: | grep rate | sed -r 's/.*police 0x[0-9a-f]+ rate (\\S*) burst (\\S*) mtu [0-9]+[KM]?b action drop overhead [0-9]+b.*/\\1 \\2/'`
+      ret["in_rate".to_sym], ret["in_burst".to_sym] = (in_info.empty? ? ["Unlimited", "Unlimited"] : in_info.chomp.split(" ", 2))
+      ret["out_rate".to_sym], ret["out_burst".to_sym] = (out_info.empty? ? ["Unlimited", "Unlimited"] : out_info.chomp.split(" ", 2))
+      ret
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should set the bandwidth" do
+      response = limit_bandwidth(:rate => 100 * 1024, :burst => 1024)
+      ret = get_bandwidth
+      [ret[:in_rate], ret[:out_rate]].each do |v|
+        v.should == "819200bit"
+      end
+      [ret[:in_burst], ret[:out_burst]].each do |v|
+        v.should == "1Kb"
+      end
+    end
+
+    it "should allow bandwidth to be changed" do
+      response = limit_bandwidth(:rate => 200 * 1024, :burst => 2048)
+      ret = get_bandwidth
+      [ret[:in_rate], ret[:out_rate]].each do |v|
+        v.should == "1638Kbit"
+      end
+      [ret[:in_burst], ret[:out_burst]].each do |v|
+        v.should == "2Kb"
+      end
+    end
+  end
+
   describe "net_out", :netfilter => true do
     attr_reader :handle
 
@@ -347,6 +392,16 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       response = client.info(:handle => handle)
       response.disk_stat.bytes_used.should be_within(32000).of(bytes_used + 1_000_000)
+    end
+
+    it "should include bandwidth stat" do
+      response = client.info(:handle => handle)
+      [response.bandwidth_stat.in_rate, response.bandwidth_stat.out_rate].each do |x|
+        x.should match(/Unlimited|[0-9]+[KMG]?bit/)
+      end
+      [response.bandwidth_stat.in_burst, response.bandwidth_stat.out_burst].each do |x|
+        x.should match(/Unlimited|[0-9]+[KMG]?b/)
+      end
     end
   end
 
