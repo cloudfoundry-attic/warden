@@ -2,7 +2,7 @@ source "http://rubygems.org"
 
 gem "rake"
 gem "vcap_common", :git => 'https://github.com/cloudfoundry/vcap-common.git', :ref => '72b230b6'
-gem "steno", :git => 'https://github.com/cloudfoundry/steno.git'
+gem "steno", "~> 0.0.15", :git => 'https://github.com/cloudfoundry/steno.git'
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
 gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => 'bcfeca6c'
 gem "sys-filesystem"
