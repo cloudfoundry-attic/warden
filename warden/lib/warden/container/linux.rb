@@ -75,13 +75,13 @@ module Warden
         }
 
         sh File.join(root_path, "create.sh"), container_path, options
-        debug "container created"
+        logger.debug("Container created")
 
         write_bind_mount_commands(request)
-        debug "wrote bind mount commands"
+        logger.debug2("Wrote bind mount commands")
 
         sh File.join(container_path, "start.sh"), options
-        debug "container started"
+        logger.debug("Container started")
 
         nil
       end
@@ -100,7 +100,7 @@ module Warden
 
       def do_destroy(request, response)
         sh File.join(root_path, "destroy.sh"), container_path, :timeout => nil
-        debug "container destroyed"
+        logger.debug("Container destroyed")
 
         nil
       end

@@ -3,7 +3,6 @@
 require "warden/container"
 require "warden/errors"
 require "warden/event_emitter"
-require "warden/logger"
 require "warden/network"
 require "warden/pool/network"
 require "warden/pool/port"
@@ -13,6 +12,8 @@ require "eventmachine"
 require "fiber"
 require "fileutils"
 require "set"
+require "steno"
+require "steno/core_ext"
 require "warden/protocol"
 
 module Warden
@@ -29,8 +30,6 @@ module Warden
         DONE                 = 5 # Accept socket closed, no active conns
       end
 
-      include Logger
-
       def initialize(server)
         @server = server
         @connections = Set.new
@@ -41,7 +40,7 @@ module Warden
       def drain
         return if @state != State::INACTIVE
 
-        info "Drain initiated"
+        logger.info("Drain initiated")
 
         @state = State::START
 
@@ -49,14 +48,14 @@ module Warden
       end
 
       def register_connection(conn)
-        debug "Connection registered: #{conn}"
+        logger.debug("Connection registered: #{conn}")
 
         @connections.add(conn)
         run_machine
       end
 
       def unregister_connection(conn)
-        debug "Connection unregistered: #{conn}"
+        logger.debug("Connection unregistered: #{conn}")
 
         @connections.delete(conn)
         run_machine
@@ -163,8 +162,9 @@ module Warden
     end
 
     def self.setup_logger(config = nil)
-      config ||= {}
-      Warden::Logger.setup_logger(config)
+      steno_config = ::Steno::Config.to_config_hash(config || {})
+      steno_config[:context] = ::Steno::Context::FiberLocal.new
+      ::Steno.init(Steno::Config.new(steno_config))
     end
 
     def self.setup_network(config = nil)
@@ -204,8 +204,8 @@ module Warden
         next unless File.exist?(container_klass.snapshot_path(path))
 
         c = container_klass.from_snapshot(path)
-        Logger.logger.info("Recovered container from #{path}")
-        Logger.logger.debug("Container resources: #{c.resources}")
+        logger.info("Recovered container from #{path}")
+        logger.debug("Container resources: #{c.resources}")
 
         if c.resources.has_key?("ports")
           container_klass.port_pool.delete(*c.resources["ports"])
@@ -248,11 +248,17 @@ module Warden
 
     def self.run!
       ::EM.epoll
+
       ::EM.run {
         f = Fiber.new do
           drained = read_drained_sentinel
 
           container_klass.setup(self.config, drained)
+
+          ::EM.error_handler do |error|
+            logger.log_exception(error)
+            raise
+          end
 
           if drained
             recover_containers
@@ -264,7 +270,7 @@ module Warden
           @drainer = Drainer.new(server)
           @drainer.on_complete do
             Fiber.new do
-              Logger.logger.info("Drain complete")
+              logger.info("Drain complete")
               # Serialize container state
               container_klass.registry.each { |_, c| c.write_snapshot }
 
@@ -281,7 +287,7 @@ module Warden
           FileUtils.chmod(unix_domain_permissions, unix_domain_path)
 
           # Let the world know Warden is ready for action.
-          Logger.logger.info("Listening on #{unix_domain_path}, and ready for action.")
+          logger.info("Listening on #{unix_domain_path}, and ready for action.")
         end
 
         f.resume
@@ -295,7 +301,6 @@ module Warden
       CRLF = "\r\n"
 
       include EventEmitter
-      include Logger
 
       def post_init
         @draining = false
@@ -325,15 +330,15 @@ module Warden
       end
 
       def drain
-        debug "Draining connection"
+        logger.debug("Draining connection")
 
         @draining = true
 
         if PREEMPTIVELY_CLOSE_ON_DRAIN.include?(@current_request.class)
-          debug "Current request is #{@current_request.class}, closing connection"
+          logger.debug("Current request is #{@current_request.class}, closing connection")
           close
         else
-          debug "Current request is #{@current_request.class}, waiting for completion"
+          logger.debug("Current request is #{@current_request.class}, waiting for completion")
         end
       end
 
@@ -367,7 +372,8 @@ module Warden
             end
           rescue => e
             close_connection_after_writing
-            warn "Disconnected client after error parsing request: #{e} (#{e.backtrace.first})"
+            logger.warn("Disconnected client after error")
+            logger.log_exception(e)
           end
         end
       end
@@ -383,7 +389,7 @@ module Warden
 
         return if request.nil?
 
-        debug request
+        logger.debug2(request)
 
         f = Fiber.new {
           begin
@@ -396,7 +402,7 @@ module Warden
             @blocked = false
 
             if @draining
-              debug "Finished processing request, closing."
+              logger.debug2("Finished processing request, closing")
               close
             else
               # Resume processing the input buffer
@@ -411,6 +417,10 @@ module Warden
       def process(request)
         case request
         when Protocol::PingRequest
+          EM.next_tick do
+            raise "foo"
+          end
+
           response = request.create_response
           send_response(response)
 

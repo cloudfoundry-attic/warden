@@ -107,9 +107,6 @@ describe "linux", :platform => "linux", :needs_root => true do
           "level" => "debug",
           "file" => Warden::Util.path("tmp/warden.log") }
 
-      #colored_test_name = "\033[37;1m%s\033[0m" % example.metadata[:full_description]
-      #Warden::Logger.logger.info colored_test_name
-
       Warden::Server.run!
     end
 

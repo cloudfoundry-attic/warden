@@ -20,7 +20,7 @@ module Warden
 
       def do_create(request, response)
         sh File.join(root_path, "create.sh"), container_path
-        debug "insecure container created"
+        logger.debug("Container created")
       end
 
       def do_stop(request, response)
@@ -37,7 +37,7 @@ module Warden
 
       def do_destroy(request, response)
         sh File.join(root_path, "destroy.sh"), container_path
-        debug "insecure container destroyed"
+        logger.debug("Container destroyed")
       end
 
       def create_job(request)
