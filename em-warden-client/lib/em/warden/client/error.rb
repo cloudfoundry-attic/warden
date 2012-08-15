@@ -3,6 +3,9 @@ module EventMachine
     module Client
       class Error < StandardError
       end
+
+      class ConnectionError < Error
+      end
     end
   end
 end

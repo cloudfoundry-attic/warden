@@ -105,7 +105,7 @@ describe EventMachine::Warden::Client do
         conn.call(request) do |r|
           expect do
             r.get
-          end.to raise_error(/disconnected/i)
+          end.to raise_error(EventMachine::Warden::Client::ConnectionError, /disconnected/i)
 
           EM.stop
         end
