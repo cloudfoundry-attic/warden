@@ -2,7 +2,6 @@
 
 require "warden/container/spawn"
 require "warden/errors"
-require "warden/logger"
 require "warden/util"
 
 module Warden
@@ -16,7 +15,6 @@ module Warden
         class OomNotifier
 
           include Spawn
-          include Logger
 
           attr_reader :container
 
@@ -32,8 +30,6 @@ module Warden
                 Fiber.new do
                   container.oomed
                 end.resume
-              else
-                debug "stderr: #{@child.err}"
               end
             end
 
@@ -51,7 +47,7 @@ module Warden
         end
 
         def oomed
-          warn "OOM happened for #{handle}"
+          logger.warn("OOM happened for #{handle}")
 
           events << 'oom'
           if state == State::Active
@@ -70,7 +66,7 @@ module Warden
                 @oom_notifier = OomNotifier.new(self)
                 on(:after_stop) do
                   if @oom_notifier
-                    debug "Unregistering OOM notifier for #{handle}"
+                    logger.debug("Unregistering OOM notifier for #{handle}")
                     @oom_notifier.unregister
                     @oom_notifier = nil
                   end

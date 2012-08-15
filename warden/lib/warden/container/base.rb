@@ -3,12 +3,13 @@
 require "warden/container/spawn"
 require "warden/errors"
 require "warden/event_emitter"
-require "warden/logger"
 require "warden/util"
 
 require "eventmachine"
 require "json"
 require "set"
+require "steno"
+require "steno/core_ext"
 require "warden/protocol"
 
 module Warden
@@ -45,7 +46,6 @@ module Warden
 
       include EventEmitter
       include Spawn
-      include Logger
 
       class << self
 
@@ -181,7 +181,7 @@ module Warden
       def cancel_grace_timer
         return unless @destroy_timer
 
-        debug "grace timer: cancel"
+        logger.debug("Grace timer: cancel")
 
         ::EM.cancel_timer(@destroy_timer)
         @destroy_timer = nil
@@ -190,17 +190,17 @@ module Warden
       def setup_grace_timer
         return if grace_time.nil?
 
-        debug "grace timer: setup (%.3fs)" % grace_time
+        logger.debug("Grace timer: setup (fires in %.3fs)" % grace_time)
 
         @destroy_timer = ::EM.add_timer(grace_time) do
-          debug "grace timer: fired"
+          logger.debug("Grace timer: fire")
           fire_grace_timer
         end
       end
 
       def fire_grace_timer
         f = Fiber.new do
-          debug "grace timer: destroy"
+          logger.debug("Grace timer: issue destroy")
 
           begin
             dispatch(Protocol::DestroyRequest.new)
@@ -279,6 +279,8 @@ module Warden
       end
 
       def dispatch(request, &blk)
+        logger.debug2("Request: #{request.inspect}")
+
         klass_name = request.class.name.split("::").last
         klass_name = klass_name.gsub(/Request$/, "")
         klass_name = klass_name.gsub(/(.)([A-Z])/) { |m| "#{m[0]}_#{m[1]}" }
@@ -300,6 +302,8 @@ module Warden
         emit(after_method.to_sym)
         hook(after_method, request, response)
 
+        logger.debug2("Response: #{response.inspect}")
+
         response
       end
 
@@ -312,7 +316,7 @@ module Warden
       end
 
       def write_snapshot
-        info "Writing snapshot for container #{handle}"
+        logger.info("Writing snapshot for container #{handle}")
 
         jobs_snapshot = {}
         jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
@@ -651,6 +655,14 @@ module Warden
         end
 
         jobs
+      end
+
+      def logger
+        if resources.has_key?("handle")
+          self.class.logger.tag(:handle => resources["handle"])
+        else
+          self.class.logger
+        end
       end
 
       class Job
