@@ -219,6 +219,10 @@ module Warden
         when "disk"
           request = Protocol::LimitDiskRequest.new(attributes)
           request.byte = Integer(args.shift) unless args.empty?
+        when "bandwidth"
+          request = Protocol::LimitBandwidthRequest.new(attributes)
+          request.rate = Integer(args.shift) unless args.empty?
+          request.burst = Integer(args.shift) unless args.empty?
         else
           raise "Unknown limit: #{limit}"
         end
@@ -232,6 +236,10 @@ module Warden
 
       def self.convert_limit_disk_response(response)
         response.byte
+      end
+
+      def self.convert_limit_bandwidth_response(response)
+        "rate: #{response.rate} burst: #{response.burst}"
       end
 
       def self.convert_ping_request(args)

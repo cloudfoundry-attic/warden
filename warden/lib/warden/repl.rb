@@ -25,6 +25,7 @@ run <handle>  cmd             - short hand for stream(spawn(cmd)) i.e. spawns cm
 list                          - list containers
 info <handle>                 - show metadata for container <handle>
 limit <handle> mem  [<value>] - set or get the memory limit for the container (in bytes)
+limit <handle> bandwidth <rate> <bandwidth> - set the bandwidth limit for the container (in bytes)
 net <handle> #in              - forward port #in on external interface to container <handle>
 net <handle> #out <address[/mask][:port]> - allow traffic from the container <handle> to address <address>
 copy <handle> <in|out> <src path> <dst path> [ownership opts] - Copy files/directories in and out of the container
