@@ -250,7 +250,7 @@ module Warden
       ::EM.epoll
 
       old_soft, old_hard = Process.getrlimit(:NOFILE)
-      Process.setrlimit(Process::RLIMIT_NOFILE, 32768, old_hard)
+      Process.setrlimit(Process::RLIMIT_NOFILE, 32768)
       new_soft, new_hard = Process.getrlimit(:NOFILE)
       logger.debug("rlimit_nofile: %d => %d" % [old_soft, new_soft])
 
