@@ -1,0 +1,107 @@
+#!/usr/bin/env ruby
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../../Gemfile", __FILE__)
+$LOAD_PATH.unshift(File.expand_path("../../lib", __FILE__))
+
+require "bundler"
+Bundler.setup
+
+require "optparse"
+require "ostruct"
+require "warden/repl_v2"
+require "warden/client"
+
+options = {}
+opt_parser = OptionParser.new do |op|
+  op.banner = <<-EOT
+Usage: warden [options] -- [commands]
+Runs an interactive REPL by default.
+
+[options] can be one of the following:
+
+EOT
+  op.on("--socket socket", "Warden socket path.") do |socket_path|
+    options[:socket_path] = socket_path
+  end
+
+  op.on("--trace", "Writes each command preceded by a '+' to stdout before" \
+        + " executing.") do |trace|
+    options[:trace] = true
+  end
+
+  op.on("--exit_on_error",
+        "Only applicable in non-interactive mode. If a multi-command string" \
+        + " is supplied, exit after the first unsuccessful command.") do
+    options[:errexit] = true
+  end
+
+  op.on_tail("--help", "Show help.") do
+    puts op
+    puts
+    puts "[commands] can be one of the following separated by a newline."
+    puts Warden::Repl.new.describe_commands(op.summary_width - 3)
+    puts
+    exit
+  end
+end
+
+global_args = []
+command_args = []
+delimiter_found = false
+ARGV.each do |element|
+  if element == "--"
+    raise "Delimiter: '--' specified multiple times." if delimiter_found
+    delimiter_found = true
+  else
+    if delimiter_found
+      command_args << element
+    else
+      global_args << element
+    end
+  end
+end
+
+opt_parser.parse(global_args)
+repl = Warden::Repl.new(options)
+
+unless command_args.empty?
+  commands = []
+  index = 0
+  command_args.each do |arg|
+    commands[index] = [] unless commands[index]
+    if arg.end_with?("\n")
+      arg.chomp!
+      commands[index] << arg
+      index += 1
+    else
+      commands[index] << arg
+    end
+  end
+
+  exit_status = nil
+  commands.each do |command_args|
+    command_info = nil
+    begin
+      command_info = repl.process_command(*command_args)
+    rescue Warden::Repl::ReplError => re
+      raise re if options[:errexit]
+    end
+
+    puts command_info[:result] if command_info && command_info[:result]
+
+    exit_status =
+      if !command_info
+        0
+      elsif command_info[:exit_status]
+        command_info[:exit_status]
+      else
+        0
+      end
+
+    break if (exit_status != 0) && options[:errexit]
+  end
+
+  exit(exit_status)
+else
+  trap('INT') { exit }
+  repl.start
+end
