@@ -24,6 +24,10 @@ module Warden
       optional :byte,       :uint64, 31 # Alias for `byte_hard`
       optional :byte_soft,  :uint64, 32
       optional :byte_hard,  :uint64, 33
+
+      def self.description
+        "set or get the disk limit for the container (in bytes)"
+      end
     end
 
     class LimitDiskResponse < BaseResponse

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # coding: UTF-8
 
 require "spec_helper"
@@ -10,8 +11,8 @@ describe Warden::Protocol::EchoRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Echo" }
-  its(:type_underscored) { should == "echo" }
+  its("class.type_camelized") { should == "Echo" }
+  its("class.type_underscored") { should == "echo" }
 
   field :message do
     it_should_be_required
@@ -21,6 +22,8 @@ describe Warden::Protocol::EchoRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::EchoResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::EchoResponse do
@@ -30,8 +33,8 @@ describe Warden::Protocol::EchoResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Echo" }
-  its(:type_underscored) { should == "echo" }
+  its("class.type_camelized") { should == "Echo" }
+  its("class.type_underscored") { should == "echo" }
 
   it { should be_ok }
   it { should_not be_error }
