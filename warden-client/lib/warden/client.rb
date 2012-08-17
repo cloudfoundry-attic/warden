@@ -68,7 +68,7 @@ module Warden
       response
     end
 
-    def write(request)
+    def write(request, &blk)
       if request.kind_of?(Array)
         @v1mode = true
         request = V1.request_from_v1(request.dup)
@@ -83,12 +83,32 @@ module Warden
       @sock.write data + "\r\n"
     end
 
+    # Since `spawn is defined in `Kernel` module, we need to redefine it
+    # to make sure that `method_missing` works for `spawn`.
+    def spawn(*args)
+      method_missing(:spawn, *args)
+    end
+
+    def stream(request, &blk)
+      response = call(request)
+      while response.exit_status.nil?
+        blk.call(response)
+        response = read
+      end
+
+      response
+    end
+
     def call(request)
       write(request)
       read
     end
 
     def method_missing(sym, *args, &blk)
+      if args.size == 1 && args[0].is_a?(Warden::Protocol::BaseRequest)
+        return call(args[0])
+      end
+
       klass_name = sym.to_s.gsub(/(^|_)([a-z])/) { $2.upcase }
       klass_name += "Request"
       klass = Warden::Protocol.const_get(klass_name)
@@ -97,3 +117,4 @@ module Warden
     end
   end
 end
+
