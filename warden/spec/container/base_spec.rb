@@ -526,5 +526,15 @@ describe Warden::Container::Base do
         container.limit_memory(Warden::Protocol::LimitDiskRequest.new)
       }
     end
+
+    describe "limit_bandwidth" do
+      before(:each) do
+        @container.stub(:do_limit_bandwidth)
+      end
+
+      include_examples "succeeds when active or stopped", Proc.new {
+        container.limit_bandwidth(Warden::Protocol::LimitBandwidthRequest.new)
+      }
+    end
   end
 end
