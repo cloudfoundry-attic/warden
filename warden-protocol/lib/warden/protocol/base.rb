@@ -39,6 +39,7 @@ module Warden
 
       LimitMemory = 51
       LimitDisk   = 52
+      LimitBandwidth  = 53
 
       Ping = 91
       List = 92

@@ -17,6 +17,53 @@ module Warden
           base.extend(ClassMethods)
         end
 
+        def to_num(val, suffix)
+          kmg_map = {
+            "G" => 10 ** 9,
+            "M" => 10 ** 6,
+            "K" => 10 ** 3,
+          }
+          factor = kmg_map[suffix] || 1
+          val * factor
+        end
+
+        def do_info(request, response)
+          super(request, response)
+          id = request.handle
+
+          in_reg = /qdisc tbf [0-9]+: root refcnt [0-9]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b lat 25.0ms/
+          out_reg = /\s*police 0x[0-9a-f]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b mtu [0-9]+[KM]?b action drop overhead [0-9]+b/
+          ret = {}
+
+          {:in => {:bash_key =>  "get_egress_info", :reg => in_reg, :rate_key => :in_rate, :burst_key => :in_burst},
+            :out => {:bash_key => "get_ingress_info", :reg => out_reg, :rate_key => :out_rate, :burst_key => :out_burst}}.each do |k, v|
+
+            # set default rate value to 0xffffffff default burst value to 0xffffffff
+            ret[v[:rate_key]], ret[v[:burst_key]] = [0xffffffff, 0xffffffff]
+            info = sh File.join(container_path, "net.sh"), v[:bash_key], :env => {
+              "ID"     => id
+            }
+            info.split("\n").each do |line|
+              if band_info = v[:reg].match(line)
+                ret[v[:rate_key]] = to_num(band_info[1].to_i, band_info[2]) / 8 # bits to bytes
+                ret[v[:burst_key]] = to_num(band_info[3].to_i, band_info[4])
+                break
+              end
+            end
+          end
+          response.bandwidth_stat = Protocol::InfoResponse::BandwidthStat.new(ret)
+          nil
+        end
+
+        def do_limit_bandwidth(request, response)
+          sh File.join(container_path, "net_rate.sh"), :env => {
+            "BURST"     => request.burst,
+            "RATE"      => request.rate * 8, # bytes to bits
+          }
+          response.rate = request.rate
+          response.burst = request.burst
+        end
+
         def do_net_in(request, response)
           host_port = self.class.port_pool.acquire
 
