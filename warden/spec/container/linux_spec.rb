@@ -294,10 +294,12 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def check_mapping(response)
       # Verify that the port mapping in @ports works
-      job_id = client.spawn(:handle => handle, :script => "echo ok | nc -l #{response.container_port}").job_id
+      script = "echo ok | nc -l #{response.container_port}"
+      job_id = client.spawn(:handle => handle,
+                            :script => script).job_id
 
       # Give nc some time to start
-      sleep 0.1
+      sleep 0.2
 
       # Connect via external IP
       external_ip = `ip route get 1.1.1.1`.split(/\n/).first.split(/\s+/).last

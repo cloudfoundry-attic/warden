@@ -7,8 +7,8 @@ gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudf
 gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => 'e2b58321'
 gem "sys-filesystem"
 
-gem "warden-protocol", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '1918b625'
-gem "warden-client", :git => 'https://github.com/cloudfoundry/warden.git', :ref => '1918b625'
+gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git", :ref => '18667f58'
+gem "warden-client", :git => "https://github.com/cloudfoundry/warden.git", :ref => '18667f58'
 
 group :spec do
   gem "rspec"
