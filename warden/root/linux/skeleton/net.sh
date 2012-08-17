@@ -124,7 +124,22 @@ case "${1}" in
     iptables -I ${filter_instance_chain} 1 ${opts} --jump RETURN
 
     ;;
+  "get_ingress_info")
+    if [ -z "${ID:-}" ]; then
+      echo "Please specify container ID..." 1>&2
+      exit 1
+    fi
+    tc filter show dev w-${ID}-0 parent ffff:
 
+    ;;
+  "get_egress_info")
+    if [ -z "${ID:-}" ]; then
+      echo "Please specify container ID..." 1>&2
+      exit 1
+    fi
+    tc qdisc show dev w-${ID}-0
+
+    ;;
   *)
     echo "Unknown command: ${1}" 1>&2
     exit 1
