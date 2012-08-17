@@ -43,12 +43,12 @@ GIT
 
 GIT
   remote: https://github.com/cloudfoundry/warden.git
-  revision: 1d8e2fb1c4225fc907f78bd1bf9a56a181f4ecf6
-  ref: 1d8e2fb1
+  revision: 18667f58c72eb90b598bf8f35916ee2fecfecda4
+  ref: 18667f58
   specs:
-    warden-client (0.0.6)
+    warden-client (0.0.7)
       warden-protocol
-    warden-protocol (0.0.5)
+    warden-protocol (0.0.6)
       beefcake
 
 GEM
