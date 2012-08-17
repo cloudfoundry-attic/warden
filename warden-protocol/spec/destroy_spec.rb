@@ -10,8 +10,8 @@ describe Warden::Protocol::DestroyRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Destroy" }
-  its(:type_underscored) { should == "destroy" }
+  its("class.type_camelized") { should == "Destroy" }
+  its("class.type_underscored") { should == "destroy" }
 
   field :handle do
     it_should_be_required
@@ -20,6 +20,8 @@ describe Warden::Protocol::DestroyRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::DestroyResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::DestroyResponse do
@@ -29,8 +31,8 @@ describe Warden::Protocol::DestroyResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Destroy" }
-  its(:type_underscored) { should == "destroy" }
+  its("class.type_camelized") { should == "Destroy" }
+  its("class.type_underscored") { should == "destroy" }
 
   it { should be_ok }
   it { should_not be_error }

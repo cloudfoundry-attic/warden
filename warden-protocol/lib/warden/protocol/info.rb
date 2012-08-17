@@ -6,6 +6,10 @@ module Warden
   module Protocol
     class InfoRequest < BaseRequest
       required :handle, :string, 1
+
+      def self.description
+        "Show metadata for a container."
+      end
     end
 
     class InfoResponse < BaseResponse

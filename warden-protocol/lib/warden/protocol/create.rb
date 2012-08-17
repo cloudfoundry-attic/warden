@@ -18,6 +18,10 @@ module Warden
 
       repeated :bind_mounts, BindMount, 1
       optional :grace_time, :uint32, 2
+
+      def self.description
+        "Create container, optionally pass options."
+      end
     end
 
     class CreateResponse < BaseResponse

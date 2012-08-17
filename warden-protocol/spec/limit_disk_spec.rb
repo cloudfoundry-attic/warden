@@ -72,8 +72,8 @@ describe Warden::Protocol::LimitDiskRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "LimitDisk" }
-  its(:type_underscored) { should == "limit_disk" }
+  its("class.type_camelized") { should == "LimitDisk" }
+  its("class.type_underscored") { should == "limit_disk" }
 
   field :handle do
     it_should_be_required
@@ -85,6 +85,8 @@ describe Warden::Protocol::LimitDiskRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LimitDiskResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::LimitDiskResponse do
@@ -94,8 +96,8 @@ describe Warden::Protocol::LimitDiskResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "LimitDisk" }
-  its(:type_underscored) { should == "limit_disk" }
+  its("class.type_camelized") { should == "LimitDisk" }
+  its("class.type_underscored") { should == "limit_disk" }
 
   it { should be_ok }
   it { should_not be_error }
