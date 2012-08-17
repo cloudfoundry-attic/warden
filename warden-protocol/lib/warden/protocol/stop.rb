@@ -8,6 +8,10 @@ module Warden
       required :handle, :string, 1
       optional :background, :bool, 10
       optional :kill, :bool, 20
+
+      def self.description
+        "Stop all processes inside a container."
+      end
     end
 
     class StopResponse < BaseResponse

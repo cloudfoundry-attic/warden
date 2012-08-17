@@ -10,8 +10,8 @@ describe Warden::Protocol::ListRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "List" }
-  its(:type_underscored) { should == "list" }
+  its("class.type_camelized") { should == "List" }
+  its("class.type_underscored") { should == "list" }
 
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::ListResponse)
@@ -25,8 +25,8 @@ describe Warden::Protocol::ListResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "List" }
-  its(:type_underscored) { should == "list" }
+  its("class.type_camelized") { should == "List" }
+  its("class.type_underscored") { should == "list" }
 
   it { should be_ok }
   it { should_not be_error }

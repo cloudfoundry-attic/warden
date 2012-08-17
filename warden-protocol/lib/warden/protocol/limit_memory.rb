@@ -7,6 +7,10 @@ module Warden
     class LimitMemoryRequest < BaseRequest
       required :handle, :string, 1
       optional :limit_in_bytes, :uint64, 2
+
+      def self.description
+        "Set or get the memory limit for the container (in bytes)."
+      end
     end
 
     class LimitMemoryResponse < BaseResponse

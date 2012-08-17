@@ -10,8 +10,8 @@ describe Warden::Protocol::NetInRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "NetIn" }
-  its(:type_underscored) { should == "net_in" }
+  its("class.type_camelized") { should == "NetIn" }
+  its("class.type_underscored") { should == "net_in" }
 
   field :handle do
     it_should_be_required
@@ -26,6 +26,8 @@ describe Warden::Protocol::NetInRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::NetInResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::NetInResponse do
@@ -35,8 +37,8 @@ describe Warden::Protocol::NetInResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "NetIn" }
-  its(:type_underscored) { should == "net_in" }
+  its("class.type_camelized") { should == "NetIn" }
+  its("class.type_underscored") { should == "net_in" }
 
   it { should be_ok }
   it { should_not be_error }

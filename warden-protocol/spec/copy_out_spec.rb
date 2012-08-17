@@ -14,8 +14,8 @@ describe Warden::Protocol::CopyOutRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "CopyOut" }
-  its(:type_underscored) { should == "copy_out" }
+  its("class.type_camelized") { should == "CopyOut" }
+  its("class.type_underscored") { should == "copy_out" }
 
   field :handle do
     it_should_be_required
@@ -40,6 +40,8 @@ describe Warden::Protocol::CopyOutRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::CopyOutResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::CopyOutResponse do
@@ -49,8 +51,8 @@ describe Warden::Protocol::CopyOutResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "CopyOut" }
-  its(:type_underscored) { should == "copy_out" }
+  its("class.type_camelized") { should == "CopyOut" }
+  its("class.type_underscored") { should == "copy_out" }
 
   it { should be_ok }
   it { should_not be_error }
