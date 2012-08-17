@@ -83,6 +83,20 @@ module Warden
       @sock.write data + "\r\n"
     end
 
+    def stream(request, &blk)
+      unless request.is_a?(Warden::Protocol::StreamRequest)
+        raise ArgumentError, "Expected argument to be of type: '#{Warden::Protocol::StreamRequest}', but received: '#{request.class}'."
+      end
+
+      response = call(request)
+      while response.exit_status.nil?
+        blk.call(response)
+        response = read
+      end
+
+      response
+    end
+
     def call(request)
       write(request)
       read
