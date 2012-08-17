@@ -8,6 +8,10 @@ module Warden
       required :handle, :string, 1
       required :script, :string, 2
       optional :privileged, :bool, 3, :default => false
+
+      def self.description
+        "Short hand for stream(link(cmd)) i.e. spawns a command, links to the result."
+      end
     end
 
     class RunResponse < BaseResponse

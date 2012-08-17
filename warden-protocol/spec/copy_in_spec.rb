@@ -14,8 +14,8 @@ describe Warden::Protocol::CopyInRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "CopyIn" }
-  its(:type_underscored) { should == "copy_in" }
+  its("class.type_camelized") { should == "CopyIn" }
+  its("class.type_underscored") { should == "copy_in" }
 
   field :handle do
     it_should_be_required
@@ -35,6 +35,8 @@ describe Warden::Protocol::CopyInRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::CopyInResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::CopyInResponse do
@@ -44,8 +46,8 @@ describe Warden::Protocol::CopyInResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "CopyIn" }
-  its(:type_underscored) { should == "copy_in" }
+  its("class.type_camelized") { should == "CopyIn" }
+  its("class.type_underscored") { should == "copy_in" }
 
   it { should be_ok }
   it { should_not be_error }

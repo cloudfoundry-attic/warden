@@ -10,8 +10,8 @@ describe Warden::Protocol::StopRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Stop" }
-  its(:type_underscored) { should == "stop" }
+  its("class.type_camelized") { should == "Stop" }
+  its("class.type_underscored") { should == "stop" }
 
   field :handle do
     it_should_be_required
@@ -30,6 +30,8 @@ describe Warden::Protocol::StopRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::StopResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::StopResponse do
@@ -39,8 +41,8 @@ describe Warden::Protocol::StopResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Stop" }
-  its(:type_underscored) { should == "stop" }
+  its("class.type_camelized") { should == "Stop" }
+  its("class.type_underscored") { should == "stop" }
 
   it { should be_ok }
   it { should_not be_error }

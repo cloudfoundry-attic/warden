@@ -10,8 +10,8 @@ describe Warden::Protocol::InfoRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Info" }
-  its(:type_underscored) { should == "info" }
+  its("class.type_camelized") { should == "Info" }
+  its("class.type_underscored") { should == "info" }
 
   field :handle do
     it_should_be_required
@@ -21,6 +21,8 @@ describe Warden::Protocol::InfoRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::InfoResponse)
   end
+
+    it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::InfoResponse::CpuStat do
@@ -59,8 +61,8 @@ describe Warden::Protocol::InfoResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Info" }
-  its(:type_underscored) { should == "info" }
+  its("class.type_camelized") { should == "Info" }
+  its("class.type_underscored") { should == "info" }
 
   it { should be_ok }
   it { should_not be_error }
