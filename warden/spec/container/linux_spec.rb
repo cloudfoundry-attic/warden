@@ -221,6 +221,42 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "limit_bandwidth" do
+    attr_reader :handle
+
+    def limit_bandwidth(options = {})
+      response = client.limit_bandwidth(options.merge(:handle => handle))
+      response.should be_ok
+      response
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should set the bandwidth" do
+      response = limit_bandwidth(:rate => 100 * 1000, :burst => 1000)
+      ret = client.info(:handle => handle)
+      [ret.bandwidth_stat.in_rate, ret.bandwidth_stat.out_rate].each do |v|
+        v.should == 100 * 1000
+      end
+      [ret.bandwidth_stat.in_burst, ret.bandwidth_stat.out_burst].each do |v|
+        v.should == 1000
+      end
+    end
+
+    it "should allow bandwidth to be changed" do
+      response = limit_bandwidth(:rate => 200 * 1000, :burst => 2000)
+      ret = client.info(:handle => handle)
+      [ret.bandwidth_stat.in_rate, ret.bandwidth_stat.out_rate].each do |v|
+        v.should == 200 * 1000
+      end
+      [ret.bandwidth_stat.in_burst, ret.bandwidth_stat.out_burst].each do |v|
+        v.should == 2000
+      end
+    end
+  end
+
   describe "net_out", :netfilter => true do
     attr_reader :handle
 
@@ -349,6 +385,16 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       response = client.info(:handle => handle)
       response.disk_stat.bytes_used.should be_within(32000).of(bytes_used + 1_000_000)
+    end
+
+    it "should include bandwidth stat" do
+      response = client.info(:handle => handle)
+      [response.bandwidth_stat.in_rate, response.bandwidth_stat.out_rate].each do |x|
+        x.should >= 0
+      end
+      [response.bandwidth_stat.in_burst, response.bandwidth_stat.out_burst].each do |x|
+        x.should >= 0
+      end
     end
   end
 

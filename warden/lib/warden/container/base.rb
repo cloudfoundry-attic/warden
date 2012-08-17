@@ -565,6 +565,14 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
+      def before_limit_bandwidth
+        check_state_in(State::Active, State::Stopped)
+      end
+
+      def do_limit_bandwidth(request, response)
+        raise WardenError.new("not implemented")
+      end
+
       def before_info
         check_state_in(State::Active, State::Stopped)
       end
