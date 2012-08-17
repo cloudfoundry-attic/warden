@@ -221,6 +221,65 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "limit_bandwidth" do
+    attr_reader :handle
+
+    def limit_bandwidth(options = {})
+      response = client.limit_bandwidth(options.merge(:handle => handle))
+      response.should be_ok
+      response
+    end
+
+    def get_bandwidth
+      in_info = `tc qdisc show dev w-#{handle}-0`
+      out_info = `tc filter show dev w-#{handle}-0 parent ffff:`
+      in_reg = /qdisc tbf [0-9]+: root refcnt [0-9]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b lat 25.0ms/
+      out_reg = /police 0x[0-9a-f]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b mtu [0-9]+[KM]?b action drop overhead [0-9]+b/
+      kmg_map = {"K" => 1000, "M" => 1000 * 1000, "G" => 1000 * 1000 * 1000}
+      ret = {}
+      {"in" => {"info" =>  in_info, "reg" => in_reg},
+        "out" => {"info" => out_info, "reg" => out_reg}}.each do |k, v|
+        #set default rate value to 0xffffffff default burst value to 0xffffffff
+        ret["#{k}_rate".to_sym], ret["#{k}_burst".to_sym] = [0xffffffff, 0xffffffff]
+        v["info"].split("\n").each do |line|
+          if band_info = v["reg"].match(line)
+            #bits to bytes
+            ret["#{k}_rate".to_sym] = band_info[1].to_i * (kmg_map[band_info[2]] || 1) / 8
+            ret["#{k}_burst".to_sym] = band_info[3].to_i * (kmg_map[band_info[4]] || 1)
+            break
+          end
+        end
+      end
+      ret
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should set the bandwidth" do
+      response = limit_bandwidth(:rate => 100 * 1000, :burst => 1000)
+      ret = get_bandwidth
+      [ret[:in_rate], ret[:out_rate]].each do |v|
+        v.should == 100 * 1000
+      end
+      [ret[:in_burst], ret[:out_burst]].each do |v|
+        v.should == 1000
+      end
+    end
+
+    it "should allow bandwidth to be changed" do
+      response = limit_bandwidth(:rate => 200 * 1000, :burst => 2000)
+      ret = get_bandwidth
+      [ret[:in_rate], ret[:out_rate]].each do |v|
+        v.should == 200 * 1000
+      end
+      [ret[:in_burst], ret[:out_burst]].each do |v|
+        v.should == 2000
+      end
+    end
+  end
+
   describe "net_out", :netfilter => true do
     attr_reader :handle
 
@@ -347,6 +406,16 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       response = client.info(:handle => handle)
       response.disk_stat.bytes_used.should be_within(32000).of(bytes_used + 1_000_000)
+    end
+
+    it "should include bandwidth stat" do
+      response = client.info(:handle => handle)
+      [response.bandwidth_stat.in_rate, response.bandwidth_stat.out_rate].each do |x|
+        x.should >= 0
+      end
+      [response.bandwidth_stat.in_burst, response.bandwidth_stat.out_burst].each do |x|
+        x.should >= 0
+      end
     end
   end
 

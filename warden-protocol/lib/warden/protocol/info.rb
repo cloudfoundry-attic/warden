@@ -55,6 +55,13 @@ module Warden
         optional :inodes_used, :uint64, 2
       end
 
+      class BandwidthStat < BaseMessage
+        optional :in_rate, :uint64, 1
+        optional :in_burst, :uint64, 2
+        optional :out_rate, :uint64, 3
+        optional :out_burst, :uint64, 4
+      end
+
       optional :state, :string, 10
 
       repeated :events, :string, 20
@@ -66,6 +73,7 @@ module Warden
       optional :memory_stat, MemoryStat, 40
       optional :cpu_stat, CpuStat, 41
       optional :disk_stat, DiskStat, 42
+      optional :bandwidth_stat, BandwidthStat, 43
     end
   end
 end
