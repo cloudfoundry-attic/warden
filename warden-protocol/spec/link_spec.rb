@@ -10,8 +10,8 @@ describe Warden::Protocol::LinkRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Link" }
-  its(:type_underscored) { should == "link" }
+  its("class.type_camelized") { should == "Link" }
+  its("class.type_underscored") { should == "link" }
 
   field :handle do
     it_should_be_required
@@ -26,6 +26,8 @@ describe Warden::Protocol::LinkRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LinkResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::LinkResponse do
@@ -35,8 +37,8 @@ describe Warden::Protocol::LinkResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Link" }
-  its(:type_underscored) { should == "link" }
+  its("class.type_camelized") { should == "Link" }
+  its("class.type_underscored") { should == "link" }
 
   it { should be_ok }
   it { should_not be_error }

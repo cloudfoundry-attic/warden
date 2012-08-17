@@ -6,6 +6,10 @@ module Warden
   module Protocol
     class DestroyRequest < BaseRequest
       required :handle, :string, 1
+
+      def self.description
+        "Shutdown a container."
+      end
     end
 
     class DestroyResponse < BaseResponse

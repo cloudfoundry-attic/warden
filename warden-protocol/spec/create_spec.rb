@@ -10,8 +10,8 @@ describe Warden::Protocol::CreateRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Create" }
-  its(:type_underscored) { should == "create" }
+  its("class.type_camelized") { should == "Create" }
+  its("class.type_underscored") { should == "create" }
 
   field :bind_mounts do
     it_should_be_optional
@@ -35,6 +35,8 @@ describe Warden::Protocol::CreateRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::CreateResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::CreateResponse do
@@ -44,8 +46,8 @@ describe Warden::Protocol::CreateResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Create" }
-  its(:type_underscored) { should == "create" }
+  its("class.type_camelized") { should == "Create" }
+  its("class.type_underscored") { should == "create" }
 
   it { should be_ok }
   it { should_not be_error }
