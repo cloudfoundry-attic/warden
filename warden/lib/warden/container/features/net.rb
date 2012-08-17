@@ -17,6 +17,43 @@ module Warden
           base.extend(ClassMethods)
         end
 
+        def do_info(request, response)
+          super(request, response)
+          id = request.handle
+          in_info = sh "tc qdisc show dev w-#{id}-0"
+          out_info = sh "tc filter show dev w-#{id}-0 parent ffff:"
+          in_reg = /qdisc tbf [0-9]+: root refcnt [0-9]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b lat 25.0ms/
+          out_reg = /\s*police 0x[0-9a-f]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b mtu [0-9]+[KM]?b action drop overhead [0-9]+b/
+          kmg_map = {"K" => 1000, "M" => 1000 * 1000, "G" => 1000 * 1000 * 1000}
+          ret = {}
+
+          {"in" => {"info" =>  in_info, "reg" => in_reg},
+            "out" => {"info" => out_info, "reg" => out_reg}}.each do |k, v|
+            #set default rate value to 0xffffffff default burst value to 0xffffffff
+            ret["#{k}_rate".to_sym], ret["#{k}_burst".to_sym] = [0xffffffff, 0xffffffff]
+            v["info"].split("\n").each do |line|
+              if band_info = v["reg"].match(line)
+                #bits to bytes
+                ret["#{k}_rate".to_sym] = band_info[1].to_i * (kmg_map[band_info[2]] || 1) / 8
+                ret["#{k}_burst".to_sym] = band_info[3].to_i * (kmg_map[band_info[4]] || 1)
+                break
+              end
+            end
+          end
+          response.bandwidth_stat = Protocol::InfoResponse::BandwidthStat.new(ret)
+          nil
+        end
+
+        def do_limit_bandwidth(request, response)
+          sh File.join(container_path, "net_rate.sh"), :env => {
+            "BURST"     => request.burst,
+            #bytes to bits
+            "RATE"      => request.rate * 8,
+          }
+          response.rate = request.rate
+          response.burst = request.burst
+        end
+
         def do_net_in(request, response)
           host_port = self.class.port_pool.acquire
 
