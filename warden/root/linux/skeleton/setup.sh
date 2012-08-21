@@ -66,6 +66,8 @@ useradd -mU -u ${user_uid} -s /bin/bash vcap
 fi
 EOS
 
+user_gid=$( egrep '^vcap:x:' ${target}/etc/passwd | awk -F: '{ print $4 }' )
+
 # Copy override directory
 cp -r override/* ${target}/
 chmod 700 ${target}/sbin/warden-*
@@ -88,7 +90,7 @@ sed -i -e '/^AcceptEnv/d' /etc/ssh/sshd_config
 # Don't use dsa host key
 sed -i -e '/^HostKey .*dsa/d' /etc/ssh/sshd_config
 # Pick up authorized keys from /etc/ssh
-echo AuthorizedKeysFile /etc/ssh/authorized_keys/%u >> /etc/ssh/sshd_config
+echo AuthorizedKeysFile /etc/ssh/%u/authorized_keys >> /etc/ssh/sshd_config
 # Never do DNS lookups
 echo UseDNS no >> /etc/ssh/sshd_config
 EOS
@@ -115,11 +117,9 @@ else
   cp ssh/access_key* ${tmp}
 fi
 
-mkdir -p ${target}/etc/ssh/authorized_keys
-cat ssh/access_key.pub >> ${target}/etc/ssh/authorized_keys/root
-chmod 644 ${target}/etc/ssh/authorized_keys/root
-cat ssh/access_key.pub >> ${target}/etc/ssh/authorized_keys/vcap
-chmod 644 ${target}/etc/ssh/authorized_keys/vcap
+chmod 755 ${target}
+install -D -m 600 -o root -g root ssh/access_key.pub ${target}/etc/ssh/root/authorized_keys
+install -D -m 600 -o ${user_uid} -g ${user_gid} ssh/access_key.pub ${target}/etc/ssh/vcap/authorized_keys
 
 # Add host key to known_hosts
 echo -n "${network_container_ip} " >> ssh/known_hosts
