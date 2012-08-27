@@ -19,7 +19,7 @@ end
 
 describe "linux", :platform => "linux", :needs_root => true do
   let!(:unix_domain_path) { Warden::Util.path("tmp/warden.sock") }
-  let!(:container_klass) { Warden::Container::Linux }
+  let!(:container_klass) { "Warden::Container::Linux" }
   let!(:container_depot_path) { Dir.mktmpdir(nil, Warden::Util.path("tmp")) }
   let!(:container_depot_file) { container_depot_path + ".img" }
   let (:have_uid_support) { true }
@@ -86,7 +86,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     FileUtils.rm_f(unix_domain_path)
 
     # Grab new network for every test to avoid resource contention
-    start_address = next_class_c
+    start_address = next_class_c.to_human
 
     @pid = fork do
       Process.setsid
@@ -101,8 +101,8 @@ describe "linux", :platform => "linux", :needs_root => true do
         "network" => {
           "pool_start_address" => start_address,
           "pool_size" => 64,
-          "allow_networks" => "4.2.2.3/32",
-          "deny_networks" => "4.2.2.0/24" },
+          "allow_networks" => ["4.2.2.3/32"],
+          "deny_networks" => ["4.2.2.0/24"] },
         "logging" => {
           "level" => "debug",
           "file" => Warden::Util.path("tmp/warden.log") }

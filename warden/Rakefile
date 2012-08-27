@@ -59,17 +59,9 @@ namespace :warden do
 
     if args[:config_path]
       config = YAML.load_file(args[:config_path])
-      if config["server"] && config["server"]["container_klass"]
-        klass = config["server"]["container_klass"]
-        config["server"]["container_klass"] = klass.split("::").inject(Kernel) do |prev, cur|
-          prev.const_get(cur)
-        end
-      end
-    else
-      config = {"logging" => {"level" => "debug2"}}
     end
 
-    Warden::Server.setup(config)
+    Warden::Server.setup(config || {})
     Warden::Server.run!
   end
 end

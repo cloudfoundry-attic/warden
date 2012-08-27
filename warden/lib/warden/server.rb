@@ -1,5 +1,6 @@
 # coding: UTF-8
 
+require "warden/config"
 require "warden/container"
 require "warden/errors"
 require "warden/event_emitter"
@@ -117,74 +118,43 @@ module Warden
       @config
     end
 
-    def self.default_unix_domain_path
-      "/tmp/warden.sock"
-    end
-
-    def self.default_unix_domain_permissions
-      0755
-    end
-
     def self.unix_domain_path
-      @unix_domain_path
+      config.server["unix_domain_path"]
     end
 
     def self.unix_domain_permissions
-      @unix_domain_permissions
-    end
-
-    def self.default_container_klass
-      ::Warden::Container::Insecure
+      config.server["unix_domain_permissions"]
     end
 
     def self.container_klass
-      @container_klass
-    end
-
-    def self.default_container_grace_time
-      5 * 60 # 5 minutes
+      config.server["container_klass"]
     end
 
     def self.container_grace_time
-      @container_grace_time
-    end
-
-    def self.default_container_limits_conf
-      {
-        "nofile" => 8192, # max number of open files
-        "nproc" => 512,   # max number of processes
-        "as" => 4194304,  # address space limit (KB)
-      }
+      config.server["container_grace_time"]
     end
 
     def self.container_limits_conf
-      @container_limits_conf
+      config.server["container_limits_conf"]
     end
 
     def self.drainer
       @drainer
     end
 
-    def self.setup_server(config = nil)
-      config ||= {}
-      @unix_domain_path = config.delete("unix_domain_path") { default_unix_domain_path }
-      @unix_domain_permissions = config.delete("unix_domain_permissions") { default_unix_domain_permissions }
-      @container_klass = config.delete("container_klass") { default_container_klass }
-      @container_grace_time = config.delete("container_grace_time") { default_container_grace_time }
-      @container_limits_conf = default_container_limits_conf.merge(config.delete("container_limits_conf") || {})
+    def self.setup_server
+      # noop
     end
 
-    def self.setup_logger(config = nil)
-      steno_config = ::Steno::Config.to_config_hash(config || {})
+    def self.setup_logging
+      steno_config = ::Steno::Config.to_config_hash(config.logging)
       steno_config[:context] = ::Steno::Context::FiberLocal.new
       ::Steno.init(Steno::Config.new(steno_config))
     end
 
-    def self.setup_network(config = nil)
-      config ||= {}
-
-      network_start_address = Network::Address.new(config["pool_start_address"] || "10.254.0.0")
-      network_size = config["pool_size"] || 64
+    def self.setup_network
+      network_start_address = Network::Address.new(config.network["pool_start_address"])
+      network_size = config.network["pool_size"]
       network_pool = Pool::Network.new(network_start_address, network_size)
       container_klass.network_pool = network_pool
 
@@ -192,21 +162,20 @@ module Warden
       container_klass.port_pool = port_pool
     end
 
-    def self.setup_user(config = nil)
-      config ||= {}
-
-      uid_start_uid = config["pool_start_uid"] || 10000
-      uid_size = config["pool_size"] || 64
-      uid_pool = Pool::Uid.new(uid_start_uid.to_i, uid_size.to_i)
+    def self.setup_user
+      uid_start_uid = config.user["pool_start_uid"]
+      uid_size = config.user["pool_size"]
+      uid_pool = Pool::Uid.new(uid_start_uid, uid_size)
       container_klass.uid_pool = uid_pool
     end
 
-    def self.setup(config = {})
-      @config = config
-      setup_server config["server"]
-      setup_logger config["logging"]
-      setup_network config["network"]
-      setup_user config["user"]
+    def self.setup(config)
+      @config = Config.new(config)
+
+      setup_server
+      setup_logging
+      setup_network
+      setup_user
     end
 
     # Must be called after pools are setup
@@ -239,7 +208,7 @@ module Warden
     end
 
     def self.drained_sentinel_path
-      File.join(@config["server"]["container_depot_path"], "drained")
+      File.join(config.server["container_depot_path"], "drained")
     end
 
     def self.write_drained_sentinel

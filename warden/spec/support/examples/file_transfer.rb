@@ -4,7 +4,7 @@ shared_examples "file transfer" do
   attr_reader :handle
 
   def path_in_container(path)
-    if container_klass == Warden::Container::Insecure
+    if container_klass =~ /::Insecure$/
       File.join(container_depot_path, handle, "root", path[1..-1])
     else
       path
