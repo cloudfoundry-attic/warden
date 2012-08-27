@@ -10,8 +10,8 @@ describe Warden::Protocol::SpawnRequest do
 
   it_should_behave_like "wrappable request"
 
-  its(:type_camelized) { should == "Spawn" }
-  its(:type_underscored) { should == "spawn" }
+  its("class.type_camelized") { should == "Spawn" }
+  its("class.type_underscored") { should == "spawn" }
 
   field :handle do
     it_should_be_required
@@ -29,6 +29,8 @@ describe Warden::Protocol::SpawnRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::SpawnResponse)
   end
+
+  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::SpawnResponse do
@@ -38,8 +40,8 @@ describe Warden::Protocol::SpawnResponse do
 
   it_should_behave_like "wrappable response"
 
-  its(:type_camelized) { should == "Spawn" }
-  its(:type_underscored) { should == "spawn" }
+  its("class.type_camelized") { should == "Spawn" }
+  its("class.type_underscored") { should == "spawn" }
 
   it { should be_ok }
   it { should_not be_error }

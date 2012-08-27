@@ -120,16 +120,46 @@ describe Warden::Client do
   context "when connected" do
 
     before(:each) do
+      container = nil
+      job_id = nil
+
       start_server do |session, request|
         next if request.nil?
 
-        case request.message
-        when "eof"
-          session.close
-        when "error"
-          session.respond(Warden::Protocol::ErrorResponse.new(:message => "error"))
+        if request.class == Warden::Protocol::EchoRequest
+          case request.message
+          when "eof"
+            session.close
+          when "error"
+            args = { :message => "error" }
+            session.respond(Warden::Protocol::ErrorResponse.new(args))
+          else
+            args = { :message => request.message }
+            session.respond(request.create_response(args))
+          end
+        elsif request.class == Warden::Protocol::CreateRequest
+          raise 'Cannot create more than one container' unless container.nil?
+
+          container = "test"
+          args = { :handle => container }
+          session.respond(Warden::Protocol::CreateResponse.new(args))
+        elsif request.class == Warden::Protocol::SpawnRequest
+          raise 'Unknown handle' unless request.handle == container
+          raise 'Cannot spawn more than one job' unless job_id.nil?
+
+          job_id = 1
+          args = { :job_id => job_id }
+          session.respond(Warden::Protocol::SpawnResponse.new(args))
+        elsif request.class == Warden::Protocol::StreamRequest
+          raise 'Unknown handle' unless request.handle == container
+          raise 'Unknown job' unless request.job_id == job_id
+
+          args = { :name => "stream", :data => "test" }
+          session.respond(Warden::Protocol::StreamResponse.new(args))
+          args = { :exit_status => 0 }
+          session.respond(Warden::Protocol::StreamResponse.new(args))
         else
-          session.respond(request.create_response(:message => request.message))
+          raise "Unknown request type: #{request.class}."
         end
       end
 
@@ -163,6 +193,32 @@ describe Warden::Client do
     it "should work when called with the old API" do
       response = client.call(["echo", "hello"])
       response.should == "hello"
+    end
+
+    it "should stream data" do
+      handle = client.create.handle
+      response = client.spawn(:handle => handle, :script => "echo test")
+
+      called = false
+      block = lambda do |response|
+        raise "Block should not be called more than once." if called
+
+        response.should be_an_instance_of Warden::Protocol::StreamResponse
+        response.data.should == "test"
+        response.name.should == "stream"
+        response.exit_status.should be_nil
+
+        called = true
+      end
+
+      request = Warden::Protocol::StreamRequest.new(:handle => handle,
+                                                    :job_id => response.job_id)
+      response = client.stream(request, &block)
+      response.data.should be_nil
+      response.name.should be_nil
+      response.exit_status.should == 0
+
+      called.should be_true
     end
   end
 end

@@ -231,11 +231,25 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     def get_bandwidth
+      in_info = `tc qdisc show dev w-#{handle}-0`
+      out_info = `tc filter show dev w-#{handle}-0 parent ffff:`
+      in_reg = /qdisc tbf [0-9]+: root refcnt [0-9]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b lat 25.0ms/
+      out_reg = /police 0x[0-9a-f]+ rate ([0-9]+)([KMG]?)bit burst ([0-9]+)([KMG]?)b mtu [0-9]+[KM]?b action drop overhead [0-9]+b/
+      kmg_map = {"K" => 1000, "M" => 1000 * 1000, "G" => 1000 * 1000 * 1000}
       ret = {}
-      in_info = `tc qdisc show dev w-#{handle}-0 | grep rate | sed -r 's/.*: root refcnt [0-9]+ rate (\\S*) burst (\\S*) lat 25.0ms.*/\\1 \\2/'`
-      out_info = `tc filter show dev w-#{handle}-0 parent ffff: | grep rate | sed -r 's/.*police 0x[0-9a-f]+ rate (\\S*) burst (\\S*) mtu [0-9]+[KM]?b action drop overhead [0-9]+b.*/\\1 \\2/'`
-      ret["in_rate".to_sym], ret["in_burst".to_sym] = (in_info.empty? ? ["Unlimited", "Unlimited"] : in_info.chomp.split(" ", 2))
-      ret["out_rate".to_sym], ret["out_burst".to_sym] = (out_info.empty? ? ["Unlimited", "Unlimited"] : out_info.chomp.split(" ", 2))
+      {"in" => {"info" =>  in_info, "reg" => in_reg},
+        "out" => {"info" => out_info, "reg" => out_reg}}.each do |k, v|
+        #set default rate value to 0xffffffff default burst value to 0xffffffff
+        ret["#{k}_rate".to_sym], ret["#{k}_burst".to_sym] = [0xffffffff, 0xffffffff]
+        v["info"].split("\n").each do |line|
+          if band_info = v["reg"].match(line)
+            #bits to bytes
+            ret["#{k}_rate".to_sym] = band_info[1].to_i * (kmg_map[band_info[2]] || 1) / 8
+            ret["#{k}_burst".to_sym] = band_info[3].to_i * (kmg_map[band_info[4]] || 1)
+            break
+          end
+        end
+      end
       ret
     end
 
@@ -244,24 +258,24 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     it "should set the bandwidth" do
-      response = limit_bandwidth(:rate => 100 * 1024, :burst => 1024)
+      response = limit_bandwidth(:rate => 100 * 1000, :burst => 1000)
       ret = get_bandwidth
       [ret[:in_rate], ret[:out_rate]].each do |v|
-        v.should == "819200bit"
+        v.should == 100 * 1000
       end
       [ret[:in_burst], ret[:out_burst]].each do |v|
-        v.should == "1Kb"
+        v.should == 1000
       end
     end
 
     it "should allow bandwidth to be changed" do
-      response = limit_bandwidth(:rate => 200 * 1024, :burst => 2048)
+      response = limit_bandwidth(:rate => 200 * 1000, :burst => 2000)
       ret = get_bandwidth
       [ret[:in_rate], ret[:out_rate]].each do |v|
-        v.should == "1638Kbit"
+        v.should == 200 * 1000
       end
       [ret[:in_burst], ret[:out_burst]].each do |v|
-        v.should == "2Kb"
+        v.should == 2000
       end
     end
   end
@@ -397,10 +411,10 @@ describe "linux", :platform => "linux", :needs_root => true do
     it "should include bandwidth stat" do
       response = client.info(:handle => handle)
       [response.bandwidth_stat.in_rate, response.bandwidth_stat.out_rate].each do |x|
-        x.should match(/Unlimited|[0-9]+[KMG]?bit/)
+        x.should >= 0
       end
       [response.bandwidth_stat.in_burst, response.bandwidth_stat.out_burst].each do |x|
-        x.should match(/Unlimited|[0-9]+[KMG]?b/)
+        x.should >= 0
       end
     end
   end

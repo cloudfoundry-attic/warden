@@ -22,10 +22,12 @@ class Session
     @sock = nil
   end
 
-  def respond(response)
-    data = response.wrap.encode.to_s
-    @sock.write data.length.to_s + "\r\n"
-    @sock.write data + "\r\n"
+  def respond(*responses)
+    responses.each do |response|
+      data = response.wrap.encode.to_s
+      @sock.write data.length.to_s + "\r\n"
+      @sock.write data + "\r\n"
+    end
   end
 
   def run!

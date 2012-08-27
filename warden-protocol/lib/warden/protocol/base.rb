@@ -73,6 +73,51 @@ module Warden
       end
     end
 
+    TypeConverter = {
+      :bool     => lambda do |arg|
+        return true if arg.downcase == "true"
+        return false if arg.downcase == "false"
+        raise ArgumentError, "Expected 'true' or 'false', but received: '#{arg}'."
+      end,
+
+      :int32    => lambda { |arg| Integer(arg) },
+      :uint32   => lambda { |arg| Integer(arg) },
+      :sint32   => lambda { |arg| Integer(arg) },
+      :int64    => lambda { |arg| Integer(arg) },
+      :uint64   => lambda { |arg| Integer(arg) },
+      :fixed32  => lambda { |arg| Float(arg) },
+      :sfixed32 => lambda { |arg| Float(arg) },
+      :float    => lambda { |arg| Float(arg) },
+      :fixed64  => lambda { |arg| Float(arg) },
+      :sfixed64 => lambda { |arg| Float(arg) },
+      :double   => lambda { |arg| Float(arg) },
+      :string   => lambda { |arg| String(arg) },
+    }
+
+    def self.protocol_type_to_str(protocol_type)
+      if protocol_type.class == Module
+        return "#{protocol_type.constants.join(", ")}"
+      elsif protocol_type.is_a?(Symbol)
+        return "#{protocol_type.to_s}"
+      end
+
+      return nil
+    end
+
+    def self.to_ruby_type(str, protocol_type)
+      converter = Warden::Protocol::TypeConverter[protocol_type]
+      return converter.call(str) if converter
+
+      # Enums are defined as Ruby Modules in Beefcake
+      error_msg = nil
+      if protocol_type.class == Module
+        return protocol_type.const_get(str) if protocol_type.const_defined?(str)
+        raise TypeError, "The constant: '#{str}' is not defined in the module: '#{protocol_type}'."
+      end
+
+      raise TypeError, "Non-existent protocol type passed: '#{protocol_type}'."
+    end
+
     class BaseMessage
       include Beefcake::Message
 
@@ -80,22 +125,24 @@ module Warden
         self.class.decode(encode)
       end
 
-      def type
-        Type.const_get(type_name)
-      end
+      class << self
+        def type
+          Type.const_get(type_name)
+        end
 
-      def type_camelized
-        type_name
-      end
+        def type_camelized
+          type_name
+        end
 
-      def type_underscored
-        type_name.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
-      end
+        def type_underscored
+          type_name.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+        end
 
-      def type_name
-        type_name = self.class.name.gsub(/(Request|Response)$/, "")
-        type_name = type_name.split("::").last
-        type_name
+        def type_name
+          type_name = name.gsub(/(Request|Response)$/, "")
+          type_name = type_name.split("::").last
+          type_name
+        end
       end
     end
 
@@ -108,7 +155,11 @@ module Warden
       end
 
       def wrap
-        WrappedRequest.new(:type => type, :payload => encode)
+        WrappedRequest.new(:type => self.class.type, :payload => encode)
+      end
+
+      def self.description
+        raise NotImplementedError
       end
     end
 
@@ -118,11 +169,11 @@ module Warden
       end
 
       def error?
-        type == Type::Error
+        self.class.type == Type::Error
       end
 
       def wrap
-        WrappedResponse.new(:type => type, :payload => encode)
+        WrappedResponse.new(:type => self.class.type, :payload => encode)
       end
     end
 

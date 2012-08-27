@@ -28,12 +28,7 @@ tc qdisc del dev ${network_host_iface} ingress 2> /dev/null || true
 #rate is the bandwidth
 #burst is the burst size
 #latency is the maxium time the packet wait to enqueue while no token left
-tc qdisc add dev ${network_host_iface} root \
-	tbf  \
-		rate ${RATE}bit \
-		burst ${BURST} \
-		latency 25ms
-
+tc qdisc add dev ${network_host_iface} root tbf rate ${RATE}bit burst ${BURST} latency 25ms 
 #Set outbound(w-<cid>-1 -> w-<cid>-0 -> eth0 -> outside)  rule
 tc qdisc add dev ${network_host_iface} ingress handle ffff:
 #use u32 filter with target(0.0.0.0) mask (0) to filter all the ingress packets

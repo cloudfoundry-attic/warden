@@ -6,6 +6,10 @@ module Warden
   module Protocol
     class InfoRequest < BaseRequest
       required :handle, :string, 1
+
+      def self.description
+        "Show metadata for a container."
+      end
     end
 
     class InfoResponse < BaseResponse
@@ -52,10 +56,10 @@ module Warden
       end
 
       class BandwidthStat < BaseMessage
-        optional :in_rate,  :string, 1
-        optional :in_burst, :string, 2
-        optional :out_rate,  :string, 3
-        optional :out_burst, :string, 4
+        optional :in_rate, :uint64, 1
+        optional :in_burst, :uint64, 2
+        optional :out_rate, :uint64, 3
+        optional :out_burst, :uint64, 4
       end
 
       optional :state, :string, 10
