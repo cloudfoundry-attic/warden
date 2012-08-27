@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
     if (-1 != select(nfds, &readable_fds, NULL, NULL, NULL)) {
       /* Pump stderr/stdout */
       for (ii = 0; ii < 2; ++ii) {
-        if (FD_ISSET(fds[ii], &readable_fds)) {
+        if (fds[ii] > 0 && FD_ISSET(fds[ii], &readable_fds)) {
           /* Stop watching for reads if a hup occurred */
           if (pump_run(&pumps[ii])) {
             close(fds[ii]);
@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
       }
 
       /* Handle status */
-      if (FD_ISSET(fds[2], &readable_fds)) {
+      if (fds[2] > 0 && FD_ISSET(fds[2], &readable_fds)) {
         if (status_reader_run(&status_reader, &hup)) {
           if (!hup) {
             if (WIFEXITED(status_reader.status)) {
