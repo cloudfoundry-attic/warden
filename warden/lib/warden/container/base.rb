@@ -71,16 +71,14 @@ module Warden
         attr_accessor :uid_pool
 
         # Called before the server starts.
-        def setup(config = {}, drained = false)
+        def setup(config, drained = false)
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
 
-          @container_rootfs_path   = config["server"]["container_rootfs_path"]
-          @container_rootfs_path ||= config["server"]["container_rootfs"]
+          @container_rootfs_path   = config.server["container_rootfs_path"]
           @container_rootfs_path ||= File.join(@root_path, "base", "rootfs")
 
-          @container_depot_path   = config["server"]["container_depot_path"]
-          @container_depot_path ||= config["server"]["container_depot"]
+          @container_depot_path   = config.server["container_depot_path"]
           @container_depot_path ||= File.join(@root_path, "instances")
 
           FileUtils.mkdir_p(@container_depot_path)

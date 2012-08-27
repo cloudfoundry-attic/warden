@@ -15,6 +15,12 @@ GIT
     eventmachine (0.12.11.cloudfoundry.3)
 
 GIT
+  remote: https://github.com/cloudfoundry/membrane.git
+  revision: b33b45c7b8a89af2b40aae1e1cb16e394877681f
+  specs:
+    membrane (0.0.3)
+
+GIT
   remote: https://github.com/cloudfoundry/steno.git
   revision: e71a658f05b7cbf54006c3cc29db752cdfb192df
   specs:
@@ -97,6 +103,7 @@ PLATFORMS
 DEPENDENCIES
   em-posix-spawn!
   eventmachine (= 0.12.11.cloudfoundry.3)!
+  membrane!
   rake
   rspec
   steno (~> 0.0.15)!

@@ -24,7 +24,7 @@ module Warden
 
         attr_reader :bind_mount_script_template
 
-        def setup(config = {}, drained = false)
+        def setup(config, drained = false)
           unless Process.uid == 0
             raise WardenError.new("linux containers require root privileges")
           end
