@@ -149,6 +149,18 @@ module Warden
       @container_grace_time
     end
 
+    def self.default_container_limits_conf
+      {
+        "nofile" => 8192, # max number of open files
+        "nproc" => 512,   # max number of processes
+        "as" => 4194304,  # address space limit (KB)
+      }
+    end
+
+    def self.container_limits_conf
+      @container_limits_conf
+    end
+
     def self.drainer
       @drainer
     end
@@ -159,6 +171,7 @@ module Warden
       @unix_domain_permissions = config.delete("unix_domain_permissions") { default_unix_domain_permissions }
       @container_klass = config.delete("container_klass") { default_container_klass }
       @container_grace_time = config.delete("container_grace_time") { default_container_grace_time }
+      @container_limits_conf = default_container_limits_conf.merge(config.delete("container_limits_conf") || {})
     end
 
     def self.setup_logger(config = nil)

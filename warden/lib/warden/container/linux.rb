@@ -80,6 +80,9 @@ module Warden
         write_bind_mount_commands(request)
         logger.debug2("Wrote bind mount commands")
 
+        write_etc_security_limits_conf
+        logger.debug2("Wrote /etc/security/limits.conf")
+
         sh File.join(container_path, "start.sh"), options
         logger.debug("Container started")
 
@@ -185,6 +188,16 @@ module Warden
             file.puts "mkdir -p #{dst_path}" % [dst_path]
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
+          end
+        end
+      end
+
+      def write_etc_security_limits_conf
+        limits_conf_path = File.join(container_path, "rootfs", "etc", "security", "limits.conf")
+        FileUtils.mkdir_p(File.dirname(limits_conf_path))
+        File.open(limits_conf_path, "w") do |file|
+          Server.container_limits_conf.each do |key, value|
+            file.puts(["*", "-", key, value].join(" "))
           end
         end
       end
