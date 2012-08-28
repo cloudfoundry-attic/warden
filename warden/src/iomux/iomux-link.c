@@ -184,6 +184,7 @@ int main(int argc, char *argv[]) {
   while (1) {
     FD_ZERO(&readable_fds);
 
+    nfds = 0;
     done = 1;
 
     for (ii = 0; ii < 3; ++ii) {
