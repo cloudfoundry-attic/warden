@@ -23,9 +23,12 @@ module Warden
 
             oom_notifier_path = Warden::Util.path("src/oom/oom")
             @child = DeferredChild.new(oom_notifier_path, container.cgroup_path(:memory))
+            @child_exited = false
 
             # Zero exit status means a process OOMed, non-zero means an error occurred
             @child.callback do
+              @child_exited = true
+
               if @child.success?
                 Fiber.new do
                   container.oomed
@@ -36,13 +39,18 @@ module Warden
             # Don't care about errback, nothing we can do
           end
 
-          def unregister
-            # Overwrite callback
+          def kill
+            return if @child_exited
+
             @child.callback do
-              # Nothing
+              @child_exited = true
             end
 
-            # TODO: kill child
+            logger.debug("Killing oom-notifier process")
+
+            # em-posix-spawn reaps the exit status for us, so no waitpid needed
+            # here.
+            @child.kill
           end
         end
 
@@ -66,8 +74,7 @@ module Warden
                 @oom_notifier = OomNotifier.new(self)
                 on(:after_stop) do
                   if @oom_notifier
-                    logger.debug("Unregistering OOM notifier for #{handle}")
-                    @oom_notifier.unregister
+                    @oom_notifier.kill
                     @oom_notifier = nil
                   end
                 end
