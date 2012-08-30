@@ -17,7 +17,7 @@ network_host_iface="w-${id}-0"
 network_container_ip=${network_container_ip:-10.0.0.2}
 network_container_iface="w-${id}-1"
 user_uid=${user_uid:-10000}
-rootfs_path=${rootfs_path:-../../base/rootfs}
+rootfs_path=$rootfs_path
 
 # Write configuration
 cat > config <<-EOS
