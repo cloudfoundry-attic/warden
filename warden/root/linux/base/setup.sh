@@ -78,8 +78,8 @@ target=$1
 debootstrap
 
 write "etc/apt/sources.list" <<-EOS
-deb $mirror lucid main universe
-deb $mirror lucid-updates main universe
+deb $mirror $suite main universe
+deb $mirror $suite-updates main universe
 EOS
 
 # Disable interactive dpkg
