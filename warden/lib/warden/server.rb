@@ -16,6 +16,7 @@ require "set"
 require "steno"
 require "steno/core_ext"
 require "warden/protocol"
+require "warden/protocol/buffer"
 
 module Warden
 
@@ -294,7 +295,7 @@ module Warden
         @blocked = false
         @closing = false
         @requests = []
-        @buf = ""
+        @buffer = Protocol::Buffer.new
 
         Server.drainer.register_connection(self)
       end
@@ -338,24 +339,11 @@ module Warden
         send_response Protocol::ErrorResponse.new(:message => err.message)
       end
 
-      def receive_data(data = nil)
-        @buf << data if data
-
-        crlf = @buf.index(CRLF)
-        if crlf
+      def receive_data(data)
+        @buffer << data
+        @buffer.each_request do |request|
           begin
-            length = Integer(@buf[0...crlf])
-            protocol_length = crlf + 2 + length + 2
-            if @buf.length >= protocol_length
-              payload = @buf[crlf + 2, length]
-
-              # Trim buffer
-              @buf = @buf[protocol_length..-1]
-
-              # Unwrap request
-              request = Protocol::WrappedRequest.decode(payload).request
-              receive_request(request)
-            end
+            receive_request(request)
           rescue => e
             close_connection_after_writing
             logger.warn("Disconnected client after error")
