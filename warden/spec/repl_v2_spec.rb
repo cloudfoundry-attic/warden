@@ -161,129 +161,157 @@ describe Warden::Repl do
     before :each do
       @client = mock("warden client")
       Warden::Client.should_receive(:new).once.with("/tmp/warden.sock")
-        .and_return(@client)
-      Warden::Protocol::Type.should_receive(:generate_klass_map)
-        .with("Request").and_return(test_klass_map)
+          .and_return(@client)
     end
 
-    it "should add command trace to output" do
-      request = response = SimpleTest.new
-      request.field = "field"
-
-      @client.should_receive(:connected?).once.and_return(true)
-      @client.should_receive(:call).once.with(request).and_return(response)
-
-      repl = described_class.new(:trace => true)
-
-      command_info = repl.process_line("simple_test --field field")
-      expected = "+ simple_test --field field\nfield : field\n"
-      command_info.keys.should == [:result]
-      command_info[:result].should =~ /^\+ simple_test --field field\n.*/
-    end
-
-    it "should serialize response from warden server" do
-      request = response = SimpleTest.new
-      request.field = "field"
-
-      @client.should_receive(:connected?).once.and_return(true)
-      @client.should_receive(:call).once.with(request).and_return(response)
-
-      repl = described_class.new
-
-      command_info = repl.process_line("simple_test --field field")
-      expected = "+ simple_test --field field\nfield : field\n"
-      command_info.should == {:result => "field : field\n"}
-    end
-
-    it "should convert run command to spawn and stream commands" do
-      run_request = Warden::Protocol::RunRequest.new
-      run_request.handle = "handle"
-      run_request.script = "script"
-
-      spawn_request = Warden::Protocol::SpawnRequest.new
-      spawn_request.handle = run_request.handle
-      spawn_request.script = run_request.script
-
-      spawn_response = Warden::Protocol::SpawnResponse.new
-      spawn_response.job_id = 10
-
-      stream_request = Warden::Protocol::StreamRequest.new
-      stream_request.handle = run_request.handle
-      stream_request.job_id = spawn_response.job_id
-
-      stream_data = Warden::Protocol::StreamResponse.new
-      stream_data.name = "stdout"
-      stream_data.data = "stdout"
-
-      stream_exit = Warden::Protocol::StreamResponse.new
-      stream_exit.exit_status = 1
-
-      @client.should_receive(:connected?).once.and_return(true)
-      @client.should_receive(:call).once.with(spawn_request)
-        .and_return(spawn_response)
-      @client.should_receive(:stream).once.with(stream_request)
-        .and_yield(stream_data).and_return(stream_exit)
-
-
-      repl = described_class.new
-
-      repl.should_receive(:deserialize).once.with(["run",
-                                                   "--handle", "handle",
-                                                   "--script", "script"])
-        .and_return(run_request)
-
-      STDOUT.should_receive(:write).once.with("stdout")
-
-      command_info = repl.process_line("run --handle handle --script script")
-    end
-
-    it "should generate prettified global help" do
-      repl = described_class.new
-
-      command_info = repl.process_line("--help")
-
-      width = NestedFieldsHelpTest.type_underscored.size + 2
-      expected = "\n"
-      test_desc_map.each_pair do |command, description|
-        expected << "\t%-#{width}s%s\n" % [command, description]
+    context "handle run command" do
+      before :each do
+        Warden::Protocol::Type.should_receive(:generate_klass_map)
+          .with("Request").and_return({1 => Warden::Protocol::RunRequest})
       end
 
-      expected << "\t%-#{width}s%s\n" % ["help", "Show help."]
-      expected << "\n"
-      expected << "Use --help with each command for more information."
-      expected << "\n"
+      it "should convert run command to spawn and stream commands" do
+        run_request = Warden::Protocol::RunRequest.new
+        run_request.handle = "handle"
+        run_request.script = "script"
 
-      command_info[:result].should == expected
+        spawn_request = Warden::Protocol::SpawnRequest.new
+        spawn_request.handle = run_request.handle
+        spawn_request.script = run_request.script
+
+        spawn_response = Warden::Protocol::SpawnResponse.new
+        spawn_response.job_id = 10
+
+        stream_request = Warden::Protocol::StreamRequest.new
+        stream_request.handle = run_request.handle
+        stream_request.job_id = spawn_response.job_id
+
+        stream_data = Warden::Protocol::StreamResponse.new
+        stream_data.name = "stdout"
+        stream_data.data = "stdout"
+
+        stream_exit = Warden::Protocol::StreamResponse.new
+        stream_exit.exit_status = 1
+
+        @client.should_receive(:connected?).once.and_return(true)
+        @client.should_receive(:call).once.with(spawn_request)
+          .and_return(spawn_response)
+        @client.should_receive(:stream).once.with(stream_request)
+          .and_yield(stream_data).and_return(stream_exit)
+
+        STDOUT.should_receive(:write).once.with("stdout")
+
+        repl = described_class.new
+        command_info = repl.process_line("run --handle handle --script script")
+      end
+
+      it "should generate right description for run command in global help" do
+        repl = described_class.new
+        command_info = repl.process_line("--help")
+
+        width = Warden::Protocol::RunRequest.type_underscored.size + 2
+        expected = "\n"
+        expected << "\trun  #{described_class.run_command_description}\n"
+        expected << "\thelp Show help.\n"
+        expected << "\n"
+        expected << "Use --help with each command for more information."
+        expected << "\n"
+
+        command_info[:result].should == expected
+      end
+
+      it "should generate right description for run command help" do
+        repl = described_class.new
+        command_info = repl.process_line("run --help")
+        command_info[:result]
+          .index("description: #{described_class.run_command_description}").
+          should be > 0
+      end
     end
 
-    it "should generate prettified command help for simple command" do
-      repl = described_class.new
+    context "handle other commands" do
+      before :each do
+        Warden::Protocol::Type.should_receive(:generate_klass_map)
+          .with("Request").and_return(test_klass_map)
+      end
 
-      command_info = repl.process_line("simple_test --help")
+      it "should add command trace to output" do
+        request = response = SimpleTest.new
+        request.field = "field"
 
-      expected = "command: #{SimpleTest.type_underscored}\n"
-      expected << "description: #{SimpleTest.description}\n"
-      expected << "usage: #{SimpleTest.type_underscored} [options]\n\n"
-      expected << "[options] can be one of the following:\n\n"
-      expected << "\t--field <field> (string)  # required\n"
+        @client.should_receive(:connected?).once.and_return(true)
+        @client.should_receive(:call).once.with(request).and_return(response)
 
-      command_info[:result].should == expected
-    end
+        repl = described_class.new(:trace => true)
 
-    it "should generate prettified command help for complex command" do
-      repl = described_class.new
+        command_info = repl.process_line("simple_test --field field")
+        expected = "+ simple_test --field field\nfield : field\n"
+        command_info.keys.should == [:result]
+        command_info[:result].should =~ /^\+ simple_test --field field\n.*/
+      end
 
-      command_info = repl.process_line("mixed_test --help")
+      it "should serialize response from warden server" do
+        request = response = SimpleTest.new
+        request.field = "field"
 
-      expected = "command: #{MixedTest.type_underscored}\n"
-      expected << "description: #{MixedTest.description}\n"
-      expected << "usage: #{MixedTest.type_underscored} [options]\n\n"
-      expected << "[options] can be one of the following:\n\n"
-      expected << "\t--bool_field  # required\n"
-      expected << "\t--complex_field[index]  # array\n"
-      expected << "\t\t.field <field> (string)  # required\n"
+        @client.should_receive(:connected?).once.and_return(true)
+        @client.should_receive(:call).once.with(request).and_return(response)
 
-      command_info[:result].should == expected
+        repl = described_class.new
+
+        command_info = repl.process_line("simple_test --field field")
+        expected = "+ simple_test --field field\nfield : field\n"
+        command_info.should == {:result => "field : field\n"}
+      end
+
+      it "should generate prettified global help" do
+        repl = described_class.new
+
+        command_info = repl.process_line("--help")
+
+        width = NestedFieldsHelpTest.type_underscored.size + 2
+        expected = "\n"
+        test_desc_map.each_pair do |command, description|
+          expected << "\t%-#{width}s%s\n" % [command, description]
+        end
+
+        expected << "\t%-#{width}s%s\n" % ["help", "Show help."]
+        expected << "\n"
+        expected << "Use --help with each command for more information."
+        expected << "\n"
+
+        command_info[:result].should == expected
+      end
+
+      it "should generate prettified command help for simple command" do
+        repl = described_class.new
+
+        command_info = repl.process_line("simple_test --help")
+
+        expected = "command: #{SimpleTest.type_underscored}\n"
+        expected << "description: #{SimpleTest.description}\n"
+        expected << "usage: #{SimpleTest.type_underscored} [options]\n\n"
+        expected << "[options] can be one of the following:\n\n"
+        expected << "\t--field <field> (string)  # required\n"
+
+        command_info[:result].should == expected
+      end
+
+      it "should generate prettified command help for complex command" do
+        repl = described_class.new
+
+        command_info = repl.process_line("mixed_test --help")
+
+        expected = "command: #{MixedTest.type_underscored}\n"
+        expected << "description: #{MixedTest.description}\n"
+        expected << "usage: #{MixedTest.type_underscored} [options]\n\n"
+        expected << "[options] can be one of the following:\n\n"
+        expected << "\t--bool_field  # required\n"
+        expected << "\t--complex_field[index]  # array\n"
+        expected << "\t\t.field <field> (string)  # required\n"
+
+        command_info[:result].should == expected
+      end
     end
   end
 end
