@@ -10,7 +10,7 @@ module Warden
       optional :privileged, :bool, 3, :default => false
 
       def self.description
-        "Short hand for stream(link(cmd)) i.e. spawns a command, links to the result."
+        "Short hand for spawn(link(cmd)) i.e. spawns a command, links to the result."
       end
     end
 
