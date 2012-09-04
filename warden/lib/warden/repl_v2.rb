@@ -72,6 +72,11 @@ module Warden
       end
 
       command_descriptions.each_pair do |command, description|
+        # TODO: Need to eliminate special case for run command.
+        if command == "run"
+          description = self.class.run_command_description
+        end
+
         text << "\t%-#{command_list_width}s%s\n" % [command, description]
       end
 
@@ -105,6 +110,7 @@ module Warden
             STDERR.write(response.data) if stream_name == "stderr"
           end
 
+          # TODO: Need to eliminate special case for run command.
           command = to_stream_command(command) if type == :run
           response = @client.stream(command, &process_stream)
           command_info[:exit_status] = response.exit_status if type == :run
@@ -133,8 +139,17 @@ module Warden
     def describe_command(command_info)
       cmd_name = command_info.keys[0]
       cmd_help = command_info[cmd_name]
+
       usage = "command: #{cmd_name}\n"
-      usage << "description: #{cmd_help[:description]}\n"
+      usage << "description: "
+      # TODO: Need to eliminate special case for run command.
+      if cmd_name == :run
+        usage << self.class.run_command_description
+      else
+        usage << "#{cmd_help[:description]}"
+      end
+      usage << "\n"
+
       options = describe_options(cmd_help, 1)
 
       if options && !options.empty?
@@ -183,6 +198,13 @@ module Warden
         history = JSON.parse(file.read)
         history.map {|line| Readline::HISTORY.push line}
       end
+    end
+
+    def self.run_command_description
+      description = "Short hand for spawn(stream(cmd))"
+      description << " i.e. spawns a command, streams the result."
+
+      description
     end
   end
 end
