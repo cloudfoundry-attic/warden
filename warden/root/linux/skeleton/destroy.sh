@@ -35,7 +35,7 @@ then
   # Remove cgroups
   for system_path in /sys/fs/cgroup/*
   do
-    path=/sys/fs/cgroup/cpu/instance-$id
+    path=$system_path/instance-$id
 
     if [ -d $path ]
     then

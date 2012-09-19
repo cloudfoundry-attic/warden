@@ -13,13 +13,13 @@ server:
   # The grace time can be disabled by setting it to nil:
   #   container_grace_time: ~
   #
-  container_grace_time: 300
+  container_grace_time: ~
 
   unix_domain_permissions: 0777
 
   # Specifies the path to the base chroot used as the read-only root
   # filesystem
-  container_rootfs_path: /tmp/warden/rootfs
+  container_rootfs_path: /root/rootfs
 
   # Specifies the path to the parent directory under which all containers
   # will live.
@@ -47,7 +47,7 @@ server:
     # - rtprio - max realtime priority
     nofile: 8192
     nproc: 512
-    as: 4194304
+    as: -1
 
 logging:
   level: debug2
