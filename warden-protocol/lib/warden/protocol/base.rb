@@ -159,7 +159,7 @@ module Warden
       end
 
       def self.description
-        raise NotImplementedError
+        type_underscored.gsub("_", " ").capitalize
       end
     end
 
