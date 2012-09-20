@@ -29,7 +29,7 @@ module Warden
       @client.connect unless @client.connected?
 
       comp = proc { |s|
-        @commands.keys.grep( /^#{Regexp.escape(s)}/ )
+        @commands.grep( /^#{Regexp.escape(s)}/ )
       }
 
       Readline.completion_append_character = " "
