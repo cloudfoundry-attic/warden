@@ -116,101 +116,122 @@ void assert_directory(const char *path) {
 }
 
 int child_accept(wshd_t *w) {
-  int fd;
+  int fd = -1;
   int i, j;
   int rv;
   int p[3][2];
   int p_[3];
   int data = 0;
 
-  for (;;) {
-    fd = -1;
+  for (i = 0; i < 3; i++) {
+    p[i][0] = -1;
+    p[i][1] = -1;
+    p_[i] = -1;
+  }
 
-    for (i = 0; i < 3; i++) {
-      p[i][0] = -1;
-      p[i][1] = -1;
-      p_[i] = -1;
+  fd = accept(w->fd, NULL, NULL);
+  if (fd == -1) {
+    perror("accept");
+    abort();
+  }
+
+  for (i = 0; i < 3; i++) {
+    rv = pipe(p[i]);
+    if (rv == -1) {
+      perror("pipe");
+      abort();
     }
+  }
 
-    fd = accept(w->fd, NULL, NULL);
-    if (fd == -1) {
-      perror("accept");
+  p_[0] = p[0][1];
+  p_[1] = p[1][0];
+  p_[2] = p[2][0];
+
+  rv = un_send_fds(fd, (char *)&data, sizeof(data), p_, 3);
+  if (rv == -1) {
+    goto err;
+  }
+
+  /* Run /bin/sh with these fds */
+  rv = fork();
+  if (rv == -1) {
+    perror("fork");
+    exit(1);
+  }
+
+  if (rv == 0) {
+    /* Close remote fds */
+    close(p[0][1]);
+    close(p[1][0]);
+    close(p[2][0]);
+
+    /* Dup local fds */
+    rv = dup2(p[0][0], STDIN_FILENO);
+    if (rv == -1) {
+      perror("dup2");
       abort();
     }
 
-    for (i = 0; i < 3; i++) {
-      rv = pipe(p[i]);
-      if (rv == -1) {
-        perror("pipe");
-        abort();
-      }
-    }
-
-    p_[0] = p[0][1];
-    p_[1] = p[1][0];
-    p_[2] = p[2][0];
-
-    rv = un_send_fds(fd, (char *)&data, sizeof(data), p_, 3);
+    rv = dup2(p[1][1], STDOUT_FILENO);
     if (rv == -1) {
-      goto err;
-    }
-
-    /* Run /bin/sh with these fds */
-    rv = fork();
-    if (rv == -1) {
-      perror("fork");
-      exit(1);
-    }
-
-    if (rv == 0) {
-      /* Close remote fds */
-      close(p[0][1]);
-      p[0][1] = -1;
-
-      close(p[1][0]);
-      p[1][0] = -1;
-
-      close(p[2][0]);
-      p[2][0] = -1;
-
-      /* Dup local fds */
-      rv = dup2(p[0][0], STDIN_FILENO);
-      if (rv == -1) {
-        perror("dup2");
-        abort();
-      }
-
-      rv = dup2(p[1][1], STDOUT_FILENO);
-      if (rv == -1) {
-        perror("dup2");
-        abort();
-      }
-
-      rv = dup2(p[2][1], STDERR_FILENO);
-      if (rv == -1) {
-        perror("dup2");
-        abort();
-      }
-
-      char * const argv[] = { "/bin/sh", NULL };
-      execvp(argv[0], argv);
-      perror("execvp");
+      perror("dup2");
       abort();
     }
+
+    rv = dup2(p[2][1], STDERR_FILENO);
+    if (rv == -1) {
+      perror("dup2");
+      abort();
+    }
+
+    /* Close dup sources */
+    close(p[0][0]);
+    close(p[1][1]);
+    close(p[2][1]);
+
+    char * const argv[] = { "/bin/sh", NULL };
+    execvp(argv[0], argv);
+    perror("execvp");
+    abort();
+  }
 
 err:
-    for (i = 0; i < 3; i++) {
-      for (j = 0; j < 2; j++) {
-        if (p[i][j] > -1) {
-          close(p[i][j]);
-          p[i][j] = -1;
-        }
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 2; j++) {
+      if (p[i][j] > -1) {
+        close(p[i][j]);
+        p[i][j] = -1;
       }
     }
+  }
 
-    if (fd > -1) {
-      close(fd);
-      fd = -1;
+  if (fd > -1) {
+    close(fd);
+    fd = -1;
+  }
+
+  return 0;
+}
+
+int child_loop(wshd_t *w) {
+  fd_set fds;
+  int rv;
+
+  for (;;) {
+    FD_ZERO(&fds);
+    FD_SET(w->fd, &fds);
+
+    do {
+      rv = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+    } while (rv == -1 && errno == EINTR);
+
+    if (rv == -1) {
+      perror("select");
+      abort();
+    }
+
+    if (FD_ISSET(w->fd, &fds)) {
+      child_accept(w);
     }
   }
 
@@ -274,7 +295,7 @@ int child_run(void *data) {
   rv = barrier_signal(&w->barrier_child);
   assert(rv == 0);
 
-  return child_accept(w);
+  return child_loop(w);
 }
 
 pid_t child_start(wshd_t *w) {
