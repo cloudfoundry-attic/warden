@@ -1,12 +1,13 @@
-#include <pty.h>
-#include <sys/mount.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <pty.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "console.h"
 #include "util.h"
 
@@ -19,17 +20,8 @@ int console_open(console_t *c) {
     return -1;
   }
 
-  /* Don't leak master fd */
-  rv = fcntl_mix_cloexec(c->master);
-  if (rv == -1) {
-    goto err;
-  }
-
-  /* Don't leak slave fd */
-  rv = fcntl_mix_cloexec(c->slave);
-  if (rv == -1) {
-    goto err;
-  }
+  fcntl_mix_cloexec(c->master);
+  fcntl_mix_cloexec(c->slave);
 
   return 0;
 
