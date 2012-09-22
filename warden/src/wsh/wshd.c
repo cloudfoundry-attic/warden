@@ -141,6 +141,9 @@ int child_accept(wshd_t *w) {
       perror("pipe");
       abort();
     }
+
+    fcntl_mix_cloexec(p[i][0]);
+    fcntl_mix_cloexec(p[i][1]);
   }
 
   p_[0] = p[0][1];
@@ -160,11 +163,6 @@ int child_accept(wshd_t *w) {
   }
 
   if (rv == 0) {
-    /* Close remote fds */
-    close(p[0][1]);
-    close(p[1][0]);
-    close(p[2][0]);
-
     /* Dup local fds */
     rv = dup2(p[0][0], STDIN_FILENO);
     if (rv == -1) {
@@ -183,11 +181,6 @@ int child_accept(wshd_t *w) {
       perror("dup2");
       abort();
     }
-
-    /* Close dup sources */
-    close(p[0][0]);
-    close(p[1][1]);
-    close(p[2][1]);
 
     char * const argv[] = { "/bin/sh", NULL };
     execvp(argv[0], argv);
