@@ -27,10 +27,10 @@ do
   echo $PID > $instance_path/tasks
 done
 
-echo ${PPID} >> ppid
+echo $PPID >> ppid
 
-ip link add name ${network_host_iface} type veth peer name ${network_container_iface}
-ip link set ${network_host_iface} netns 1
-ip link set ${network_container_iface} netns ${PID}
+ip link add name $network_host_iface type veth peer name $network_container_iface
+ip link set $network_host_iface netns 1
+ip link set $network_container_iface netns $PID
 
 exit 0
