@@ -72,13 +72,17 @@ int un_connect(const char *path) {
 int un_send_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   struct msghdr mh;
   struct cmsghdr *cmh = NULL;
-  char buf[CMSG_SPACE(sizeof(int) * fdslen)];
+  char *buf;
+  size_t buflen = CMSG_SPACE(sizeof(int) * fdslen);
   struct iovec iov[1];
+
+  buf = malloc(buflen);
+  assert(buf != NULL);
 
   memset(&mh, 0, sizeof(mh));
 
   mh.msg_control = buf;
-  mh.msg_controllen = sizeof(buf);
+  mh.msg_controllen = buflen;
   mh.msg_iov = iov;
   mh.msg_iovlen = 1;
   iov[0].iov_base = data;
@@ -97,19 +101,25 @@ int un_send_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
     rv = sendmsg(fd, &mh, 0);
   } while (rv == -1 && errno == EINTR);
 
+  free(buf);
+
   return rv == -1 ? -1 : 0;
 }
 
 int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   struct msghdr mh;
   struct cmsghdr *cmh = NULL;
-  char buf[CMSG_SPACE(sizeof(int) * fdslen)];
+  char *buf;
+  size_t buflen = CMSG_SPACE(sizeof(int) * fdslen);
   struct iovec iov[1];
+
+  buf = malloc(buflen);
+  assert(buf != NULL);
 
   memset(&mh, 0, sizeof(mh));
 
   mh.msg_control = buf;
-  mh.msg_controllen = sizeof(buf);
+  mh.msg_controllen = buflen;
   mh.msg_iov = iov;
   mh.msg_iovlen = 1;
   iov[0].iov_base = data;
@@ -122,7 +132,7 @@ int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   } while (rv == -1 && (errno == EINTR || errno == EAGAIN));
 
   if (rv == -1) {
-    return rv;
+    goto done;
   }
 
   cmh = CMSG_FIRSTHDR(&mh);
@@ -137,6 +147,9 @@ int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
     /* needs more protection... */
     fds[i] = fds_[i];
   }
+
+done:
+  free(buf);
 
   return rv;
 }
