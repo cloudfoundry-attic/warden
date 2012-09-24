@@ -33,26 +33,55 @@ void pump_pair_close(pump_pair_t *pp) {
   pp->wfd = -1;
 }
 
-int pump_add(pump_t *p, pump_pair_t *pp) {
-  if (pp->rfd < 0 || pp->wfd < 0) {
+int pump_add_fd(pump_t *p, int fd, int mode) {
+  if (fd < 0) {
     return 0;
   }
 
-  if (pp->rfd > p->nfd) {
-    p->nfd = pp->rfd;
+  if (fd > p->nfd) {
+    p->nfd = fd;
   }
 
-  if (pp->wfd > p->nfd) {
-    p->nfd = pp->wfd;
+  if (mode & PUMP_READ) {
+    FD_SET(fd, &p->rfds);
   }
 
-  FD_SET(pp->rfd, &p->rfds);
-  FD_SET(pp->wfd, &p->wfds);
+  if (mode & PUMP_WRITE) {
+    FD_SET(fd, &p->wfds);
+  }
 
-  FD_SET(pp->rfd, &p->efds);
-  FD_SET(pp->wfd, &p->efds);
+  if (mode & PUMP_EXCEPT) {
+    FD_SET(fd, &p->efds);
+  }
 
   return 1;
+}
+
+int pump_add_pair(pump_t *p, pump_pair_t *pp) {
+  int j = 0;
+
+  j += pump_add_fd(p, pp->rfd, PUMP_READ | PUMP_EXCEPT);
+  j += pump_add_fd(p, pp->wfd, PUMP_WRITE | PUMP_EXCEPT);
+
+  return j;
+}
+
+int pump_ready(pump_t *p, int fd, int mode) {
+  int rv = 0;
+
+  if (mode & PUMP_READ) {
+    rv |= FD_ISSET(fd, &p->rfds);
+  }
+
+  if (mode & PUMP_WRITE) {
+    rv |= FD_ISSET(fd, &p->wfds);
+  }
+
+  if (mode & PUMP_EXCEPT) {
+    rv |= FD_ISSET(fd, &p->efds);
+  }
+
+  return rv;
 }
 
 int pump_select(pump_t *p) {
