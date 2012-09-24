@@ -10,6 +10,4 @@ cd $(dirname $0)/../
 source ./common.sh
 source ./config
 
-rootfs_path=${rootfs_path:-../../base/rootfs}
-
-setup_fs ${rootfs_path}
+setup_fs $rootfs_path
