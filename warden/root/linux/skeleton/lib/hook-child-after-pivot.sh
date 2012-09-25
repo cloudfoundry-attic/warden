@@ -12,7 +12,7 @@ source ./config
 
 mkdir -p /dev/pts
 mount -t devpts -o newinstance,ptmxmode=0666 devpts /dev/pts
-ln -s pts/ptmx /dev/ptmx
+ln -sf pts/ptmx /dev/ptmx
 
 hostname $id
 
