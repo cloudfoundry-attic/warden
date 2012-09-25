@@ -27,7 +27,7 @@ do
   echo $PID > $instance_path/tasks
 done
 
-echo $PPID >> ppid
+echo $PID > ./run/wshd.pid
 
 ip link add name $network_host_iface type veth peer name $network_container_iface
 ip link set $network_host_iface netns 1
