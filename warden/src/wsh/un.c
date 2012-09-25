@@ -139,12 +139,12 @@ int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   assert(cmh != NULL);
   assert(cmh->cmsg_level == SOL_SOCKET);
   assert(cmh->cmsg_type == SCM_RIGHTS);
+  assert(cmh->cmsg_len == CMSG_LEN(sizeof(int) * fdslen));
 
   int *fds_ = (int *)CMSG_DATA(cmh);
   int i;
 
   for (i = 0; i < fdslen; i++) {
-    /* needs more protection... */
     fds[i] = fds_[i];
   }
 
