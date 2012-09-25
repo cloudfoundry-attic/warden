@@ -15,3 +15,6 @@ mount -t devpts -o newinstance,ptmxmode=0666 devpts /dev/pts
 ln -s pts/ptmx /dev/ptmx
 
 hostname $id
+
+ifconfig lo 127.0.0.1
+ifconfig $network_container_iface $network_container_ip netmask $network_netmask
