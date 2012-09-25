@@ -3,13 +3,16 @@
 #include <assert.h>
 #include <errno.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+#include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "barrier.h"
@@ -38,6 +41,10 @@ struct wshd_s {
   barrier_t barrier_parent;
   barrier_t barrier_child;
   pid_t pid;
+
+  /* Map pids to exit status fds */
+  int *pid_to_fd;
+  size_t pid_to_fd_len;
 };
 
 int wshd__usage(wshd_t *w) {
@@ -115,15 +122,66 @@ void assert_directory(const char *path) {
   }
 }
 
+void child_pid_to_fd_add(wshd_t *w, pid_t pid, int fd) {
+  int len = w->pid_to_fd_len;
+  int diff = 2 * sizeof(int);
+
+  /* Store a copy */
+  fd = dup(fd);
+  if (fd == -1) {
+    perror("dup");
+    abort();
+  }
+
+  w->pid_to_fd = realloc(w->pid_to_fd, len + diff);
+  assert(w->pid_to_fd != NULL);
+
+  w->pid_to_fd[len+0] = pid;
+  w->pid_to_fd[len+1] = fd;
+  w->pid_to_fd_len = len + diff;
+}
+
+int child_pid_to_fd_remove(wshd_t *w, pid_t pid) {
+  int len = w->pid_to_fd_len;
+  int diff = 2 * sizeof(int);
+  int *cur;
+  int offset;
+  int fd = -1;
+
+  for (cur = w->pid_to_fd; cur < (w->pid_to_fd + len); cur += diff) {
+    if (cur[0] == pid) {
+      fd = cur[1];
+      offset = cur - w->pid_to_fd;
+
+      if ((offset + diff) < len) {
+        memmove(cur, cur + diff, len - offset - diff);
+      }
+
+      w->pid_to_fd = realloc(w->pid_to_fd, len - diff);
+      w->pid_to_fd_len = len - diff;
+
+      if (w->pid_to_fd_len) {
+        assert(w->pid_to_fd != NULL);
+      } else {
+        assert(w->pid_to_fd == NULL);
+      }
+
+      break;
+    }
+  }
+
+  return fd;
+}
+
 int child_accept(wshd_t *w) {
   int fd = -1;
   int i, j;
   int rv;
-  int p[3][2];
-  int p_[3];
+  int p[4][2];
+  int p_[4];
   int data = 0;
 
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 4; i++) {
     p[i][0] = -1;
     p[i][1] = -1;
     p_[i] = -1;
@@ -135,7 +193,7 @@ int child_accept(wshd_t *w) {
     abort();
   }
 
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 4; i++) {
     rv = pipe(p[i]);
     if (rv == -1) {
       perror("pipe");
@@ -149,8 +207,9 @@ int child_accept(wshd_t *w) {
   p_[0] = p[0][1];
   p_[1] = p[1][0];
   p_[2] = p[2][0];
+  p_[3] = p[3][0];
 
-  rv = un_send_fds(fd, (char *)&data, sizeof(data), p_, 3);
+  rv = un_send_fds(fd, (char *)&data, sizeof(data), p_, 4);
   if (rv == -1) {
     goto err;
   }
@@ -188,8 +247,10 @@ int child_accept(wshd_t *w) {
     abort();
   }
 
+  child_pid_to_fd_add(w, rv, p[3][1]);
+
 err:
-  for (i = 0; i < 3; i++) {
+  for (i = 0; i < 4; i++) {
     for (j = 0; j < 2; j++) {
       if (p[i][j] > -1) {
         close(p[i][j]);
@@ -206,13 +267,64 @@ err:
   return 0;
 }
 
+void child_handle_sigchld(wshd_t *w, struct signalfd_siginfo fdsi) {
+  pid_t pid;
+  int status, exitstatus;
+  int fd;
+
+  assert(fdsi.ssi_signo == SIGCHLD);
+
+  /* Since we caught SIGCHLD, this can only succeed */
+  pid = waitpid(fdsi.ssi_pid, &status, 0);
+  assert(pid == fdsi.ssi_pid);
+
+  /* Processes can be reparented, so a pid may not map to an fd */
+  fd = child_pid_to_fd_remove(w, pid);
+  if (fd == -1) {
+    return;
+  }
+
+  /* Write exit status to fd (don't care about success) */
+  exitstatus = WEXITSTATUS(status);
+  write(fd, &exitstatus, sizeof(exitstatus));
+  close(fd);
+}
+
+int child_signalfd(void) {
+  sigset_t mask;
+  int rv;
+  int fd;
+
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGCHLD);
+
+  rv = sigprocmask(SIG_BLOCK, &mask, NULL);
+  if (rv == -1) {
+    perror("sigprocmask");
+    abort();
+  }
+
+  fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
+  if (fd == -1) {
+    perror("signalfd");
+    abort();
+  }
+
+  return fd;
+}
+
 int child_loop(wshd_t *w) {
-  fd_set fds;
+  int sfd;
   int rv;
 
+  sfd = child_signalfd();
+
   for (;;) {
+    fd_set fds;
+
     FD_ZERO(&fds);
     FD_SET(w->fd, &fds);
+    FD_SET(sfd, &fds);
 
     do {
       rv = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
@@ -225,6 +337,15 @@ int child_loop(wshd_t *w) {
 
     if (FD_ISSET(w->fd, &fds)) {
       child_accept(w);
+    }
+
+    if (FD_ISSET(sfd, &fds)) {
+      struct signalfd_siginfo fdsi;
+
+      rv = read(sfd, &fdsi, sizeof(fdsi));
+      assert(rv == sizeof(fdsi));
+
+      child_handle_sigchld(w, fdsi);
     }
   }
 
