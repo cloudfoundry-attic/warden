@@ -1,6 +1,6 @@
 #!/bin/bash
 
-target="union"
+[ -f etc/config ] && source etc/config
 
 function get_distrib_codename() {
   if [ -r /etc/lsb-release ]
@@ -18,16 +18,16 @@ function get_distrib_codename() {
 }
 
 function setup_fs() {
-  mkdir -p rootfs $target
+  mkdir -p tmp/rootfs mnt
 
   distrib_codename=$(get_distrib_codename)
 
   case "$distrib_codename" in
   lucid|natty|oneiric)
-    mount -n -t aufs -o br:rootfs=rw:$1=ro+wh none $target
+    mount -n -t aufs -o br:tmp/rootfs=rw:$rootfs_path=ro+wh none mnt
     ;;
   precise)
-    mount -n -t overlayfs -o rw,upperdir=rootfs,lowerdir=$1 none $target
+    mount -n -t overlayfs -o rw,upperdir=tmp/rootfs,lowerdir=$rootfs_path none mnt
     ;;
   *)
     echo "Unsupported: $distrib_codename"
@@ -37,5 +37,5 @@ function setup_fs() {
 }
 
 function teardown_fs() {
-  umount $target
+  umount mnt
 }

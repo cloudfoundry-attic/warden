@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname "${0}")
 
-source ./config
+source ./etc/config
 
 ./net.sh teardown
 

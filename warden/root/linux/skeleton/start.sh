@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname $0)
 
-source ./config
+source ./etc/config
 
 if [ -f ./run/wshd.pid ]
 then
@@ -17,4 +17,4 @@ fi
 
 ./net.sh setup
 
-./bin/wshd --run ./run --lib ./lib --root ./union
+./bin/wshd --run ./run --lib ./lib --root ./mnt

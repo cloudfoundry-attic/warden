@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname "${0}")
 
-source ./config
+source ./etc/config
 
 filter_dispatch_chain="warden-dispatch"
 filter_default_chain="warden-default"
