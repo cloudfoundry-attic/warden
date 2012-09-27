@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname $0)
 
-source ./common.sh
+source ./lib/common.sh
 
 # Defaults for debugging the setup script
 id=${id:-test}

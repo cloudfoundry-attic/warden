@@ -7,7 +7,6 @@ shopt -s nullglob
 
 cd $(dirname $0)
 
-source ./common.sh
 source ./config
 
 if [ -f ./run/wshd.pid ]

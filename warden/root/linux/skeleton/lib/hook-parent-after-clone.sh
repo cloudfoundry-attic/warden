@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname $0)/../
 
-source ./common.sh
+source ./lib/common.sh
 source ./config
 
 # Add new group for every subsystem
