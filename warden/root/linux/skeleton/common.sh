@@ -2,17 +2,6 @@
 
 target="union"
 
-function write() {
-  [ -z "${1}" ] && return 1
-
-  mkdir -p ${target}/$(dirname ${1})
-  cat > ${target}/${1}
-}
-
-function chroot() {
-  $(which chroot) ${target} env -i /bin/bash
-}
-
 # When the override file /etc/lsb-release exists, try getting codename there.
 # Fall back to executing lsb_release.
 function get_codename() {
