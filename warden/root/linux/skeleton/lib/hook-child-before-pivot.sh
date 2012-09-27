@@ -8,6 +8,5 @@ shopt -s nullglob
 cd $(dirname $0)/../
 
 source ./lib/common.sh
-source ./config
 
 # Placeholder
