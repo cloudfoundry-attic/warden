@@ -10,10 +10,21 @@ require "pp"
 require "optparse"
 
 module Warden
+  # Runs either interactively (or) non-interactively. Returns the output
+  # and exit status of a command and raises errors (if any) in non-interactive
+  # execution. Autocompletes commands, writes their output to standard out and
+  # writes the errors to standard error in interactive repl execution.
   class Repl
 
     include Warden::CommandsManager
 
+    # Parameters:
+    # - opts [Hash]
+    #      Set :trace to true to log every command executed with a "+" prefix.
+    #      Set :socket_path to a custom file path to connect to the Warden
+    #         server.
+    #      Set :history_path to a custom file path to save history of commands
+    #         being executed.
     def initialize(opts = {})
       @trace = opts[:trace] == true
       @socket_path = opts[:socket_path] || "/tmp/warden.sock"
@@ -23,6 +34,11 @@ module Warden
       @commands = command_descriptions.keys # for Readline's keyword completion
     end
 
+    # Starts an interactive client that uses the 'warden> ' prompt to accept
+    # commands interactively. Autocompletes commands on the prompt when the tab
+    # key is pressed. Writes the output of the command to standard out and
+    # errors to standard error. Also saves and restores the command history
+    # from a specified file.
     def start
       restore_history
 
@@ -47,6 +63,20 @@ module Warden
       end
     end
 
+    # Executes the Warden command passed and returns the result and exit status.
+    #
+    # Parameters:
+    # - line [String]:
+    #      Command to be executed.
+    #
+    # Returns:
+    #    Hash with the following keys and values:
+    #       :result => Output of the command. [String]
+    #       :exit_status => Exit status of the command [Integer]
+    #
+    # Raises:
+    # - Warden::CommandsManager::CommandError:
+    #      When command and/or its arguments are wrong.
     def process_line(line)
       line ||= ""
       line = line.strip
@@ -55,6 +85,15 @@ module Warden
       process_command(Shellwords.shellsplit(line))
     end
 
+    # Returns a prettified description [String] of all commands defined in the
+    # Warden protocol gem.
+    #
+    # Parameters:
+    # - command_list_width [Integer]:
+    #       Non-negative integer that can be used format the width to be
+    #       printed between a command name and its description. The default
+    #       value of zero formats the width to be two whitespaces more than the
+    #       longest command name defined among all commands.
     def describe_commands(command_list_width = 0)
       command_list_width ||= 0
       if !(command_list_width.is_a?(Integer) && command_list_width >= 0)
