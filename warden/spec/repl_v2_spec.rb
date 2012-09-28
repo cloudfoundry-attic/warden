@@ -80,14 +80,20 @@ describe Warden::Repl do
         @repl.start
       end
 
-      it "should write command error messages to stderr" do
+      it "should write error messages to stderr" do
         ce = Warden::CommandsManager::CommandError.new("command error")
+        ce.set_backtrace(["backtrace"])
         @repl.should_receive(:process_line).once.with(@command)
           .and_raise(ce)
 
-        STDERR.should_receive(:write).with("#{ce.message}\n").once
+        expected = "#{ce}\n"
+        ce.backtrace.each { |err| expected << "#{err}\n" }
+
+        received = ""
+        STDERR.stub!(:write) { |str| received << str }
 
         @repl.start
+        expected.should == received
       end
     end
 
