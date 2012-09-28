@@ -145,6 +145,18 @@ module Warden
     #      Optional field delimiter that separates fields (flag elements)
     #      defined in each argument in the above array.
     #
+    # Returns:
+    # - nil:
+    #      Returned when the command_args represent a global help command, so
+    #      there is nothing to be deserialized and there are no errors.
+    # - Hash:
+    #      Returned when the command_args contained the 'help' flag. The hash
+    #      is a description of the command which can be prettified by the
+    #      caller to display help for the command.
+    # - Object of a subbclass of Warden::Protocol::BaseRequest:
+    #      A protocol buffer object dynamically constructed and populated from
+    #      command_args passed.
+    #
     # Raises:
     # - Warden::CommandsManager::CommandError:
     #      When command and/or its arguments are wrong.
