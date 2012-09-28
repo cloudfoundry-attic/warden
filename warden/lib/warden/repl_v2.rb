@@ -57,8 +57,13 @@ module Warden
             save_history
             STDOUT.write("#{command_info[:result]}")
           end
-        rescue Warden::CommandsManager::CommandError => ce
-          STDERR.write("#{ce.message}\n")
+        rescue => e
+          if e.is_a?(StandardError)
+            STDERR.write("#{e}\n")
+            e.backtrace.each { |err| STDERR.write("#{err}\n") }
+          else
+            raise e
+          end
         end
       end
     end
