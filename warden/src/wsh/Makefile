@@ -6,16 +6,21 @@ all: wshd wshc
 clean:
 	rm -f *.o clone wshd wshc
 
-install:
+install: all
 	cp wshd wshc ../../root/linux/skeleton/bin/
 
 .PHONY: all clean
 
-wshd: wshd.o barrier.o mount.o un.o util.o
+wshd: wshd.o barrier.o mount.o un.o util.o msg.o
 	$(CC) -o $@ $^ -lutil
 
-wshc: wshc.o pump.o un.o util.o
+wshc: wshc.o pump.o un.o util.o msg.o
 	$(CC) -o $@ $^ -lutil
 
 %.o: %.c
 	$(CC) -c -Wall $(OPTIMIZATION) $(DEBUG) $(CFLAGS) $<
+
+-include Makefile.dep
+
+dep:
+	$(CC) -MM *.c > Makefile.dep
