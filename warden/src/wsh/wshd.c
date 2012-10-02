@@ -2,20 +2,24 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/param.h>
 #include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "barrier.h"
+#include "msg.h"
 #include "mount.h"
 #include "un.h"
 #include "util.h"
@@ -173,24 +177,136 @@ int child_pid_to_fd_remove(wshd_t *w, pid_t pid) {
   return fd;
 }
 
-int child_accept(wshd_t *w) {
-  int fd = -1;
+int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
   int i, j;
+  int p[2][2];
+  int p_[2];
   int rv;
-  int p[4][2];
-  int p_[4];
-  int data = 0;
+  msg_response_t res;
 
-  for (i = 0; i < 4; i++) {
+  msg_response_init(&res);
+
+  /* Initialize so that the error handler can do its job */
+  for (i = 0; i < 2; i++) {
     p[i][0] = -1;
     p[i][1] = -1;
     p_[i] = -1;
   }
 
-  fd = accept(w->fd, NULL, NULL);
-  if (fd == -1) {
-    perror("accept");
+  rv = pipe(p[1]);
+  if (rv == -1) {
+    perror("pipe");
     abort();
+  }
+
+  fcntl_mix_cloexec(p[1][0]);
+  fcntl_mix_cloexec(p[1][1]);
+
+  rv = posix_openpt(O_RDWR | O_NOCTTY);
+  if (rv < 0) {
+    perror("posix_openpt");
+    abort();
+  }
+
+  p[0][0] = rv;
+
+  rv = grantpt(p[0][0]);
+  if (rv < 0) {
+    perror("grantpt");
+    abort();
+  }
+
+  rv = unlockpt(p[0][0]);
+  if (rv < 0) {
+    perror("unlockpt");
+    abort();
+  }
+
+  rv = open(ptsname(p[0][0]), O_RDWR);
+  if (rv < 0) {
+    perror("open");
+    abort();
+  }
+
+  p[0][1] = rv;
+
+  fcntl_mix_cloexec(p[0][0]);
+  fcntl_mix_cloexec(p[0][1]);
+
+  /* Descriptors to send to client */
+  p_[0] = p[0][0];
+  p_[1] = p[1][0];
+
+  rv = un_send_fds(fd, (char *)&res, sizeof(res), p_, 4);
+  if (rv == -1) {
+    goto err;
+  }
+
+  rv = fork();
+  if (rv == -1) {
+    perror("fork");
+    exit(1);
+  }
+
+  if (rv > 0) {
+    child_pid_to_fd_add(w, rv, p[1][1]);
+  }
+
+  if (rv == 0) {
+    char * const argv[] = { "/bin/sh", NULL };
+
+    rv = dup2(p[0][1], STDIN_FILENO);
+    assert(rv != -1);
+
+    rv = dup2(p[0][1], STDOUT_FILENO);
+    assert(rv != -1);
+
+    rv = dup2(p[0][1], STDERR_FILENO);
+    assert(rv != -1);
+
+    rv = setsid();
+    assert(rv != -1);
+
+    rv = ioctl(STDIN_FILENO, TIOCSCTTY, 1);
+    assert(rv != -1);
+
+    execvp(argv[0], argv);
+    perror("execvp");
+    abort();
+  }
+
+err:
+  for (i = 0; i < 2; i++) {
+    for (j = 0; j < 2; j++) {
+      if (p[i][j] > -1) {
+        close(p[i][j]);
+        p[i][j] = -1;
+      }
+    }
+  }
+
+  if (fd > -1) {
+    close(fd);
+    fd = -1;
+  }
+
+  return 0;
+}
+
+int child_handle_noninteractive(int fd, wshd_t *w, msg_request_t *req) {
+  int i, j;
+  int p[4][2];
+  int p_[4];
+  int rv;
+  msg_response_t res;
+
+  msg_response_init(&res);
+
+  /* Initialize so that the error handler can do its job */
+  for (i = 0; i < 4; i++) {
+    p[i][0] = -1;
+    p[i][1] = -1;
+    p_[i] = -1;
   }
 
   for (i = 0; i < 4; i++) {
@@ -204,12 +320,13 @@ int child_accept(wshd_t *w) {
     fcntl_mix_cloexec(p[i][1]);
   }
 
+  /* Descriptors to send to client */
   p_[0] = p[0][1];
   p_[1] = p[1][0];
   p_[2] = p[2][0];
   p_[3] = p[3][0];
 
-  rv = un_send_fds(fd, (char *)&data, sizeof(data), p_, 4);
+  rv = un_send_fds(fd, (char *)&res, sizeof(res), p_, 4);
   if (rv == -1) {
     goto err;
   }
@@ -221,33 +338,26 @@ int child_accept(wshd_t *w) {
     exit(1);
   }
 
+  if (rv > 0) {
+    child_pid_to_fd_add(w, rv, p[3][1]);
+  }
+
   if (rv == 0) {
-    /* Dup local fds */
+    char * const argv[] = { "/bin/sh", NULL };
+
     rv = dup2(p[0][0], STDIN_FILENO);
-    if (rv == -1) {
-      perror("dup2");
-      abort();
-    }
+    assert(rv != -1);
 
     rv = dup2(p[1][1], STDOUT_FILENO);
-    if (rv == -1) {
-      perror("dup2");
-      abort();
-    }
+    assert(rv != -1);
 
     rv = dup2(p[2][1], STDERR_FILENO);
-    if (rv == -1) {
-      perror("dup2");
-      abort();
-    }
+    assert(rv != -1);
 
-    char * const argv[] = { "/bin/sh", NULL };
     execvp(argv[0], argv);
     perror("execvp");
     abort();
   }
-
-  child_pid_to_fd_add(w, rv, p[3][1]);
 
 err:
   for (i = 0; i < 4; i++) {
@@ -265,6 +375,41 @@ err:
   }
 
   return 0;
+}
+
+int child_accept(wshd_t *w) {
+  int rv, fd;
+  char buf[1024];
+  size_t buflen = sizeof(buf);
+  msg_request_t req;
+
+  rv = accept(w->fd, NULL, NULL);
+  if (rv == -1) {
+    perror("accept");
+    abort();
+  }
+
+  fd = rv;
+
+  rv = un_recv_fds(fd, buf, buflen, NULL, 0);
+  if (rv < 0) {
+    perror("recvmsg");
+    exit(255);
+  }
+
+  if (rv == 0) {
+    close(fd);
+    return 0;
+  }
+
+  assert(rv == sizeof(req));
+  memcpy(&req, buf, sizeof(req));
+
+  if (req.tty) {
+    return child_handle_interactive(fd, w, &req);
+  } else {
+    return child_handle_noninteractive(fd, w, &req);
+  }
 }
 
 void child_handle_sigchld(wshd_t *w, struct signalfd_siginfo fdsi) {
