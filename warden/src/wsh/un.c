@@ -135,17 +135,19 @@ int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
     goto done;
   }
 
-  cmh = CMSG_FIRSTHDR(&mh);
-  assert(cmh != NULL);
-  assert(cmh->cmsg_level == SOL_SOCKET);
-  assert(cmh->cmsg_type == SCM_RIGHTS);
-  assert(cmh->cmsg_len == CMSG_LEN(sizeof(int) * fdslen));
+  if (fds != NULL) {
+    cmh = CMSG_FIRSTHDR(&mh);
+    assert(cmh != NULL);
+    assert(cmh->cmsg_level == SOL_SOCKET);
+    assert(cmh->cmsg_type == SCM_RIGHTS);
+    assert(cmh->cmsg_len == CMSG_LEN(sizeof(int) * fdslen));
 
-  int *fds_ = (int *)CMSG_DATA(cmh);
-  int i;
+    int *fds_ = (int *)CMSG_DATA(cmh);
+    int i;
 
-  for (i = 0; i < fdslen; i++) {
-    fds[i] = fds_[i];
+    for (i = 0; i < fdslen; i++) {
+      fds[i] = fds_[i];
+    }
   }
 
 done:
