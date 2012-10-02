@@ -32,5 +32,6 @@ int pump_select(pump_t *p);
 
 void pump_pair_init(pump_pair_t *pp, pump_t *p, int rfd, int wfd);
 int pump_pair_splice(pump_pair_t *pp);
+int pump_pair_copy(pump_pair_t *pp);
 
 #endif

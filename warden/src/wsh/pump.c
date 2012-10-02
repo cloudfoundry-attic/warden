@@ -1,5 +1,7 @@
 #define _GNU_SOURCE
 
+#include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,4 +109,35 @@ int pump_pair_splice(pump_pair_t *pp) {
   }
 
   return rv;
+}
+
+int pump_pair_copy(pump_pair_t *pp) {
+  char buf[64 * 1024];
+  int nr, nw;
+
+  if (!FD_ISSET(pp->rfd, &pp->p->rfds)) {
+    return 0;
+  }
+
+  do {
+    nr = read(pp->rfd, buf, sizeof(buf));
+  } while (nr == -1 && errno == EINTR);
+
+  if (nr <= 0) {
+    pump_pair_close(pp);
+    return nr;
+  }
+
+  do {
+    nw = write(pp->wfd, buf, nr);
+  } while (nw == -1 && errno == EINTR);
+
+  if (nw <= 0) {
+    pump_pair_close(pp);
+    return nw;
+  }
+
+  assert(nw == nr);
+
+  return nw;
 }
