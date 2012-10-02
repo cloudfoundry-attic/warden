@@ -131,7 +131,7 @@ int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
     rv = recvmsg(fd, &mh, 0);
   } while (rv == -1 && (errno == EINTR || errno == EAGAIN));
 
-  if (rv == -1) {
+  if (rv <= 0) {
     goto done;
   }
 
