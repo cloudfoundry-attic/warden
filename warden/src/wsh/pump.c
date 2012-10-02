@@ -23,7 +23,6 @@ void pump_pair_init(pump_pair_t *pp, pump_t *p, int rfd, int wfd) {
   pp->wfd = wfd;
 
   fcntl_mix_nonblock(rfd);
-  fcntl_mix_nonblock(wfd);
 }
 
 void pump_pair_close(pump_pair_t *pp) {
