@@ -103,7 +103,7 @@ int un_send_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
 
   free(buf);
 
-  return rv == -1 ? -1 : 0;
+  return rv;
 }
 
 int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
