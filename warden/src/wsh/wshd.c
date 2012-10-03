@@ -177,6 +177,45 @@ int child_pid_to_fd_remove(wshd_t *w, pid_t pid) {
   return fd;
 }
 
+int child_fork(msg_request_t *req, int in, int out, int err) {
+  int rv;
+
+  rv = fork();
+  if (rv == -1) {
+    perror("fork");
+    exit(1);
+  }
+
+  if (rv == 0) {
+    char * const argv[] = { "/bin/sh", NULL };
+    char * const envp[] = { NULL };
+
+    rv = dup2(in, STDIN_FILENO);
+    assert(rv != -1);
+
+    rv = dup2(out, STDOUT_FILENO);
+    assert(rv != -1);
+
+    rv = dup2(err, STDERR_FILENO);
+    assert(rv != -1);
+
+    rv = setsid();
+    assert(rv != -1);
+
+    /* Set controlling terminal if needed */
+    if (isatty(in)) {
+      rv = ioctl(STDIN_FILENO, TIOCSCTTY, 1);
+      assert(rv != -1);
+    }
+
+    execvpe(argv[0], argv, envp);
+    perror("execvp");
+    abort();
+  }
+
+  return rv;
+}
+
 int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
   int i, j;
   int p[2][2];
@@ -242,39 +281,10 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
     goto err;
   }
 
-  rv = fork();
-  if (rv == -1) {
-    perror("fork");
-    exit(1);
-  }
+  rv = child_fork(req, p[0][1], p[0][1], p[0][1]);
+  assert(rv > 0);
 
-  if (rv > 0) {
-    child_pid_to_fd_add(w, rv, p[1][1]);
-  }
-
-  if (rv == 0) {
-    char * const argv[] = { "/bin/sh", NULL };
-    char * const envp[] = { NULL };
-
-    rv = dup2(p[0][1], STDIN_FILENO);
-    assert(rv != -1);
-
-    rv = dup2(p[0][1], STDOUT_FILENO);
-    assert(rv != -1);
-
-    rv = dup2(p[0][1], STDERR_FILENO);
-    assert(rv != -1);
-
-    rv = setsid();
-    assert(rv != -1);
-
-    rv = ioctl(STDIN_FILENO, TIOCSCTTY, 1);
-    assert(rv != -1);
-
-    execvpe(argv[0], argv, envp);
-    perror("execvp");
-    abort();
-  }
+  child_pid_to_fd_add(w, rv, p[1][1]);
 
 err:
   for (i = 0; i < 2; i++) {
@@ -332,34 +342,10 @@ int child_handle_noninteractive(int fd, wshd_t *w, msg_request_t *req) {
     goto err;
   }
 
-  /* Run /bin/sh with these fds */
-  rv = fork();
-  if (rv == -1) {
-    perror("fork");
-    exit(1);
-  }
+  rv = child_fork(req, p[0][0], p[1][1], p[2][1]);
+  assert(rv > 0);
 
-  if (rv > 0) {
-    child_pid_to_fd_add(w, rv, p[3][1]);
-  }
-
-  if (rv == 0) {
-    char * const argv[] = { "/bin/sh", NULL };
-    char * const envp[] = { NULL };
-
-    rv = dup2(p[0][0], STDIN_FILENO);
-    assert(rv != -1);
-
-    rv = dup2(p[1][1], STDOUT_FILENO);
-    assert(rv != -1);
-
-    rv = dup2(p[2][1], STDERR_FILENO);
-    assert(rv != -1);
-
-    execvpe(argv[0], argv, envp);
-    perror("execvp");
-    abort();
-  }
+  child_pid_to_fd_add(w, rv, p[3][1]);
 
 err:
   for (i = 0; i < 4; i++) {
