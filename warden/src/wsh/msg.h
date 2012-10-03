@@ -2,6 +2,7 @@
 #define MSG_H 1
 
 #define MSG_VERSION 1
+#define MSG_MAX_SIZE (16 * 1024)
 
 typedef struct msg_request_s msg_request_t;
 typedef struct msg_response_s msg_response_t;

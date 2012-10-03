@@ -125,7 +125,7 @@ void tty_winsz(void) {
 
 int loop_interactive(int fd) {
   msg_response_t res;
-  char buf[1024];
+  char buf[MSG_MAX_SIZE];
   size_t buflen = sizeof(buf);
   int fds[2];
   size_t fdslen = sizeof(fds)/sizeof(fds[0]);
@@ -160,7 +160,7 @@ int loop_interactive(int fd) {
 
 int loop_noninteractive(int fd) {
   msg_response_t res;
-  char buf[1024];
+  char buf[MSG_MAX_SIZE];
   size_t buflen = sizeof(buf);
   int fds[4];
   size_t fdslen = sizeof(fds)/sizeof(fds[0]);
