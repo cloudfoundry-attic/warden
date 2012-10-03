@@ -68,7 +68,7 @@ module Warden
         end
 
         def do_net_in(request, response)
-          host_port = self.class.port_pool.acquire
+          host_port = request.host_port || self.class.port_pool.acquire
 
           # Use same port on the container side as the host side if unspecified
           container_port = request.container_port || host_port
@@ -86,7 +86,7 @@ module Warden
           response.container_port = container_port
 
         rescue WardenError
-          self.class.port_pool.release(host_port)
+          self.class.port_pool.release(host_port) unless request.host_port
           raise
         end
 
