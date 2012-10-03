@@ -379,7 +379,7 @@ err:
 
 int child_accept(wshd_t *w) {
   int rv, fd;
-  char buf[1024];
+  char buf[MSG_MAX_SIZE];
   size_t buflen = sizeof(buf);
   msg_request_t req;
 
