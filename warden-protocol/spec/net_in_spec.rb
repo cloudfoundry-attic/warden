@@ -23,6 +23,11 @@ describe Warden::Protocol::NetInRequest do
     it_should_be_typed_as_uint
   end
 
+  field :host_port do
+    it_should_be_optional
+    it_should_be_typed_as_uint
+  end
+
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::NetInResponse)
   end
