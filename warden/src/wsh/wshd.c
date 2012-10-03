@@ -237,7 +237,7 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
   p_[0] = p[0][0];
   p_[1] = p[1][0];
 
-  rv = un_send_fds(fd, (char *)&res, sizeof(res), p_, 4);
+  rv = un_send_fds(fd, (char *)&res, sizeof(res), p_, 2);
   if (rv == -1) {
     goto err;
   }
