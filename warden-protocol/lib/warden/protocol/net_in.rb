@@ -7,6 +7,7 @@ module Warden
     class NetInRequest < BaseRequest
       required :handle, :string, 1
       optional :container_port, :uint32, 2
+      optional :host_port, :uint32, 3
 
       def self.description
         "Forward port on external interface to container."
