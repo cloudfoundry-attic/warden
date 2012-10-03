@@ -68,26 +68,41 @@ module Warden
         end
 
         def do_net_in(request, response)
-          host_port = self.class.port_pool.acquire
+          if request.host_port.nil?
+            begin
+              host_port = self.class.port_pool.acquire
 
-          # Use same port on the container side as the host side if unspecified
-          container_port = request.container_port || host_port
+              # Use same port on the container side as the host side if unspecified
+              container_port = request.container_port || host_port
 
-          # Port may be re-used after this container has been destroyed
-          @resources["ports"] << host_port
-          @acquired["ports"] << host_port
+              # Port may be re-used after this container has been destroyed
+              @resources["ports"] << host_port
+              @acquired["ports"] << host_port
 
-          sh File.join(container_path, "net.sh"), "in", :env => {
-            "HOST_PORT"      => host_port,
-            "CONTAINER_PORT" => container_port,
-          }
+              sh File.join(container_path, "net.sh"), "in", :env => {
+                "HOST_PORT"      => host_port,
+                "CONTAINER_PORT" => container_port,
+              }
 
-          response.host_port      = host_port
-          response.container_port = container_port
+              response.host_port      = host_port
+              response.container_port = container_port
 
-        rescue WardenError
-          self.class.port_pool.release(host_port)
-          raise
+            rescue WardenError
+              self.class.port_pool.release(host_port)
+              raise
+            end
+          else
+            host_port = request.host_port
+            container_port = request.container_port || host_port
+
+            sh File.join(container_path, "net.sh"), "in", :env => {
+              "HOST_PORT"      => host_port,
+              "CONTAINER_PORT" => container_port,
+            }
+
+            response.host_port      = host_port
+            response.container_port = container_port
+          end
         end
 
         def do_net_out(request, response)
