@@ -254,6 +254,7 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
 
   if (rv == 0) {
     char * const argv[] = { "/bin/sh", NULL };
+    char * const envp[] = { NULL };
 
     rv = dup2(p[0][1], STDIN_FILENO);
     assert(rv != -1);
@@ -270,7 +271,7 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
     rv = ioctl(STDIN_FILENO, TIOCSCTTY, 1);
     assert(rv != -1);
 
-    execvp(argv[0], argv);
+    execvpe(argv[0], argv, envp);
     perror("execvp");
     abort();
   }
@@ -344,6 +345,7 @@ int child_handle_noninteractive(int fd, wshd_t *w, msg_request_t *req) {
 
   if (rv == 0) {
     char * const argv[] = { "/bin/sh", NULL };
+    char * const envp[] = { NULL };
 
     rv = dup2(p[0][0], STDIN_FILENO);
     assert(rv != -1);
@@ -354,7 +356,7 @@ int child_handle_noninteractive(int fd, wshd_t *w, msg_request_t *req) {
     rv = dup2(p[2][1], STDERR_FILENO);
     assert(rv != -1);
 
-    execvp(argv[0], argv);
+    execvpe(argv[0], argv, envp);
     perror("execvp");
     abort();
   }
