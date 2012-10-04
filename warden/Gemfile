@@ -5,7 +5,7 @@ gem "vcap_common", :git => 'https://github.com/cloudfoundry/vcap-common.git', :r
 gem "steno", "~> 0.0.15", :git => 'https://github.com/cloudfoundry/steno.git'
 gem "membrane", :git => 'https://github.com/cloudfoundry/membrane.git'
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
-gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git', :ref => 'bcfeca6c'
+gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git'
 gem "sys-filesystem"
 
 gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git", :ref => 'be0b6d85'
