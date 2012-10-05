@@ -187,8 +187,10 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
   }
 
   if (rv == 0) {
-    char * const argv[] = { "/bin/sh", NULL };
-    char * const envp[] = { NULL };
+    char *default_argv[] = { "/bin/sh", NULL };
+    char *default_envp[] = { NULL };
+    char **argv = default_argv;
+    char **envp = default_envp;
 
     rv = dup2(in, STDIN_FILENO);
     assert(rv != -1);
@@ -208,9 +210,15 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
       assert(rv != -1);
     }
 
+    /* Use argv from request if needed */
+    if (req->arg.count) {
+      argv = (char **)msg_array_export(&req->arg);
+      assert(argv != NULL);
+    }
+
     execvpe(argv[0], argv, envp);
-    perror("execvp");
-    abort();
+    perror("execvpe");
+    exit(255);
   }
 
   return rv;
