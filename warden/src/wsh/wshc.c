@@ -212,6 +212,12 @@ int main(int argc, char **argv) {
     req.tty = 0;
   }
 
+  rv = msg_array_import(&req.arg, argc - 2, (const char **)&argv[2]);
+  if (rv == -1) {
+    fprintf(stderr, "msg_import_array: Too much data\n");
+    exit(255);
+  }
+
   rv = un_send_fds(fd, (char *)&req, sizeof(req), NULL, 0);
   if (rv <= 0) {
     perror("sendmsg");
