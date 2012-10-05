@@ -216,6 +216,13 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
       assert(argv != NULL);
     }
 
+    /* Use resource limits from request */
+    rv = msg_rlimit_export(&req->rlim);
+    if (rv == -1) {
+      fprintf(stderr, "msg_rlimit_export: %s\n", strerror(errno));
+      exit(255);
+    }
+
     execvpe(argv[0], argv, envp);
     perror("execvpe");
     exit(255);
