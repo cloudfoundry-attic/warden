@@ -1,20 +1,20 @@
 OPTIMIZATION?=-O0
 DEBUG?=-g -ggdb -rdynamic
 
-all: wshd wshc
+all: wshd wsh
 
 clean:
-	rm -f *.o clone wshd wshc
+	rm -f *.o clone wshd wsh
 
 install: all
-	cp wshd wshc ../../root/linux/skeleton/bin/
+	cp wshd wsh ../../root/linux/skeleton/bin/
 
 .PHONY: all clean
 
 wshd: wshd.o barrier.o mount.o un.o util.o msg.o
 	$(CC) -o $@ $^ -lutil
 
-wshc: wshc.o pump.o un.o util.o msg.o
+wsh: wsh.o pump.o un.o util.o msg.o
 	$(CC) -o $@ $^ -lutil
 
 %.o: %.c
