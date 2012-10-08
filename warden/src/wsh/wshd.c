@@ -39,6 +39,9 @@ struct wshd_s {
   /* Path to directory that will become root in the new mount namespace */
   const char *root_path;
 
+  /* Process title */
+  const char *title;
+
   /* File descriptor of listening socket */
   int fd;
 
@@ -67,6 +70,10 @@ int wshd__usage(wshd_t *w) {
     "Directory that will become root in the new mount namespace"
     "\n");
 
+  fprintf(stderr, "  --title NAME "
+    "Process title"
+    "\n");
+
   return 0;
 }
 
@@ -77,11 +84,13 @@ int wshd__getopt(wshd_t *w) {
   while (i < w->argc) {
     if (j >= 2) {
       if (strcmp("--run", w->argv[i]) == 0) {
-        w->run_path = w->argv[i+1];
+        w->run_path = strdup(w->argv[i+1]);
       } else if (strcmp("--lib", w->argv[i]) == 0) {
-        w->lib_path = w->argv[i+1];
+        w->lib_path = strdup(w->argv[i+1]);
       } else if (strcmp("--root", w->argv[i]) == 0) {
-        w->root_path = w->argv[i+1];
+        w->root_path = strdup(w->argv[i+1]);
+      } else if (strcmp("--title", w->argv[i]) == 0) {
+        w->title = strdup(w->argv[i+1]);
       } else {
         goto invalid;
       }
@@ -675,6 +684,10 @@ int main(int argc, char **argv) {
 
   if (w->root_path == NULL) {
     w->root_path = "root";
+  }
+
+  if (w->title != NULL) {
+    setproctitle(argv, w->title);
   }
 
   assert_directory(w->run_path);
