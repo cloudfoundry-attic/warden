@@ -3,6 +3,46 @@
 require "spec_helper"
 require "warden/protocol"
 
+describe Warden::Protocol::BaseRequest do
+  it "should respond to #wrap" do
+    request = Warden::Protocol::SpawnRequest.new(:handle => "blah",
+                                                 :script => "script")
+    wrapped = request.wrap
+    wrapped.should be_an_instance_of(Warden::Protocol::WrappedRequest)
+    wrapped.type.should == Warden::Protocol::SpawnRequest.type
+    decoded = Warden::Protocol::SpawnRequest.decode(wrapped.payload)
+    decoded.handle.should == request.handle
+    decoded.script.should == request.script
+  end
+
+  it "should wrap beefcake errors" do
+    expect {
+      Warden::Protocol::SpawnRequest.new.wrap
+    }.to raise_error(Warden::Protocol::ProtocolError) { |e|
+      e.cause.class.name.should =~ /^Beefcake/
+    }
+  end
+end
+
+describe Warden::Protocol::BaseResponse do
+  it "should respond to #wrap" do
+    response = Warden::Protocol::SpawnResponse.new(:job_id => 1)
+    wrapped = response.wrap
+    wrapped.should be_an_instance_of(Warden::Protocol::WrappedResponse)
+    wrapped.type.should == Warden::Protocol::SpawnResponse.type
+    decoded = Warden::Protocol::SpawnResponse.decode(wrapped.payload)
+    decoded.job_id.should == response.job_id
+  end
+
+  it "should wrap beefcake errors" do
+    expect {
+      Warden::Protocol::SpawnResponse.new.wrap
+    }.to raise_error(Warden::Protocol::ProtocolError) { |e|
+      e.cause.class.name.should =~ /^Beefcake/
+    }
+  end
+end
+
 describe Warden::Protocol::WrappedRequest do
   it "should respond to #request" do
     w = Warden::Protocol::WrappedRequest.new
@@ -12,6 +52,15 @@ describe Warden::Protocol::WrappedRequest do
     w.should be_valid
 
     w.request.should be_a(Warden::Protocol::SpawnRequest)
+  end
+
+  it "should wrap beefcake errors" do
+    w = Warden::Protocol::WrappedRequest.new
+    w.type = Warden::Protocol::Type::Spawn
+    w.payload = "bad payload"
+    w.should be_valid
+
+    expect { w.request }.to raise_error(Warden::Protocol::ProtocolError)
   end
 end
 
@@ -24,6 +73,16 @@ describe Warden::Protocol::WrappedResponse do
     w.should be_valid
 
     w.response.should be_a(Warden::Protocol::SpawnResponse)
+  end
+
+  it "should wrap beefcake errors" do
+    w = Warden::Protocol::WrappedResponse.new
+    w.type = Warden::Protocol::Type::Spawn
+    w.payload = "bad payload"
+
+    w.should be_valid
+
+    expect { w.response }.to raise_error(Warden::Protocol::ProtocolError)
   end
 end
 
