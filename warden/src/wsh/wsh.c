@@ -14,6 +14,91 @@
 #include "pump.h"
 #include "un.h"
 
+typedef struct wsh_s wsh_t;
+
+struct wsh_s {
+  int argc;
+  char **argv;
+
+  /* Path to socket */
+  const char *socket_path;
+};
+
+int wsh__usage(wsh_t *w) {
+  fprintf(stderr, "Usage: %s OPTION...\n", w->argv[0]);
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "  --socket PATH "
+    "Path to socket"
+    "\n");
+
+  fprintf(stderr, "  --rsh         "
+    "RSH compatibility mode"
+    "\n");
+  return 0;
+}
+
+int wsh__getopt(wsh_t *w) {
+  int i = 1;
+  int j = w->argc - i;
+
+  while (i < w->argc) {
+    if (w->argv[i][0] != '-') {
+      break;
+    }
+
+    if (j >= 1 && ((strcmp(w->argv[i], "-h") == 0) || (strcmp(w->argv[i], "--help") == 0))) {
+      wsh__usage(w);
+      return -1;
+    } else if (j >= 2 && strcmp(w->argv[i], "--socket") == 0) {
+      w->socket_path = strdup(w->argv[i+1]);
+      i += 2;
+      j -= 2;
+    } else if (j >= 1 && strcmp(w->argv[i], "--rsh") == 0) {
+      i += 1;
+      j -= 1;
+
+      /* rsh [-46dn] [-l username] [-t timeout] host [command] */
+      while (i < w->argc) {
+        if (w->argv[i][0] != '-') {
+          break;
+        }
+
+        if (j >= 1 && strlen(w->argv[i]) == 2 && strchr("46dn", w->argv[i][1])) {
+          i += 1;
+          j -= 1;
+        } else if (j >= 2 && strlen(w->argv[i]) == 2 && strchr("lt", w->argv[i][1])) {
+          i += 2;
+          j -= 2;
+        } else {
+          goto invalid;
+        }
+      }
+
+      /* Skip over host */
+      assert(i < w->argc);
+      i += 1;
+      j -= 1;
+    } else {
+      goto invalid;
+    }
+  }
+
+  w->argc = w->argc - i;
+  if (w->argc) {
+    w->argv = &w->argv[i];
+  } else {
+    w->argv = NULL;
+  }
+
+  return 0;
+
+invalid:
+  fprintf(stderr, "%s: invalid option -- %s\n", w->argv[0], w->argv[i]);
+  fprintf(stderr, "Try `%s --help' for more information.\n", w->argv[0]);
+  return -1;
+}
+
 void pump_loop(pump_t *p, int exit_status_fd, pump_pair_t *pp, int pplen) {
   int i, rv;
 
@@ -188,15 +273,27 @@ int loop_noninteractive(int fd) {
 }
 
 int main(int argc, char **argv) {
-  int fd, rv;
+  wsh_t *w;
+  int rv;
+  int fd;
   msg_request_t req;
 
-  if (argc < 2) {
-    fprintf(stderr, "Usage: %s SOCKET\n", argv[0]);
+  w = calloc(1, sizeof(*w));
+  assert(w != NULL);
+
+  w->argc = argc;
+  w->argv = argv;
+
+  rv = wsh__getopt(w);
+  if (rv == -1) {
     exit(1);
   }
 
-  rv = un_connect(argv[1]);
+  if (w->socket_path == NULL) {
+    w->socket_path = "run/wshd.sock";
+  }
+
+  rv = un_connect(w->socket_path);
   if (rv < 0) {
     perror("connect");
     exit(255);
@@ -212,7 +309,7 @@ int main(int argc, char **argv) {
     req.tty = 0;
   }
 
-  rv = msg_array_import(&req.arg, argc - 2, (const char **)&argv[2]);
+  rv = msg_array_import(&req.arg, w->argc, (const char **)w->argv);
   if (rv == -1) {
     fprintf(stderr, "msg_import_array: Too much data\n");
     exit(255);
