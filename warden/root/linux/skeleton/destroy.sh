@@ -5,32 +5,36 @@ set -o nounset
 set -o errexit
 shopt -s nullglob
 
-cd $(dirname "${0}")
+cd $(dirname $0)
 
 source ./etc/config
 
 ./net.sh teardown
 
-if [ -f ppid ]
+if [ -f ./run/wshd.pid ]
 then
-  ppid=$(cat ppid)
-  rm -f ppid
-
+  pid=$(cat ./run/wshd.pid)
   path=/sys/fs/cgroup/cpu/instance-$id
   tasks=$path/tasks
 
-  while true
-  do
-    kill -9 $ppid 2> /dev/null || true
+  if [ -d $path ]
+  then
+    while true
+    do
+      kill -9 $pid 2> /dev/null || true
 
-    # Wait while there are tasks in one of the instance's cgroups
-    if [ -f $tasks ] && [ -n "$(cat $tasks)" ]
-    then
-      sleep 0.1
-    else
-      break
-    fi
-  done
+      # Wait while there are tasks in one of the instance's cgroups
+      if [ -f $tasks ] && [ -n "$(cat $tasks)" ]
+      then
+        sleep 0.1
+      else
+        break
+      fi
+    done
+  fi
+
+  # Done, remove pid
+  rm -f ./run/wshd.pid
 
   # Remove cgroups
   for system_path in /sys/fs/cgroup/*
