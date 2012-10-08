@@ -75,3 +75,34 @@ int run(const char *p1, const char *p2) {
 
   return 0;
 }
+
+void setproctitle(char **argv, const char *title) {
+  char *last;
+  int i;
+  size_t len;
+  char *p;
+  size_t n;
+
+  last = argv[0];
+  i = 0;
+
+  while (last == argv[i]) {
+    last += strlen(argv[i++]) + 1;
+  }
+
+  len = last - argv[0];
+  p = argv[0];
+  n = strlen(title);
+  assert(len > n);
+
+  /* Assign argv termination sentinel */
+  argv[1] = NULL;
+
+  /* Copy title */
+  strncpy(p, title, n);
+  len -= n;
+  p += n;
+
+  /* Set remaining bytes to \0 */
+  memset(p, '\0', len);
+}

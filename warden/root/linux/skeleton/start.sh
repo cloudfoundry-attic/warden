@@ -17,4 +17,4 @@ fi
 
 ./net.sh setup
 
-./bin/wshd --run ./run --lib ./lib --root ./mnt
+./bin/wshd --run ./run --lib ./lib --root ./mnt --title "wshd: $id"
