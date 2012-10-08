@@ -1,5 +1,4 @@
 barrier.o: barrier.c barrier.h util.h
-console.o: console.c console.h util.h
 mount.o: mount.c mount.h
 msg.o: msg.c msg.h
 pump.o: pump.c pump.h util.h
