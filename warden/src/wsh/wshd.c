@@ -232,6 +232,13 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
       exit(255);
     }
 
+    /* Set user from request */
+    rv = msg_user_export(&req->user);
+    if (rv == -1) {
+      fprintf(stderr, "msg_user_export: %s\n", strerror(errno));
+      exit(255);
+    }
+
     execvpe(argv[0], argv, envp);
     perror("execvpe");
     exit(255);
