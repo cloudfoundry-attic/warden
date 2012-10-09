@@ -20,3 +20,4 @@ hostname $id
 
 ifconfig lo 127.0.0.1
 ifconfig $network_container_iface $network_container_ip netmask $network_netmask
+route add default gw $network_host_ip $network_container_iface
