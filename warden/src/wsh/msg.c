@@ -75,6 +75,8 @@ static struct {
   _R(RLIMIT_STACK, 8192 * 1024, 8192 * 1024),
 };
 
+#undef _R
+
 int msg_rlimit_import(msg__rlimit_t *r) {
   int i;
   struct rlimit rlim;
