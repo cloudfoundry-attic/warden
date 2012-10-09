@@ -14,7 +14,7 @@
 
 #include "util.h"
 
-void fcntl_mix(int fd, int flag) {
+void fcntl_mix_cloexec(int fd) {
   int rv;
 
   rv = fcntl(fd, F_GETFD);
@@ -23,19 +23,27 @@ void fcntl_mix(int fd, int flag) {
     abort();
   }
 
-  rv = fcntl(fd, F_SETFD, rv | flag);
+  rv = fcntl(fd, F_SETFD, rv | FD_CLOEXEC);
   if (rv == -1) {
     perror("fcntl");
     abort();
   }
 }
 
-void fcntl_mix_cloexec(int fd) {
-  fcntl_mix(fd, O_CLOEXEC);
-}
-
 void fcntl_mix_nonblock(int fd) {
-  fcntl_mix(fd, O_NONBLOCK);
+  int rv;
+
+  rv = fcntl(fd, F_GETFL);
+  if (rv == -1) {
+    perror("fcntl");
+    abort();
+  }
+
+  rv = fcntl(fd, F_SETFL, rv | O_NONBLOCK);
+  if (rv == -1) {
+    perror("fcntl");
+    abort();
+  }
 }
 
 int run(const char *p1, const char *p2) {
