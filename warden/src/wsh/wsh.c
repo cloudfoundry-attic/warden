@@ -130,17 +130,19 @@ void pump_loop(pump_t *p, int exit_status_fd, pump_pair_t *pp, int pplen) {
       int status;
 
       rv = read(exit_status_fd, &status, sizeof(status));
-      if (rv < sizeof(status)) {
-        /* Error, or short read. */
-        perror("read");
-        exit(255);
-      }
+      assert(rv >= 0);
 
       /* One more splice to make sure kernel buffers are emptied */
       for (i = 0; i < pplen; i++) {
         pump_pair_copy(&pp[i]);
       }
 
+      if (rv == 0) {
+        /* EOF: process terminated by signal */
+        exit(255);
+      }
+
+      assert(rv == sizeof(status));
       exit(status);
     }
   }

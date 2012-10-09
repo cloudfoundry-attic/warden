@@ -426,27 +426,41 @@ int child_accept(wshd_t *w) {
   }
 }
 
-void child_handle_sigchld(wshd_t *w, struct signalfd_siginfo fdsi) {
+void child_handle_sigchld(wshd_t *w) {
   pid_t pid;
   int status, exitstatus;
   int fd;
 
-  assert(fdsi.ssi_signo == SIGCHLD);
+  while (1) {
+    do {
+      pid = waitpid(-1, &status, WNOHANG);
+    } while (pid == -1 && errno == EINTR);
 
-  /* Since we caught SIGCHLD, this can only succeed */
-  pid = waitpid(fdsi.ssi_pid, &status, 0);
-  assert(pid == fdsi.ssi_pid);
+    /* Break when there are no more children */
+    if (pid == -1) {
+      assert(errno == ECHILD);
+      break;
+    }
 
-  /* Processes can be reparented, so a pid may not map to an fd */
-  fd = child_pid_to_fd_remove(w, pid);
-  if (fd == -1) {
-    return;
+    /* Processes can be reparented, so a pid may not map to an fd */
+    fd = child_pid_to_fd_remove(w, pid);
+    if (fd == -1) {
+      continue;
+    }
+
+    if (WIFEXITED(status)) {
+      exitstatus = WEXITSTATUS(status);
+
+      /* Send exit status to client */
+      write(fd, &exitstatus, sizeof(exitstatus));
+    } else {
+      assert(WIFSIGNALED(status));
+
+      /* No exit status */
+    }
+
+    close(fd);
   }
-
-  /* Write exit status to fd (don't care about success) */
-  exitstatus = WEXITSTATUS(status);
-  write(fd, &exitstatus, sizeof(exitstatus));
-  close(fd);
 }
 
 int child_signalfd(void) {
@@ -504,7 +518,8 @@ int child_loop(wshd_t *w) {
       rv = read(sfd, &fdsi, sizeof(fdsi));
       assert(rv == sizeof(fdsi));
 
-      child_handle_sigchld(w, fdsi);
+      /* Ignore siginfo and loop waitpid to catch all children */
+      child_handle_sigchld(w);
     }
   }
 
