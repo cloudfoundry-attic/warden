@@ -403,6 +403,8 @@ int child_accept(wshd_t *w) {
 
   fd = rv;
 
+  fcntl_mix_cloexec(fd);
+
   rv = un_recv_fds(fd, buf, buflen, NULL, 0);
   if (rv < 0) {
     perror("recvmsg");
