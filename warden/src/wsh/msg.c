@@ -2,9 +2,12 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "msg.h"
 
@@ -119,6 +122,45 @@ int msg_rlimit_export(msg__rlimit_t *r) {
       fprintf(stderr, "%d\n", r->rlim[i].id);
       return rv;
     }
+  }
+
+  return 0;
+}
+
+int msg_user_import(msg__user_t *u, const char *name) {
+  int rv;
+
+  if (name != NULL) {
+    rv = snprintf(u->name, sizeof(u->name), "%s", name);
+    assert(rv < sizeof(u->name));
+  }
+
+  return 0;
+}
+
+int msg_user_export(msg__user_t *u) {
+  struct passwd *pw;
+  int rv;
+
+  if (strlen(u->name) == 0) {
+    return 0;
+  }
+
+  pw = getpwnam(u->name);
+  if (pw == NULL) {
+    return -1;
+  }
+
+  rv = setgid(pw->pw_gid);
+  if (rv == -1) {
+    perror("setgid");
+    abort();
+  }
+
+  rv = setuid(pw->pw_uid);
+  if (rv == -1) {
+    perror("setuid");
+    abort();
   }
 
   return 0;

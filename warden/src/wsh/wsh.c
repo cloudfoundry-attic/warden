@@ -22,6 +22,9 @@ struct wsh_s {
 
   /* Path to socket */
   const char *socket_path;
+
+  /* User to change to */
+  const char *user;
 };
 
 int wsh__usage(wsh_t *w) {
@@ -65,9 +68,15 @@ int wsh__getopt(wsh_t *w) {
         }
 
         if (j >= 1 && strlen(w->argv[i]) == 2 && strchr("46dn", w->argv[i][1])) {
+          /* Ignore */
           i += 1;
           j -= 1;
-        } else if (j >= 2 && strlen(w->argv[i]) == 2 && strchr("lt", w->argv[i][1])) {
+        } else if (j >= 2 && strlen(w->argv[i]) == 2 && w->argv[i][1] == 'l') {
+          w->user = strdup(w->argv[i+1]);
+          i += 2;
+          j -= 2;
+        } else if (j >= 2 && strlen(w->argv[i]) == 2 && w->argv[i][1] == 't') {
+          /* Ignore */
           i += 2;
           j -= 2;
         } else {
@@ -320,6 +329,12 @@ int main(int argc, char **argv) {
   rv = msg_rlimit_import(&req.rlim);
   if (rv == -1) {
     fprintf(stderr, "msg_rlimit_import: %s\n", strerror(errno));
+    exit(255);
+  }
+
+  rv = msg_user_import(&req.user, w->user);
+  if (rv == -1) {
+    fprintf(stderr, "msg_user_import: %s\n", strerror(errno));
     exit(255);
   }
 
