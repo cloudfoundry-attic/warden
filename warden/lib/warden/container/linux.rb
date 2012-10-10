@@ -113,7 +113,7 @@ module Warden
         # Build arguments
         args  = [wsh_path]
         args += ["--socket", socket_path]
-        args += ["su", "-s", "/bin/bash", user]
+        args += ["su", "-l", "-s", "/bin/bash", user]
 
         args << { :input => request.script }
 
