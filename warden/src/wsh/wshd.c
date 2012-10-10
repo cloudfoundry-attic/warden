@@ -444,8 +444,7 @@ void child_handle_sigchld(wshd_t *w) {
     } while (pid == -1 && errno == EINTR);
 
     /* Break when there are no more children */
-    if (pid == -1) {
-      assert(errno == ECHILD);
+    if (pid <= 0) {
       break;
     }
 
