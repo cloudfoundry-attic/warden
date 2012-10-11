@@ -113,6 +113,7 @@ int pump_pair_splice(pump_pair_t *pp) {
 
 int pump_pair_copy(pump_pair_t *pp) {
   char buf[64 * 1024];
+  char *ptr = buf;
   int nr, nw;
 
   if (!FD_ISSET(pp->rfd, &pp->p->rfds)) {
@@ -128,16 +129,19 @@ int pump_pair_copy(pump_pair_t *pp) {
     return nr;
   }
 
-  do {
-    nw = write(pp->wfd, buf, nr);
-  } while (nw == -1 && errno == EINTR);
+  while (nr) {
+    do {
+      nw = write(pp->wfd, ptr, nr);
+    } while (nw == -1 && errno == EINTR);
 
-  if (nw <= 0) {
-    pump_pair_close(pp);
-    return nw;
+    if (nw <= 0) {
+      pump_pair_close(pp);
+      return nw;
+    }
+
+    ptr += nw;
+    nr -= nw;
   }
 
-  assert(nw == nr);
-
-  return nw;
+  return 0;
 }
