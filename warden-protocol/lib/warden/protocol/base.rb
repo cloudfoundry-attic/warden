@@ -182,7 +182,11 @@ module Warden
       required :payload, :string, 2
 
       def request
-        Type.to_request_klass(type).decode(payload)
+        begin
+          Type.to_request_klass(type).decode(payload)
+        rescue WrongTypeError, InvalidValueError, RequiredFieldNotSetError => e
+          raise ProtocolError, e
+        end
       end
     end
 
