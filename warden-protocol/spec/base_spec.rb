@@ -6,22 +6,24 @@ require "warden/protocol"
 describe Warden::Protocol::WrappedRequest do
   it "should respond to #request" do
     w = Warden::Protocol::WrappedRequest.new
-    w.type = Warden::Protocol::Type::Ping
-    w.payload = Warden::Protocol::PingRequest.new.encode
+    w.type = Warden::Protocol::Type::Spawn
+    w.payload = Warden::Protocol::SpawnRequest.new(:handle => "blah",
+                                                   :script => "script").encode
     w.should be_valid
 
-    w.request.should be_a(Warden::Protocol::PingRequest)
+    w.request.should be_a(Warden::Protocol::SpawnRequest)
   end
 end
 
 describe Warden::Protocol::WrappedResponse do
   it "should respond to #response" do
     w = Warden::Protocol::WrappedResponse.new
-    w.type = Warden::Protocol::Type::Ping
-    w.payload = Warden::Protocol::PingResponse.new.encode
+    w.type = Warden::Protocol::Type::Spawn
+    w.payload = Warden::Protocol::SpawnResponse.new(:handle => "blah",
+                                                    :job_id => 2).encode
     w.should be_valid
 
-    w.response.should be_a(Warden::Protocol::PingResponse)
+    w.response.should be_a(Warden::Protocol::SpawnResponse)
   end
 end
 
