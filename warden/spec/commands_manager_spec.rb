@@ -489,7 +489,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of ArgumentError
+          error.should be_an_instance_of Warden::CommandsManager::CommandError
           error.message.should == "invalid value for Integer(): \"blah\""
         }
       end
