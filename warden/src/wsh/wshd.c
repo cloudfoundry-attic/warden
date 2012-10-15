@@ -228,14 +228,14 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
     /* Use resource limits from request */
     rv = msg_rlimit_export(&req->rlim);
     if (rv == -1) {
-      fprintf(stderr, "msg_rlimit_export: %s\n", strerror(errno));
+      perror("msg_rlimit_export");
       exit(255);
     }
 
     /* Set user from request */
     rv = msg_user_export(&req->user);
     if (rv == -1) {
-      fprintf(stderr, "msg_user_export: %s\n", strerror(errno));
+      perror("msg_user_export");
       exit(255);
     }
 
