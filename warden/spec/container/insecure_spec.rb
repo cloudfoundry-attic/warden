@@ -18,11 +18,16 @@ def next_class_c
 end
 
 describe "insecure" do
-  let!(:unix_domain_path) { Warden::Util.path("tmp/warden.sock") }
-  let!(:container_klass) { "Warden::Container::Insecure" }
-  let!(:container_depot_path) { Dir.mktmpdir(nil, Warden::Util.path("tmp")) }
-  let!(:container_depot_file) { container_depot_path + ".img" }
+  let(:work_path) { File.join(Dir.tmpdir, "warden", "spec") }
+  let(:unix_domain_path) { File.join(work_path, "warden.sock") }
+  let(:container_klass) { "Warden::Container::Insecure" }
+  let(:container_depot_path) { File.join(work_path, "containers") }
+  let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { false }
+
+  before do
+    FileUtils.mkdir_p(container_depot_path)
+  end
 
   before do
     start_warden
@@ -61,7 +66,7 @@ describe "insecure" do
           "deny_networks" => ["4.2.2.0/24"] },
         "logging" => {
           "level" => "debug",
-          "file" => Warden::Util.path("tmp/warden.log") }
+          "file" => File.join(work_path, "warden.log") }
 
       Warden::Server.run!
     end
