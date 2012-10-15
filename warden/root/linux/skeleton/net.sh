@@ -67,8 +67,8 @@ function setup_nat() {
 }
 
 # Lock execution
-mkdir -p ../../tmp
-exec 3> ../../tmp/$(basename "${0}").lock
+mkdir -p ../tmp
+exec 3> ../tmp/$(basename $0).lock
 flock -x -w 10 3
 
 case "${1}" in
