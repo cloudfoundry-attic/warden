@@ -1,9 +1,8 @@
 GIT
   remote: https://github.com/cloudfoundry/common.git
-  revision: bcfeca6c2e831e57fd5327eda5fa077868e1ad2b
-  ref: bcfeca6c
+  revision: 018bee883fc22fa92bee3626d68bea2d7a1a514d
   specs:
-    em-posix-spawn (0.1.3)
+    em-posix-spawn (0.1.4)
       eventmachine
       posix-spawn
 

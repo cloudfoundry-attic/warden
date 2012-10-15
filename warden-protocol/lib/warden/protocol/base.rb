@@ -94,6 +94,19 @@ module Warden
       :string   => lambda { |arg| String(arg) },
     }
 
+    # Used to wrap around Beefcake errors.
+    class ProtocolError < StandardError
+      attr_reader :cause
+
+      def initialize(cause)
+        @cause = cause
+      end
+
+      def message
+        return @cause.message
+      end
+    end
+
     def self.protocol_type_to_str(protocol_type)
       if protocol_type.class == Module
         return "#{protocol_type.constants.join(", ")}"
@@ -121,8 +134,16 @@ module Warden
     class BaseMessage
       include Beefcake::Message
 
+      def safe
+          yield
+        rescue WrongTypeError, InvalidValueError, RequiredFieldNotSetError => e
+          raise ProtocolError, e
+      end
+
       def reload
-        self.class.decode(encode)
+        safe do
+          self.class.decode(encode)
+        end
       end
 
       class << self
@@ -155,7 +176,9 @@ module Warden
       end
 
       def wrap
-        WrappedRequest.new(:type => self.class.type, :payload => encode)
+        safe do
+          WrappedRequest.new(:type => self.class.type, :payload => encode)
+        end
       end
 
       def self.description
@@ -173,7 +196,9 @@ module Warden
       end
 
       def wrap
-        WrappedResponse.new(:type => self.class.type, :payload => encode)
+        safe do
+          WrappedResponse.new(:type => self.class.type, :payload => encode)
+        end
       end
     end
 
@@ -182,7 +207,9 @@ module Warden
       required :payload, :string, 2
 
       def request
-        Type.to_request_klass(type).decode(payload)
+        safe do
+          Type.to_request_klass(type).decode(payload)
+        end
       end
     end
 
@@ -191,7 +218,9 @@ module Warden
       required :payload, :string, 2
 
       def response
-        Type.to_response_klass(type).decode(payload)
+        safe do
+          Type.to_response_klass(type).decode(payload)
+        end
       end
     end
   end
