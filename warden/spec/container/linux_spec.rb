@@ -18,11 +18,21 @@ def next_class_c
 end
 
 describe "linux", :platform => "linux", :needs_root => true do
-  let!(:unix_domain_path) { Warden::Util.path("tmp/warden.sock") }
-  let!(:container_klass) { "Warden::Container::Linux" }
-  let!(:container_depot_path) { Dir.mktmpdir(nil, Warden::Util.path("tmp")) }
-  let!(:container_depot_file) { container_depot_path + ".img" }
-  let (:have_uid_support) { true }
+  let(:work_path) { File.join(Dir.tmpdir, "warden", "spec") }
+  let(:unix_domain_path) { File.join(work_path, "warden.sock") }
+  let(:container_klass) { "Warden::Container::Linux" }
+  let(:container_rootfs_path) { File.join(work_path, "..", "rootfs") }
+  let(:container_depot_path) { File.join(work_path, "containers") }
+  let(:container_depot_file) { container_depot_path + ".img" }
+  let(:have_uid_support) { true }
+
+  before do
+    unless File.directory?(container_rootfs_path)
+      raise "%s does not exist" % container_rootfs_path
+    end
+
+    FileUtils.mkdir_p(container_depot_path)
+  end
 
   before do
     `dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null`
@@ -96,6 +106,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         "server" => {
           "unix_domain_path" => unix_domain_path,
           "container_klass" => container_klass,
+          "container_rootfs_path" => container_rootfs_path,
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5 },
         "network" => {
@@ -105,7 +116,7 @@ describe "linux", :platform => "linux", :needs_root => true do
           "deny_networks" => ["4.2.2.0/24"] },
         "logging" => {
           "level" => "debug",
-          "file" => Warden::Util.path("tmp/warden.log") }
+          "file" => File.join(work_path, "warden.log") }
 
       Warden::Server.run!
     end
