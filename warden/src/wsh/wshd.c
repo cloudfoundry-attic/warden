@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
@@ -186,6 +187,70 @@ int child_pid_to_fd_remove(wshd_t *w, pid_t pid) {
   return fd;
 }
 
+char **env__add(char **envp, const char *key, const char *value) {
+  size_t envplen = 0;
+  char *buf;
+  size_t buflen;
+  int rv;
+
+  if (envp == NULL) {
+    /* Trailing NULL */
+    envplen = 1;
+  } else {
+    while(envp[envplen++] != NULL);
+  }
+
+  envp = realloc(envp, sizeof(envp[0]) * (envplen + 1));
+  assert(envp != NULL);
+
+  buflen = strlen(key) + 1 + strlen(value) + 1;
+  buf = malloc(buflen);
+  assert(buf != NULL);
+
+  rv = snprintf(buf, buflen, "%s=%s", key, value);
+  assert(rv == buflen - 1);
+
+  envp[envplen - 1] = buf;
+  envp[envplen] = NULL;
+
+  return envp;
+}
+
+char **child_setup_environment(msg_request_t *req) {
+  const char *user;
+  struct passwd *pw;
+  int rv;
+  char **envp = NULL;
+
+  user = req->user.name;
+  if (!strlen(user)) {
+    user = "root";
+  }
+
+  pw = getpwnam(user);
+  if (pw == NULL) {
+    perror("getpwnam");
+    return NULL;
+  }
+
+  rv = chdir(pw->pw_dir);
+  if (rv == -1) {
+    perror("chdir");
+    return NULL;
+  }
+
+  envp = env__add(envp, "HOME", pw->pw_dir);
+  envp = env__add(envp, "USER", pw->pw_name);
+
+  if (pw->pw_uid == 0) {
+    envp = env__add(envp, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin");
+  } else {
+    envp = env__add(envp, "PATH", "/bin:/usr/bin");
+  }
+
+  return envp;
+}
+
 int child_fork(msg_request_t *req, int in, int out, int err) {
   int rv;
 
@@ -238,6 +303,9 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
       perror("msg_user_export");
       exit(255);
     }
+
+    envp = child_setup_environment(req);
+    assert(envp != NULL);
 
     execvpe(argv[0], argv, envp);
     perror("execvpe");
