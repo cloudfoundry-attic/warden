@@ -2,6 +2,7 @@
 
 require "rspec"
 require "tempfile"
+require "tmpdir"
 require "warden/protocol"
 
 Dir["./spec/support/**/*.rb"].each { |f| require f }
