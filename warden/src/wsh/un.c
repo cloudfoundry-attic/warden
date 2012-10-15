@@ -72,12 +72,11 @@ int un_connect(const char *path) {
 int un_send_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   struct msghdr mh;
   struct cmsghdr *cmh = NULL;
-  char *buf;
+  char buf[2048];
   size_t buflen = CMSG_SPACE(sizeof(int) * fdslen);
   struct iovec iov[1];
 
-  buf = malloc(buflen);
-  assert(buf != NULL);
+  assert(sizeof(buf) >= buflen);
 
   memset(&mh, 0, sizeof(mh));
 
@@ -101,20 +100,17 @@ int un_send_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
     rv = sendmsg(fd, &mh, 0);
   } while (rv == -1 && errno == EINTR);
 
-  free(buf);
-
   return rv;
 }
 
 int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   struct msghdr mh;
   struct cmsghdr *cmh = NULL;
-  char *buf;
+  char buf[2048];
   size_t buflen = CMSG_SPACE(sizeof(int) * fdslen);
   struct iovec iov[1];
 
-  buf = malloc(buflen);
-  assert(buf != NULL);
+  assert(sizeof(buf) >= buflen);
 
   memset(&mh, 0, sizeof(mh));
 
@@ -151,7 +147,5 @@ int un_recv_fds(int fd, char *data, int datalen, int *fds, int fdslen) {
   }
 
 done:
-  free(buf);
-
   return rv;
 }
