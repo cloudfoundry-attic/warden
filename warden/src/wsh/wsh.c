@@ -35,6 +35,10 @@ int wsh__usage(wsh_t *w) {
     "Path to socket"
     "\n");
 
+  fprintf(stderr, "  --user USER   "
+    "User to change to"
+    "\n");
+
   fprintf(stderr, "  --rsh         "
     "RSH compatibility mode"
     "\n");
@@ -55,6 +59,10 @@ int wsh__getopt(wsh_t *w) {
       return -1;
     } else if (j >= 2 && strcmp(w->argv[i], "--socket") == 0) {
       w->socket_path = strdup(w->argv[i+1]);
+      i += 2;
+      j -= 2;
+    } else if (j >= 2 && strcmp(w->argv[i], "--user") == 0) {
+      w->user = strdup(w->argv[i+1]);
       i += 2;
       j -= 2;
     } else if (j >= 1 && strcmp(w->argv[i], "--rsh") == 0) {
