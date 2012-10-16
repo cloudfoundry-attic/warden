@@ -92,6 +92,8 @@ module Warden
         def initialize(*args)
           @env, @argv, @options = extract_process_spawn_arguments(*args)
 
+          @options[:close_others] = true
+
           @child = Child.new(env, *(argv + [options]))
 
           @child.callback do
