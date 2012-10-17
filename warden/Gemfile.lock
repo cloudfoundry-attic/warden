@@ -42,8 +42,8 @@ GIT
 
 GIT
   remote: https://github.com/cloudfoundry/warden.git
-  revision: ab5f67aa07d0d750790d73c08950781447eeaad9
-  ref: ab5f67aa
+  revision: d8c00be63adf481e5a55440ec4fd1a80c0d0b2fa
+  ref: d8c00be
   specs:
     warden-client (0.0.7)
       warden-protocol
