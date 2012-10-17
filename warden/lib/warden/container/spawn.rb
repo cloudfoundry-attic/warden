@@ -37,6 +37,8 @@ module Warden
         options = { :env => env, :timeout => 5.0, :max => 1024 * 1024 }.merge(options)
 
         p = DeferredChild.new(*(args + [options]))
+        p.logger = logger
+        p.run
         p.yield
 
       rescue WardenError => err
@@ -60,6 +62,8 @@ module Warden
         attr_reader :env
         attr_reader :argv
         attr_reader :options
+
+        attr_accessor :logger
 
         def stdout
           @child.out
@@ -91,7 +95,9 @@ module Warden
 
         def initialize(*args)
           @env, @argv, @options = extract_process_spawn_arguments(*args)
+        end
 
+        def run
           @child = Child.new(env, *(argv + [options]))
 
           @child.callback do
