@@ -616,6 +616,8 @@ module Warden
 
         spawn_path = File.join(bin_path, "iomux-spawn")
         spawner = DeferredChild.new(spawn_path, job_root, *args)
+        spawner.logger = logger
+        spawner.run
 
         # iomux-spawn indicates it is ready to receive connections by writing
         # the child's pid to stdout. Wait for that before attempting to
@@ -647,6 +649,9 @@ module Warden
 
         # Wait for the spawned child to be continued
         job = Job.new(self, job_id, "spawner" => spawner)
+        job.logger = logger
+        job.run
+
         Fiber.yield
 
         job
@@ -656,19 +661,27 @@ module Warden
         jobs = {}
 
         jobs_snapshot.each do |job_id, job_snapshot|
-          job_id = Integer(job_id)
-          jobs[job_id] = Job.new(self, job_id, job_snapshot)
+          job = Job.new(self, Integer(job_id), job_snapshot)
+          job.logger = logger
+          job.run
+
+          jobs[job.job_id] = job
         end
 
         jobs
       end
 
       def logger
-        if resources.has_key?("handle")
-          self.class.logger.tag(:handle => resources["handle"])
-        else
-          self.class.logger
+        if @logger
+          return @logger
         end
+
+        if resources.has_key?("handle")
+          @logger = self.class.logger.tag(:handle => resources["handle"])
+          return @logger
+        end
+
+        self.class.logger
       end
 
       class Job
@@ -677,25 +690,38 @@ module Warden
 
         attr_reader :container
         attr_reader :job_id
-        attr_reader :job_root_path
+        attr_reader :options
 
-        def initialize(container, job_id, opts = {})
+        attr_accessor :logger
+
+        def initialize(container, job_id, options = {})
           @container = container
           @job_id = job_id
-          @job_root_path = container.job_path(job_id)
-
-          @cursors_path = File.join(@job_root_path, "cursors")
+          @options = options
 
           @yielded = []
-          @spawner = opts["spawner"]
+          @spawner = options["spawner"]
+        end
 
-          if opts["status"]
-            @status = opts["status"]
+        def job_root_path
+          container.job_path(job_id)
+        end
+
+        def cursors_path
+          File.join(job_root_path, "cursors")
+        end
+
+        def run
+          if options["status"]
+            @status = options["status"]
           else
             @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
-                                       "-w", @cursors_path, @job_root_path,
-                                       :prepend_stdout => opts["stdout"],
-                                       :prepend_stderr => opts["stderr"])
+                                       "-w", cursors_path, job_root_path,
+                                       :prepend_stdout => options["stdout"],
+                                       :prepend_stderr => options["stderr"])
+            @child.logger = logger
+            @child.run
+
             setup_child_handlers
           end
         end
