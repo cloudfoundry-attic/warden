@@ -6,5 +6,6 @@ default: all
 	cd oom && $(MAKE) $@
 	cd repquota && $(MAKE) $@
 	cd iomux && $(MAKE) $@
+	cd closefds && $(MAKE) $@
 
 .PHONY: default
