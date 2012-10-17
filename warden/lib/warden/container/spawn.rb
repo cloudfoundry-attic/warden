@@ -1,6 +1,7 @@
 # coding: UTF-8
 
 require "warden/errors"
+require "warden/util"
 
 require "em/deferrable"
 require "em/posix/spawn"
@@ -94,9 +95,10 @@ module Warden
         end
 
         def initialize(*args)
-          @env, @argv, @options = extract_process_spawn_arguments(*args)
+          # Close all non-default file descriptors before spawning the child
+          args.unshift(Util.path("src/closefds/closefds"))
 
-          @options[:close_others] = true
+          @env, @argv, @options = extract_process_spawn_arguments(*args)
         end
 
         def run
