@@ -27,6 +27,8 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:have_uid_support) { true }
 
   before do
+    FileUtils.mkdir_p(work_path)
+
     unless File.directory?(container_rootfs_path)
       raise "%s does not exist" % container_rootfs_path
     end
