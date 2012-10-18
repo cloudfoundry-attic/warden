@@ -26,6 +26,17 @@ describe Warden::Protocol::RunRequest do
     it_should_default_to false
   end
 
+  field :rlimits do
+    it_should_be_optional
+
+    it "should be populated with ResourceLimits object" do
+      rlimits = Warden::Protocol::ResourceLimits.new
+
+      request.rlimits = rlimits
+      request.should be_valid
+    end
+  end
+
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::RunResponse)
   end
