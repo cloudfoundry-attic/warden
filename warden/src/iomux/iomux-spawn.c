@@ -30,7 +30,7 @@ static void *run_status_writer(void *data) {
   return NULL;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
   int              backlog          = 10;
   muxer_t         *muxers[2]        = {NULL, NULL};
   status_writer_t *sw               = NULL;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     set_cloexec(fds[ii]);
   }
 
-  child = child_create(argv + 2, argc - 2);
+  child = child_create(argv + 2, argc - 2, envp);
 
   printf("child_pid=%d\n", child->pid);
   fflush(stdout);
