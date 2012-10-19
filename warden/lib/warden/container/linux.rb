@@ -116,7 +116,11 @@ module Warden
         args += ["--user", user]
         args += ["/bin/bash"]
 
-        args << { :input => request.script }
+        options = {
+          :input => request.script,
+          :env => resource_limits(request),
+        }
+        args << options
 
         spawn_job(*args)
       end
