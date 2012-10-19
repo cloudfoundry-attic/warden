@@ -38,7 +38,7 @@ describe EventMachine::Warden::Client do
       expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
 
       handler = mock()
-      handler.should_receive(request.type_underscored).and_return(expected_response)
+      handler.should_receive(request.class.type_underscored).and_return(expected_response)
       server = MockWardenServer.new(handler)
       actual_response = nil
 
@@ -59,7 +59,7 @@ describe EventMachine::Warden::Client do
       expected_response = MockWardenServer::Error.new("test error")
 
       handler = mock()
-      handler.should_receive(request.type_underscored).and_raise(expected_response)
+      handler.should_receive(request.class.type_underscored).and_raise(expected_response)
       server = MockWardenServer.new(handler)
 
       em do
@@ -79,7 +79,7 @@ describe EventMachine::Warden::Client do
       expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
 
       handler = mock()
-      handler.should_receive(request.type_underscored).twice.and_return(expected_response)
+      handler.should_receive(request.class.type_underscored).twice.and_return(expected_response)
       server = MockWardenServer.new(handler)
 
       em do
@@ -95,7 +95,7 @@ describe EventMachine::Warden::Client do
       expected_response = RuntimeError.new
 
       handler = mock()
-      handler.should_receive(request.type_underscored).and_return(nil)
+      handler.should_receive(request.class.type_underscored).and_return(nil)
       server = MockWardenServer.new(handler)
 
       em do
@@ -113,6 +113,70 @@ describe EventMachine::Warden::Client do
         # Close server side of the connection
         ::EM.add_timer(0.01) do
           server.connections.first.close_connection
+        end
+      end
+    end
+
+    describe "idle timer" do
+      let(:request) { Warden::Protocol::EchoRequest.new(:message => "hello") }
+      let(:response) { Warden::Protocol::EchoResponse.new(:message => "world") }
+
+      let(:server) do
+        handler = double
+        handler.stub(request.class.type_underscored).and_return(response)
+
+        MockWardenServer.new(handler)
+      end
+
+      let(:conn) do
+        server.create_connection
+      end
+
+      it "should setup an idle timer after connecting" do
+        em do
+          server.start
+
+          conn.idle_timeout = 0.05
+
+          # Check state after 2 * idle_timeout
+          EM.add_timer(0.10) do
+            conn.should_not be_connected
+            EM.stop
+          end
+        end
+      end
+
+      it "should setup an idle timer after executing a request" do
+        em do
+          server.start
+
+          conn.idle_timeout = 0.05
+
+          conn.call(request) do |_|
+            # Check state after 2 * idle_timeout
+            EM.add_timer(0.10) do
+              conn.should_not be_connected
+              EM.stop
+            end
+          end
+        end
+      end
+
+      it "should cancel the idle timer when busy" do
+        em do
+          server.start
+
+          conn.idle_timeout = 0.05
+
+          EM.add_periodic_timer(0.01) do
+            conn.call(request)
+          end
+
+          # Check state after 2 * idle_timeout
+          EM.add_timer(0.10) do
+            conn.should be_connected
+            EM.stop
+          end
         end
       end
     end

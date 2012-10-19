@@ -439,6 +439,12 @@ module Warden
         field.type.ancestors.include?(Warden::Protocol::BaseMessage)
     end
 
+    def safe_convert
+      yield
+    rescue ArgumentError, TypeError => e
+      raise CommandError, e.message
+    end
+
     # Populates a protocol buffer request object with the arguments.
     def populate_request(request, arguments, field_delim = ".")
       # Handle to the proto buf object that will be populated with a value.
@@ -510,8 +516,11 @@ module Warden
               raise FlagError, "Invalid flag: '#{flag_str}'."
             end
 
-            list[field_index] = Warden::Protocol::to_ruby_type(next_arg,
-                                                               field_type)
+            safe_convert do
+              list[field_index] = Warden::Protocol::to_ruby_type(next_arg,
+                                                                 field_type)
+            end
+
             # This is done to prevent parsing of this value as a command-line
             # flag in the next iteration.
             dont_parse = true
@@ -525,9 +534,12 @@ module Warden
               raise FlagError, "Invalid flag: '#{flag_str}'."
             end
 
-            pb_handle.send("#{field_name}=",
-                           Warden::Protocol::to_ruby_type(next_arg,
-                                                          last_parsed[:type]))
+            safe_convert do
+              pb_handle.send("#{field_name}=",
+                             Warden::Protocol::to_ruby_type(next_arg,
+                                                            last_parsed[:type]))
+            end
+
             # This is done to prevent parsing of this value as a command-line
             # flag in the next iteration.
             dont_parse = true

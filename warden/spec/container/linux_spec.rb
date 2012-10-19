@@ -365,6 +365,20 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.container_port.should == 8080
       check_mapping(response)
     end
+
+    it "should allow the port on the host side to be specified" do
+      response = net_in(:host_port => 8080)
+      response.host_port.should == 8080
+      response.container_port.should == 8080
+      check_mapping(response)
+    end
+
+    it "should allow the port on both of the container and host sides to be specified" do
+      response = net_in(:host_port => 8080, :container_port => 8081)
+      response.host_port.should == 8080
+      response.container_port.should == 8081
+      check_mapping(response)
+    end
   end
 
   describe "info" do
