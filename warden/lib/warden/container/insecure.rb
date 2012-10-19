@@ -41,7 +41,9 @@ module Warden
       end
 
       def create_job(request)
-        spawn_job(File.join(container_path, "run.sh"), :input => request.script)
+        spawn_job(File.join(container_path, "run.sh"),
+                  :input => request.script,
+                  :env => resource_limits(request))
       end
 
       def do_net_in(request, response)
