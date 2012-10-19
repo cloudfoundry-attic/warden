@@ -21,11 +21,13 @@ struct child_s {
 
 /**
  * Forks off a child process that will execute the command specified by _argv_.
+ * The environmental parameters passed through _envp_ will be forwarded to the
+ * child process.
  *
  * NB: stdout/stderr of the child will be redirected to the pipes _stdout_ and
  *     _stderr_.
  */
-child_t *child_create(char **argv, size_t argv_size);
+child_t *child_create(char **argv, size_t argv_size, char **envp);
 
 /**
  * Unblocks the child process.

@@ -12,7 +12,7 @@
  * Search for implementations of closefrom(2) for a portable version.
  */
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv, char **envp) {
   DIR *dirp;
   struct dirent *entry;
   int fd;
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
   closedir(dirp);
 
-  execvp(argv[1], &argv[1]);
+  execvpe(argv[1], &argv[1], &envp[0]);
   perror("execvp");
   exit(255);
 }
