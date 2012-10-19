@@ -15,6 +15,8 @@ end
 class EventMachine::Warden::Client::Connection < ::EM::Connection
   include EM::Warden::Client::EventEmitter
 
+  IDLE_TIMEOUT = 30
+
   class CommandResult
     def initialize(value)
       @value = value
@@ -29,10 +31,33 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
     end
   end
 
+  def cancel_idle_timer
+    @idle_timer.cancel if @idle_timer
+  end
+
+  def setup_idle_timer
+    cancel_idle_timer
+
+    @idle_timer = EM::Timer.new(@idle_timeout) { idle_timeout! }
+  end
+
+  def idle_timeout=(idle_timeout)
+    @idle_timeout = idle_timeout
+
+    setup_idle_timer
+  end
+
+  def idle_timeout!
+    close_connection
+  end
+
   def post_init
     @requests  = []
     @connected = false
     @buffer    = ::Warden::Protocol::Buffer.new
+
+    @idle_timer   = nil
+    @idle_timeout = IDLE_TIMEOUT
 
     on(:connected) do
       @connected = true
@@ -82,6 +107,8 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
 
     @requests << [request, blk]
 
+    cancel_idle_timer
+
     send_data(::Warden::Protocol::Buffer.request_to_wire(request))
   end
 
@@ -105,6 +132,8 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
       if blk
         blk.call(CommandResult.new(response))
       end
+
+      setup_idle_timer if @requests.empty?
     end
   end
 end
