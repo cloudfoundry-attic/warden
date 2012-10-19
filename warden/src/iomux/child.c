@@ -9,7 +9,7 @@
 #include "child.h"
 #include "util.h"
 
-child_t *child_create(char **argv, size_t argv_size) {
+child_t *child_create(char **argv, size_t argv_size, char **envp) {
   child_t *child = NULL;
   pid_t cpid;
   int ii = 0;
@@ -74,7 +74,7 @@ child_t *child_create(char **argv, size_t argv_size) {
       exit(1);
     }
 
-    execvp(argv[0], argv);
+    execvpe(argv[0], argv, envp);
 
     /* NOTREACHED */
     exit(0);
