@@ -37,7 +37,7 @@ class MockWardenServer
       @buffer << data if data
       @buffer.each_request do |request|
         begin
-          response = handler.send(request.type_underscored, request)
+          response = handler.send(request.class.type_underscored, request)
           send_response(response) if response
         rescue MockWardenServer::Error => err
           send_error(err)
@@ -78,13 +78,13 @@ end
 
 def create_mock_handler(request, response = nil)
   handler = mock()
-  mock_cont = handler.should_receive(request.type_underscored)
+  mock_cont = handler.should_receive(request.class.type_underscored)
   mock_cont = mock_cont.with(request)
 
   if response
     if response.kind_of?(StandardError)
       mock_cont.and_raise(response)
-    else response
+    else
       mock_cont.and_return(response)
     end
   else

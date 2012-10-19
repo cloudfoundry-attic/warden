@@ -38,7 +38,7 @@ describe EventMachine::Warden::Client do
       expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
 
       handler = mock()
-      handler.should_receive(request.type_underscored).and_return(expected_response)
+      handler.should_receive(request.class.type_underscored).and_return(expected_response)
       server = MockWardenServer.new(handler)
       actual_response = nil
 
@@ -59,7 +59,7 @@ describe EventMachine::Warden::Client do
       expected_response = MockWardenServer::Error.new("test error")
 
       handler = mock()
-      handler.should_receive(request.type_underscored).and_raise(expected_response)
+      handler.should_receive(request.class.type_underscored).and_raise(expected_response)
       server = MockWardenServer.new(handler)
 
       em do
@@ -79,7 +79,7 @@ describe EventMachine::Warden::Client do
       expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
 
       handler = mock()
-      handler.should_receive(request.type_underscored).twice.and_return(expected_response)
+      handler.should_receive(request.class.type_underscored).twice.and_return(expected_response)
       server = MockWardenServer.new(handler)
 
       em do
@@ -95,7 +95,7 @@ describe EventMachine::Warden::Client do
       expected_response = RuntimeError.new
 
       handler = mock()
-      handler.should_receive(request.type_underscored).and_return(nil)
+      handler.should_receive(request.class.type_underscored).and_return(nil)
       server = MockWardenServer.new(handler)
 
       em do

@@ -14,7 +14,7 @@ Gem::Specification.new do |gem|
   gem.version       = EventMachine::Warden::Client::VERSION
 
   gem.add_dependency('eventmachine')
-  gem.add_dependency('warden-protocol')
+  gem.add_dependency('warden-protocol', '>= 0.0.9')
 
   # Only needed for backwards API compatibility.
   gem.add_dependency('warden-client')
