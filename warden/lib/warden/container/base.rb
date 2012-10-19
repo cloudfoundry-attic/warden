@@ -608,6 +608,20 @@ module Warden
         end
       end
 
+      # Converts resource limits mentioned in a spawn/run request into a hash of
+      # environment variables that can be passed to the job being spawned.
+      def resource_limits(request)
+        rlimits = {}
+        if request.rlimits
+          request.rlimits.fields.each_value do |field|
+            value = request.rlimits.send("#{field.name}")
+            rlimits["RLIMIT_#{field.name.to_s.upcase}"] = value.to_s if value
+          end
+        end
+
+        rlimits
+      end
+
       def spawn_job(*args)
         job_id = self.class.generate_job_id
 
