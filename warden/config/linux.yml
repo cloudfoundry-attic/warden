@@ -49,6 +49,9 @@ server:
     nproc: 512
     as: 4194304
 
+  quota:
+    disk_quota_enabled: false
+
 logging:
   level: debug2
 
