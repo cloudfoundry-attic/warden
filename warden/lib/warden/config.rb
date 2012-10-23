@@ -15,6 +15,9 @@ module Warden
           "nproc"  => 512,     # max number of processes
           "as"     => 4194304, # address space limit (KB)
         },
+        "quota"                   => {
+          "disk_quota_enabled" => true,
+        },
       }
     end
 
@@ -48,6 +51,9 @@ module Warden
             optional("msgqueue")     => Integer, # max memory used by POSIX message queues (bytes)
             optional("nice")         => Integer, # max nice priority allowed to raise to values: [-20, 19]
             optional("rtprio")       => Integer, # max realtime priority
+          },
+          "quota"                 => {
+            optional("disk_quota_enabled")      => bool,
           },
         }
       end
