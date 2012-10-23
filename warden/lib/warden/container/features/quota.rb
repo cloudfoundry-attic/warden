@@ -33,7 +33,7 @@ module Warden
           super
 
           # Reset quota limits
-          setquota(uid)
+          setquota(uid) if self.class.quota_enabled
         end
 
         def do_limit_disk(request, response)

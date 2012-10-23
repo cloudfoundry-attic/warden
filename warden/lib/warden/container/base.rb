@@ -52,6 +52,7 @@ module Warden
         attr_reader :root_path
         attr_reader :container_rootfs_path
         attr_reader :container_depot_path
+        attr_reader :quota_enabled
 
         # Stores a map of handles to their respective container objects. Only
         # live containers are reachable through this map. Containers are only
@@ -80,6 +81,9 @@ module Warden
 
           @container_depot_path   = config.server["container_depot_path"]
           @container_depot_path ||= File.join(@root_path, "instances")
+
+          @quota_enabled   = config.server["quota"]["enabled"]
+          @quota_enabled &&= true
 
           FileUtils.mkdir_p(@container_depot_path)
         end

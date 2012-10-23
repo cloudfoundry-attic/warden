@@ -47,6 +47,7 @@ module Warden
                 "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
                 "CONTAINER_DEPOT_PATH" => container_depot_path,
                 "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
+                "QUOTA_ENABLED" => quota_enabled,
               },
               :timeout => nil
             }

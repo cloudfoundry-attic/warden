@@ -4,6 +4,7 @@ require "membrane"
 
 module Warden
   class Config
+
     def self.server_defaults
       {
         "unix_domain_path"        => "/tmp/warden.sock",
@@ -14,6 +15,9 @@ module Warden
           "nofile" => 8192,    # max number of open files
           "nproc"  => 512,     # max number of processes
           "as"     => 4194304, # address space limit (KB)
+        },
+        "quota"                   => {
+          "enabled" => true,
         },
       }
     end
@@ -48,6 +52,9 @@ module Warden
             optional("msgqueue")     => Integer, # max memory used by POSIX message queues (bytes)
             optional("nice")         => Integer, # max nice priority allowed to raise to values: [-20, 19]
             optional("rtprio")       => Integer, # max realtime priority
+          },
+          "quota"                 => {
+            optional("enabled")      => bool,
           },
         }
       end
