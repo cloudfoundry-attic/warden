@@ -19,7 +19,8 @@ server:
 
   # Specifies the path to the base chroot used as the read-only root
   # filesystem
-  container_rootfs_path: /tmp/warden/rootfs
+  #container_rootfs_path: /tmp/warden/rootfs
+  container_rootfs_path: /home/yang/cloudfoundry/warden/warden/root/linux/base/rootfs
 
   # Specifies the path to the parent directory under which all containers
   # will live.
@@ -48,6 +49,9 @@ server:
     nofile: 8192
     nproc: 512
     as: 4194304
+
+  quota:
+    enabled: false
 
 logging:
   level: debug2
