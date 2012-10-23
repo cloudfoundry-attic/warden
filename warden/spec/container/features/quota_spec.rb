@@ -45,6 +45,10 @@ describe Warden::Container::Features::Quota do
     let(:response) { Warden::Protocol::LimitDiskResponse.new }
 
     describe "setting 'block_soft'" do
+      before do
+        instance.class.stub(:disk_quota_enabled).and_return(true)
+      end
+
       after do
         instance.do_limit_disk(request, response)
 
@@ -73,6 +77,10 @@ describe Warden::Container::Features::Quota do
     end
 
     describe "setting 'block_hard'" do
+      before do
+        instance.class.stub(:disk_quota_enabled).and_return(true)
+      end
+
       after do
         instance.do_limit_disk(request, response)
 
@@ -106,6 +114,10 @@ describe Warden::Container::Features::Quota do
     end
 
     describe "setting 'inode_soft'" do
+      before do
+        instance.class.stub(:disk_quota_enabled).and_return(true)
+      end
+
       after do
         instance.do_limit_disk(request, response)
 
@@ -120,6 +132,10 @@ describe Warden::Container::Features::Quota do
     end
 
     describe "setting 'inode_hard'" do
+      before do
+        instance.class.stub(:disk_quota_enabled).and_return(true)
+      end
+
       after do
         instance.do_limit_disk(request, response)
 
@@ -132,6 +148,37 @@ describe Warden::Container::Features::Quota do
         it "via '#{inode_property}'" do
           request.send(inode_property + "=", 1024)
         end
+      end
+    end
+
+    describe "disabling disk quota" do
+      before do
+        instance.class.stub(:disk_quota_enabled).and_return(false)
+      end
+
+      after do
+        instance.do_limit_disk(request, response)
+
+        %W(byte_limit byte byte_hard byte_soft).each do |byte_property|
+          block_property = byte_property.gsub("byte", "block")
+          inode_property = byte_property.gsub("byte", "inode")
+
+          response.method(byte_property ).call.should be_nil
+          response.method(block_property).call.should be_nil
+          response.method(inode_property).call.should be_nil
+        end
+      end
+
+      it "should not be able to set any properties" do
+        %W(byte_limit byte byte_hard byte_soft).each do |byte_property|
+          block_property = byte_property.gsub("byte", "block")
+          inode_property = byte_property.gsub("byte", "inode")
+
+          request.send(byte_property  + "=", 4096)
+          request.send(block_property + "=", 1)
+          request.send(inode_property + "=", 1024)
+        end
+        request.send("byte_soft" + "=", 4000)
       end
     end
   end
