@@ -10,6 +10,9 @@ module Warden
         "unix_domain_permissions" => 0755,
         "container_klass"         => "Warden::Container::Insecure",
         "container_grace_time"    => (5 * 60), # 5 minutes,
+        "quota" => {
+          "disk_quota_enabled" => true,
+        },
       }
     end
 
@@ -42,6 +45,9 @@ module Warden
             optional("rtprio")     => Integer,
             optional("sigpending") => Integer,
             optional("stack")      => Integer,
+          },
+          "quota" => {
+            optional("disk_quota_enabled") => bool,
           },
         }
       end

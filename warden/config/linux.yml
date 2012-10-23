@@ -31,6 +31,9 @@ server:
     nofile: 8192
     nproc: 512
 
+  quota:
+    disk_quota_enabled: true
+
 logging:
   level: debug2
 
