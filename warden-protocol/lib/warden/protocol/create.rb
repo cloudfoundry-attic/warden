@@ -21,7 +21,7 @@ module Warden
       optional :handle, :string, 3
 
       def self.description
-        "Create a container, optionally pass options."
+        "Create a container, optionally pass options. If a handle is specified, then tie the created container to the specified handle."
       end
     end
 
