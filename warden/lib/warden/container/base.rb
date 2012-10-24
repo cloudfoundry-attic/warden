@@ -658,6 +658,9 @@ module Warden
           end
         end
 
+        # Ensure that the client connection is not stuck when iomux-spawn
+        # fails.
+        raise WardenError.new("iomux-spawn failed") if spawner.terminated?
         # Wait for the spawner to be ready to receive connections
         Fiber.yield
 
@@ -666,8 +669,11 @@ module Warden
         job.logger = logger
         job.run
 
+        # Ensure that the client connection is not stuck when iomux-spawn
+        # fails.
+        raise WardenError.new("iomux-spawn failed") if spawner.terminated?
+        # Wait for the spawner to activate the spawned job.
         Fiber.yield
-
         job
       end
 
