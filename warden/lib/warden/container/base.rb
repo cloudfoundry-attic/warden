@@ -628,9 +628,14 @@ module Warden
         job_root = job_path(job_id)
         FileUtils.mkdir_p(job_root)
 
+        f = Fiber.current
+
         spawn_path = File.join(bin_path, "iomux-spawn")
         spawner = DeferredChild.new(spawn_path, job_root, *args)
         spawner.logger = logger
+        # Setup errback/callback to notify premature iomux-spawn failures.
+        spawner.errback { f.resume(:no) if f.alive? }
+        spawner.callback { f.resume(:no) if f.alive? }
         spawner.run
 
         # iomux-spawn indicates it is ready to receive connections by writing
@@ -638,7 +643,6 @@ module Warden
         # link. In the event that the spawner fails this code will still be
         # invoked, causing the linker to exit with status 255 (the desired
         # behavior).
-        f = Fiber.current
         out = ""
         state = :wait_ready
         spawner.add_streams_listener do |_, data|
@@ -659,15 +663,21 @@ module Warden
         end
 
         # Wait for the spawner to be ready to receive connections
-        Fiber.yield
+        spawner_alive = Fiber.yield
+        # Ensure that the client connection is not stuck when iomux-spawn
+        # fails.
+        raise WardenError.new("iomux-spawn failed") if spawner_alive == :no
 
         # Wait for the spawned child to be continued
         job = Job.new(self, job_id, "spawner" => spawner)
         job.logger = logger
         job.run
 
-        Fiber.yield
-
+        # Wait for the spawner to activate the spawned job.
+        spawner_alive = Fiber.yield
+        # Ensure that the client connection is not stuck when iomux-spawn
+        # fails.
+        raise WardenError.new("iomux-spawn failed") if spawner_alive == :no
         job
       end
 
