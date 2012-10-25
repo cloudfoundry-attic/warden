@@ -57,7 +57,9 @@ module Warden
             save_history
             STDOUT.write("#{command_info[:result]}")
           end
-        rescue Warden::CommandsManager::CommandError => ce
+        rescue Warden::Protocol::ProtocolError,
+          Warden::Client::ServerError,
+          Warden::CommandsManager::CommandError => ce
           STDERR.write("#{ce.message}\n")
         end
       end
