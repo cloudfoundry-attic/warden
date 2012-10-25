@@ -94,19 +94,19 @@ module Warden
           @job_id += 1
         end
 
-        def generate_handle
-          @handle ||= begin
-                        t = Time.now
-                        t.tv_sec * 1_000_000 + t.tv_usec
-                      end
-          @handle += 1
+        def generate_container_id
+          @container_id ||= begin
+                              t = Time.now
+                              t.tv_sec * 1_000_000 + t.tv_usec
+                            end
+          @container_id += 1
 
           # Explicit loop because we MUST have 11 characters.
           # This is required because we use the handle to name a network
           # interface for the container, this name has a 2 character prefix and
           # suffix, and has a maximum length of 15 characters (IFNAMSIZ).
           11.times.map do |i|
-            ((@handle >> (55 - (i + 1) * 5)) & 31).to_s(32)
+            ((@container_id >> (55 - (i + 1) * 5)) & 31).to_s(32)
           end.join
         end
 
@@ -161,7 +161,12 @@ module Warden
       end
 
       def handle
-        @handle ||= resources["handle"]
+        @handle ||= resources["handle"] if resources.has_key?("handle")
+        @handle ||= container_id
+      end
+
+      def container_id
+        @container_id ||= self.class.generate_container_id
       end
 
       def host_ip
@@ -340,7 +345,7 @@ module Warden
         if @resources.has_key?("handle")
           # Restored from snapshot
         else
-          @resources["handle"] = self.class.generate_handle
+          @resources["handle"] = handle
         end
 
         if @resources.has_key?("network")
