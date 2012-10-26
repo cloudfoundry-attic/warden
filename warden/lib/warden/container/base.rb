@@ -341,9 +341,15 @@ module Warden
       end
 
       # Acquire resources required for every container instance.
-      def acquire
+      def acquire(opts = {})
         if @resources.has_key?("handle")
           # Restored from snapshot
+        elsif opts[:handle]
+          if self.class.registry[opts[:handle]]
+            raise WardenError.new("container with handle: #{opts[:handle]} already exists.")
+          end
+
+          @resources["handle"] = opts[:handle]
         else
           @resources["handle"] = handle
         end
@@ -390,7 +396,7 @@ module Warden
         check_state_in(State::Born)
 
         begin
-          acquire
+          acquire(:handle => request.handle)
 
           if request.grace_time
             self.grace_time = request.grace_time

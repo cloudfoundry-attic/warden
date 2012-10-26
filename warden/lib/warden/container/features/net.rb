@@ -102,7 +102,7 @@ module Warden
           }
         end
 
-        def acquire
+        def acquire(opts = {})
           if !@resources.has_key?("ports")
             @resources["ports"] = []
             @acquired["ports"] = []
