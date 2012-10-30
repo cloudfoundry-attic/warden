@@ -77,8 +77,11 @@ module Warden
         sh File.join(root_path, "create.sh"), container_path, options
         logger.debug("Container created")
 
-        write_bind_mount_commands(request)
+        write_bind_mount_commands(request.bind_mounts)
         logger.debug2("Wrote bind mount commands")
+
+        write_image_mount_commands(request.image_mounts)
+        logger.debug2("Wrote image mount commands")
 
         write_etc_security_limits_conf
         logger.debug2("Wrote /etc/security/limits.conf")
@@ -162,14 +165,14 @@ module Warden
         sh *args
       end
 
-      def write_bind_mount_commands(request)
-        return if request.bind_mounts.nil? || request.bind_mounts.empty?
+      def write_bind_mount_commands(bind_mount_list)
+        return if bind_mount_list.nil? || bind_mount_list.empty?
 
         File.open(File.join(container_path, "hook-parent-before-clone.sh"), "a") do |file|
           file.puts
           file.puts
 
-          request.bind_mounts.each do |bind_mount|
+          bind_mount_list.each do |bind_mount|
             src_path = bind_mount.src_path
             dst_path = bind_mount.dst_path
 
@@ -188,6 +191,35 @@ module Warden
             file.puts "mkdir -p #{dst_path}" % [dst_path]
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
+          end
+        end
+      end
+
+      def write_image_mount_commands(image_mount_list)
+        return if image_mount_list.nil? || image_mount_list.empty?
+
+        File.open(File.join(container_path, "hook-parent-before-clone.sh"), "a") do |file|
+          file.puts
+          file.puts
+
+          image_mount_list.each do |image_mount|
+            image_path = image_mount.image_path
+            dst_path = image_mount.dst_path
+
+            # Fix up destination path to be an absolute path inside the union
+            dst_path = File.join(container_path, "union", dst_path[1..-1])
+
+            mode = case image_mount.mode
+                   when Protocol::CreateRequest::ImageMount::Mode::RO
+                     "ro"
+                   when Protocol::CreateRequest::ImageMount::Mode::RW
+                     "rw"
+                   else
+                     raise "Unknown mode"
+                   end
+
+            file.puts "mkdir -p #{dst_path}" % [dst_path]
+            file.puts "mount -n -o loop,#{mode} #{image_path} #{dst_path}"
           end
         end
       end
