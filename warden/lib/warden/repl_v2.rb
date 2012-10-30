@@ -25,7 +25,12 @@ module Warden
     #         Warden server.
     #      Set :history_path to a custom file path to where history of commands
     #         being executed should be saved.
+    #      Set :exit_on_error to true if you want the Repl to stop after the
+    #         first command that returns a non-zero exit status, or stop after
+    #         handling the first error in processing a command.
     def initialize(opts = {})
+      @exit_on_error = opts[:exit_on_error]
+      @exit_on_error = false unless @exit_on_error
       @trace = opts[:trace] == true
       @socket_path = opts[:socket_path] || "/tmp/warden.sock"
       @client = Warden::Client.new(@socket_path)
@@ -41,7 +46,6 @@ module Warden
     # from a specified file.
     def start
       restore_history
-
       @client.connect unless @client.connected?
 
       comp = proc { |s|
@@ -51,7 +55,10 @@ module Warden
       Readline.completion_append_character = " "
       Readline.completion_proc = comp
 
+      exit_status = 0
       while line = Readline.readline('warden> ', true)
+        command_info = nil
+
         begin
           if command_info = process_line(line)
             save_history
@@ -61,8 +68,19 @@ module Warden
           Warden::Client::ServerError,
           Warden::CommandsManager::CommandError => ce
           STDERR.write("#{ce.message}\n")
+          break if @exit_on_error
+        end
+
+        if @exit_on_error
+          if command_info && command_info[:exit_status]
+            exit_status = command_info[:exit_status]
+          end
+
+          break if exit_status != 0
         end
       end
+
+      exit_status
     end
 
     # Executes the Warden command passed and returns the result and exit status.
@@ -126,8 +144,6 @@ module Warden
       text
     end
 
-    private
-
     def process_command(command_args)
       command_info = { :result => "" }
       command_info[:result] << "+ #{command_args.join(" ")}\n" if @trace
@@ -163,6 +179,8 @@ module Warden
 
       command_info
     end
+
+    private
 
     def to_stream_command(command)
       spawn_command = convert_to_spawn_command(command)

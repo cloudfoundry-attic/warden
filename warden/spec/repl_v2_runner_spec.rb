@@ -7,17 +7,22 @@ describe Warden::ReplRunner do
     context "parse global arguments" do
       it "should parse global arguments" do
         repl = double("repl")
-        repl.should_receive(:start).once
+        repl.should_receive(:start).once.and_return(0)
 
         expected_options = {
           :trace => true,
           :socket_path => "/foo/bar",
+          :exit_on_error => true,
         }
         Warden::Repl.should_receive(:new).once.with(expected_options).
           and_return(repl)
 
-        described_class.run(["--trace", "--exit_on_error",
-                             "--socket", "/foo/bar"])
+        expect do
+          described_class.run(["--trace", "--exit_on_error",
+                               "--socket", "/foo/bar"])
+        end.to raise_error(SystemExit) do |error|
+          error.status.should == 0
+        end
       end
 
       it "should raise an error when a global argument is wrong" do
@@ -70,60 +75,23 @@ describe Warden::ReplRunner do
 
       it "should start interactive repl" do
         repl = double("repl")
-        repl.should_receive(:start).once
+        repl.should_receive(:start).once.and_return(0)
 
         Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
 
-        described_class.run
-      end
-    end
-
-    context "parse commands" do
-      it "should strip whitespace" do
-        repl = double("repl")
-        repl.should_receive(:process_line).once.with("command --arg")
-
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
-
-        expect {
-          described_class.run(["--", "  command", "--arg   "])
-        }.to raise_error(SystemExit) { |error|
+        expect do
+          described_class.run
+        end.to raise_error(SystemExit) do |error|
           error.status.should == 0
-        }
-      end
-
-      it "should ignore empty commands" do
-        repl = double("repl")
-        repl.should_not_receive(:process_line)
-
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
-
-        expect {
-          described_class.run(["--", "\n\n"])
-        }.to raise_error(SystemExit) { |error|
-          error.status.should == 0
-        }
-      end
-
-      it "should accept multi-line commands" do
-        repl = double("repl")
-        repl.should_receive(:process_line).twice.with("command --arg")
-
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
-
-        expect {
-          described_class.run(["--", "command --arg\ncommand --arg\n"])
-        }.to raise_error(SystemExit) { |error|
-          error.status.should == 0
-        }
+        end
       end
     end
 
     context "execute commands non-interactively" do
-      it "should write output of command to stdout and exit with status 0" do
+      it "should write output of command to stdout and exit with exit status of the command" do
         repl = double("repl")
-        repl.should_receive(:process_line).once.with("command --arg").
-          and_return({ :result => "result" })
+        repl.should_receive(:process_command).once.with(["command", "--arg"]).
+          and_return({ :result => "result", :exit_status => 2 })
 
         Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
 
@@ -133,9 +101,9 @@ describe Warden::ReplRunner do
         end
 
         expect {
-          described_class.run(["--exit_on_error", "--", "command --arg"])
+          described_class.run(["--", "command", "--arg"])
         }.to raise_error(SystemExit) { |error|
-          error.status.should == 0
+          error.status.should == 2
         }
 
         received_output.should == "result"
@@ -144,7 +112,7 @@ describe Warden::ReplRunner do
       it "should write stack back trace of command error to stderr and exit with status 0" do
         repl = double("repl")
         ce = Warden::CommandsManager::CommandError.new("command error")
-        repl.should_receive(:process_line).once.with("command --arg").
+        repl.should_receive(:process_command).once.with(["command", "--arg"]).
           and_raise(ce)
 
         Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
@@ -155,7 +123,7 @@ describe Warden::ReplRunner do
         end
 
         expect {
-          described_class.run(["--", "command --arg"])
+          described_class.run(["--", "command", "--arg"])
         }.to raise_error(SystemExit) { |error|
           error.status.should == 0
         }
@@ -164,38 +132,6 @@ describe Warden::ReplRunner do
         ce.backtrace.each { |err| expected_err << "#{err}\n" }
 
         received_err.should == expected_err
-      end
-
-      it "should exit with exit status 1 if command error is raised and exit_on_error flag is set" do
-        repl = double("repl")
-        ce = Warden::CommandsManager::CommandError.new("command error")
-        repl.should_receive(:process_line).once.with("command --arg").
-          and_raise(ce)
-
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
-
-        STDERR.should_receive(:write).any_number_of_times
-        expect {
-          described_class.run(["--exit_on_error", "--", "command --arg"])
-        }.to raise_error(SystemExit) { |error|
-          error.status.should == 1
-        }
-      end
-
-      it "should exit with exit status of the first failed command if exit_on_error flag is set" do
-        repl = double("repl")
-        repl.should_receive(:process_line).once.with("bad_command_0 --arg").
-          and_return({ :exit_status => 2 })
-
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
-
-        expect {
-          described_class.run(["--exit_on_error", "--",
-                               "bad_command_0 --arg\nbad_command_1 --arg\n"])
-        }.to raise_error { |error|
-          error.should be_an_instance_of SystemExit
-          error.status.should == 2
-        }
       end
     end
   end
