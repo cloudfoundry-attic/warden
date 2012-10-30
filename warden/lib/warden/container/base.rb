@@ -510,16 +510,19 @@ module Warden
       end
 
       def do_run(request, response)
-        spawn_request = Protocol::SpawnRequest.new \
+        spawn_request = Protocol::SpawnRequest.new({
           :handle => request.handle,
           :script => request.script,
-          :privileged => request.privileged
+          :privileged => request.privileged,
+          :rlimits => request.rlimits,
+        })
 
         spawn_response = dispatch(spawn_request)
 
-        link_request = Protocol::LinkRequest.new \
+        link_request = Protocol::LinkRequest.new({
           :handle => handle,
-          :job_id => spawn_response.job_id
+          :job_id => spawn_response.job_id,
+        })
 
         link_response = dispatch(link_request)
 
@@ -622,15 +625,20 @@ module Warden
       # Converts resource limits mentioned in a spawn/run request into a hash of
       # environment variables that can be passed to the job being spawned.
       def resource_limits(request)
-        rlimits = {}
+        rlimits = Server.config.rlimits
+
         if request.rlimits
-          request.rlimits.fields.each_value do |field|
-            value = request.rlimits.send("#{field.name}")
-            rlimits["RLIMIT_#{field.name.to_s.upcase}"] = value.to_s if value
+          request.rlimits.to_hash.each do |key, value|
+            rlimits[key.to_s] = value
           end
         end
 
-        rlimits
+        rlimits_env = {}
+        rlimits.each do |key, value|
+          rlimits_env["RLIMIT_#{key.to_s.upcase}"] = value.to_s
+        end
+
+        rlimits_env
       end
 
       def spawn_job(*args)

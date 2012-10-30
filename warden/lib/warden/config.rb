@@ -10,11 +10,6 @@ module Warden
         "unix_domain_permissions" => 0755,
         "container_klass"         => "Warden::Container::Insecure",
         "container_grace_time"    => (5 * 60), # 5 minutes,
-        "container_limits_conf"   => {
-          "nofile" => 8192,    # max number of open files
-          "nproc"  => 512,     # max number of processes
-          "as"     => 4194304, # address space limit (KB)
-        },
       }
     end
 
@@ -29,25 +24,24 @@ module Warden
 
           "container_klass"       => String,
           "container_grace_time"  => enum(nil, Integer),
-          "container_limits_conf" => {
-            optional("core")         => Integer, # limits the core file size (KB)
-            optional("data")         => Integer, # max data size (KB)
-            optional("fsize")        => Integer, # maximum filesize (KB)
-            optional("memlock")      => Integer, # max locked-in-memory address space (KB)
-            optional("nofile")       => Integer, # max number of open files
-            optional("rss")          => Integer, # max resident set size (KB)
-            optional("stack")        => Integer, # max stack size (KB)
-            optional("cpu")          => Integer, # max CPU time (MIN)
-            optional("nproc")        => Integer, # max number of processes
-            optional("as")           => Integer, # address space limit (KB)
-            optional("maxlogins")    => Integer, # max number of logins for this user
-            optional("maxsyslogins") => Integer, # max number of logins on the system
-            optional("priority")     => Integer, # the priority to run user process with
-            optional("locks")        => Integer, # max number of file locks the user can hold
-            optional("sigpending")   => Integer, # max number of pending signals
-            optional("msgqueue")     => Integer, # max memory used by POSIX message queues (bytes)
-            optional("nice")         => Integer, # max nice priority allowed to raise to values: [-20, 19]
-            optional("rtprio")       => Integer, # max realtime priority
+
+          # See getrlimit(2) for details. Integer values are passed verbatim.
+          optional("container_rlimits") => {
+            optional("as")         => Integer,
+            optional("core")       => Integer,
+            optional("cpu")        => Integer,
+            optional("data")       => Integer,
+            optional("fsize")      => Integer,
+            optional("locks")      => Integer,
+            optional("memlock")    => Integer,
+            optional("msgqueue")   => Integer,
+            optional("nice")       => Integer,
+            optional("nofile")     => Integer,
+            optional("nproc")      => Integer,
+            optional("rss")        => Integer,
+            optional("rtprio")     => Integer,
+            optional("sigpending") => Integer,
+            optional("stack")      => Integer,
           },
         }
       end
@@ -141,6 +135,10 @@ module Warden
 
       @network["deny_networks"]  = @network["deny_networks"].compact
       @network["allow_networks"] = @network["allow_networks"].compact
+    end
+
+    def rlimits
+      @server["container_rlimits"] || {}
     end
   end
 end

@@ -515,5 +515,21 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.stderr.should == ""
     end
   end
+
+  describe "resource limits" do
+    attr_reader :handle
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should be configurable" do
+      rlimits = Warden::Protocol::ResourceLimits.new(:nofile => 1234)
+      response = client.run(:handle => handle, :script => "ulimit -n", :rlimits => rlimits)
+      response.exit_status.should == 0
+      response.stdout.chomp.should == "1234"
+      response.stderr.chomp.should == ""
+    end
+  end
 end
 
