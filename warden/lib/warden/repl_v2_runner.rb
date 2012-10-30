@@ -66,31 +66,41 @@ EOT
       opt_parser.parse(global_args)
       repl = Warden::Repl.new(options)
 
-      unless command.empty?
-        command_info = nil
-
-        begin
-          command_info = repl.process_command(command)
-        rescue Warden::CommandsManager::CommandError => ce
-          STDERR.write("#{ce}\n")
-          ce.backtrace.each { |err| STDERR.write("#{err}\n") }
-        end
-
-        exit_status = 0
-        if command_info
-          STDOUT.write(command_info[:result])
-          exit_status = command_info[:exit_status] if command_info[:exit_status]
-        end
-
-        exit(exit_status)
+      if command.empty?
+        run_interactively(repl)
       else
-        trap('INT') do
-          STDERR.write("\n\nExiting...\n")
-          exit
-        end
-
-        exit(repl.start)
+        run_non_interactively(repl, command)
       end
+    end
+
+    private
+
+    def self.run_interactively(repl)
+      trap('INT') do
+        STDERR.write("\n\nExiting...\n")
+        exit
+      end
+
+      exit(repl.start)
+    end
+
+    def self.run_non_interactively(repl, command)
+      command_info = nil
+
+      begin
+        command_info = repl.process_command(command)
+      rescue Warden::CommandsManager::CommandError => ce
+        STDERR.write("#{ce}\n")
+        ce.backtrace.each { |err| STDERR.write("#{err}\n") }
+      end
+
+      exit_status = 0
+      if command_info
+        STDOUT.write(command_info[:result])
+        exit_status = command_info[:exit_status] if command_info[:exit_status]
+      end
+
+      exit(exit_status)
     end
   end
 end
