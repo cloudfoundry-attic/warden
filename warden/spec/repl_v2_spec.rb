@@ -91,6 +91,43 @@ describe Warden::Repl do
       end
     end
 
+    context "handle error_on_exit flag" do
+      before :each do
+        @command = "simple_test --field field"
+
+        @client.should_receive(:connected?).once.and_return(true)
+        Warden::Client.should_receive(:new).once.with("/tmp/warden.sock")
+          .and_return(@client)
+
+        Readline.should_receive(:readline).with('warden> ', true)
+          .and_return(@command)
+
+        @repl = described_class.new(:exit_on_error => true)
+        @repl.should_receive(:restore_history).once.and_return(nil)
+      end
+
+      it "should return the exit status of the first failed command" do
+        # Injecting non-zero exit status below in the mock
+        @repl.should_receive(:process_line).once.with(@command)
+          .and_return({:exit_status => 2, :result => "result"})
+
+        STDOUT.should_receive(:write).with("result").once
+
+        @repl.should_receive(:save_history).once.and_return(nil)
+        @repl.start.should == 2
+      end
+
+      it "should write command error messages to stderr and return 0" do
+        ce = Warden::CommandsManager::CommandError.new("command error")
+        @repl.should_receive(:process_line).once.with(@command)
+           .and_raise(ce)
+
+        STDERR.should_receive(:write).with("#{ce.message}\n").once
+
+        @repl.start.should == 0
+      end
+    end
+
     context "save, restore history" do
       before :each do
         @client.should_receive(:connected?).once.and_return(true)
