@@ -49,7 +49,17 @@ var messageToResponse = map[Message_Type]func() Response{
 	Message_Echo:           func() Response { return &EchoResponse{} },
 }
 
-func readMessage(r *bufio.Reader) (*Message, error) {
+type Reader struct {
+	*bufio.Reader
+}
+
+func NewReader(r_ io.Reader) *Reader {
+	r := &Reader{}
+	r.Reader = bufio.NewReader(r_)
+	return r
+}
+
+func (r *Reader) ReadMessage() (*Message, error) {
 	l, more, err := r.ReadLine()
 	if err != nil {
 		return nil, err
@@ -85,18 +95,8 @@ func readMessage(r *bufio.Reader) (*Message, error) {
 	return m, nil
 }
 
-type RequestReader struct {
-	r *bufio.Reader
-}
-
-func NewRequestReader(r io.Reader) *RequestReader {
-	rr := &RequestReader{}
-	rr.r = bufio.NewReader(r)
-	return rr
-}
-
-func (rr *RequestReader) Read() (Request, error) {
-	m, err := readMessage(rr.r)
+func (r *Reader) ReadRequest() (Request, error) {
+	m, err := r.ReadMessage()
 	if err != nil {
 		return nil, err
 	}
@@ -116,18 +116,8 @@ func (rr *RequestReader) Read() (Request, error) {
 	return req, nil
 }
 
-type ResponseReader struct {
-	r *bufio.Reader
-}
-
-func NewResponseReader(r io.Reader) *ResponseReader {
-	rr := &ResponseReader{}
-	rr.r = bufio.NewReader(r)
-	return rr
-}
-
-func (rr *ResponseReader) Read() (Response, error) {
-	m, err := readMessage(rr.r)
+func (r *Reader) ReadResponse() (Response, error) {
+	m, err := r.ReadMessage()
 	if err != nil {
 		return nil, err
 	}

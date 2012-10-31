@@ -7,7 +7,17 @@ import (
 	"strconv"
 )
 
-func writeMessage(w *bufio.Writer, m *Message) error {
+type Writer struct {
+	*bufio.Writer
+}
+
+func NewWriter(w_ io.Writer) *Writer {
+	w := &Writer{}
+	w.Writer = bufio.NewWriter(w_)
+	return w
+}
+
+func (w *Writer) WriteMessage(m *Message) error {
 	data, err := proto.Marshal(m)
 	if err != nil {
 		return err
@@ -34,17 +44,7 @@ func writeMessage(w *bufio.Writer, m *Message) error {
 	return nil
 }
 
-type RequestWriter struct {
-	w *bufio.Writer
-}
-
-func NewRequestWriter(w io.Writer) *RequestWriter {
-	rw := &RequestWriter{}
-	rw.w = bufio.NewWriter(w)
-	return rw
-}
-
-func (rw *RequestWriter) Write(r Request) error {
+func (w *Writer) WriteRequest(r Request) error {
 	data, err := proto.Marshal(r)
 	if err != nil {
 		return err
@@ -56,20 +56,10 @@ func (rw *RequestWriter) Write(r Request) error {
 		Payload: data,
 	}
 
-	return writeMessage(rw.w, m)
+	return w.WriteMessage(m)
 }
 
-type ResponseWriter struct {
-	w *bufio.Writer
-}
-
-func NewResponseWriter(w io.Writer) *ResponseWriter {
-	rw := &ResponseWriter{}
-	rw.w = bufio.NewWriter(w)
-	return rw
-}
-
-func (rw *ResponseWriter) Write(r Response) error {
+func (w *Writer) WriteResponse(r Response) error {
 	data, err := proto.Marshal(r)
 	if err != nil {
 		return err
@@ -81,5 +71,5 @@ func (rw *ResponseWriter) Write(r Response) error {
 		Payload: data,
 	}
 
-	return writeMessage(rw.w, m)
+	return w.WriteMessage(m)
 }
