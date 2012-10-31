@@ -1,0 +1,10 @@
+package warden;
+
+message CopyInRequest {
+  required string handle = 1;
+  required string src_path = 2;
+  required string dst_path = 3;
+}
+
+message CopyInResponse {
+}

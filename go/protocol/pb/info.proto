@@ -1,0 +1,69 @@
+package warden;
+
+message InfoRequest {
+  required string handle = 1;
+}
+
+message InfoResponse {
+  message MemoryStat {
+    optional uint64 cache                     =  1;
+    optional uint64 rss                       =  2;
+    optional uint64 mapped_file               =  3;
+    optional uint64 pgpgin                    =  4;
+    optional uint64 pgpgout                   =  5;
+    optional uint64 swap                      =  6;
+    optional uint64 pgfault                   =  7;
+    optional uint64 pgmajfault                =  8;
+    optional uint64 inactive_anon             =  9;
+    optional uint64 active_anon               = 10;
+    optional uint64 inactive_file             = 11;
+    optional uint64 active_file               = 12;
+    optional uint64 unevictable               = 13;
+    optional uint64 hierarchical_memory_limit = 14;
+    optional uint64 hierarchical_memsw_limit  = 15;
+    optional uint64 total_cache               = 16;
+    optional uint64 total_rss                 = 17;
+    optional uint64 total_mapped_file         = 18;
+    optional uint64 total_pgpgin              = 19;
+    optional uint64 total_pgpgout             = 20;
+    optional uint64 total_swap                = 21;
+    optional uint64 total_pgfault             = 22;
+    optional uint64 total_pgmajfault          = 23;
+    optional uint64 total_inactive_anon       = 24;
+    optional uint64 total_active_anon         = 25;
+    optional uint64 total_inactive_file       = 26;
+    optional uint64 total_active_file         = 27;
+    optional uint64 total_unevictable         = 28;
+  }
+
+  message CpuStat {
+    optional uint64 usage  = 1; // Nanoseconds
+    optional uint64 user   = 2; // Hz (USER_HZ specifically)
+    optional uint64 system = 3; // Hz
+  }
+
+  message DiskStat {
+    optional uint64 bytes_used  = 1;
+    optional uint64 inodes_used = 2;
+  }
+
+  message BandwidthStat {
+    optional uint64 in_rate   = 1;
+    optional uint64 in_burst  = 2;
+    optional uint64 out_rate  = 3;
+    optional uint64 out_burst = 4;
+  }
+
+  optional string state = 10;
+
+  repeated string events = 20;
+
+  optional string host_ip        = 30;
+  optional string container_ip   = 31;
+  optional string container_path = 32;
+
+  optional MemoryStat memory_stat       = 40;
+  optional CpuStat cpu_stat             = 41;
+  optional DiskStat disk_stat           = 42;
+  optional BandwidthStat bandwidth_stat = 43;
+}

@@ -1,0 +1,34 @@
+package warden;
+
+message Message {
+  enum Type {
+    Error = 1;
+
+    Create  = 11;
+    Stop    = 12;
+    Destroy = 13;
+    Info    = 14;
+
+    Spawn  = 21;
+    Link   = 22;
+    Run    = 23;
+    Stream = 24;
+
+    NetIn  = 31;
+    NetOut = 32;
+
+    CopyIn  = 41;
+    CopyOut = 42;
+
+    LimitMemory    = 51;
+    LimitDisk      = 52;
+    LimitBandwidth = 53;
+
+    Ping = 91;
+    List = 92;
+    Echo = 93;
+  }
+
+  required Type type = 1;
+  required string payload = 2;
+}

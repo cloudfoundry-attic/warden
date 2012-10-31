@@ -1,0 +1,11 @@
+package warden;
+
+message LimitMemoryRequest {
+  required string handle = 1;
+
+  optional uint64 limit_in_bytes = 2;
+}
+
+message LimitMemoryResponse {
+  optional uint64 limit_in_bytes = 1;
+}

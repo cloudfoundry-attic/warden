@@ -1,0 +1,15 @@
+package warden;
+
+message RunRequest {
+  required string handle = 1;
+
+  required string script = 2;
+  optional bool privileged = 3 [default = false];
+  optional ResourceLimits rlimits = 4;
+}
+
+message RunResponse {
+  optional uint32 exit_status = 1;
+  optional string stdout = 2;
+  optional string stderr = 3;
+}

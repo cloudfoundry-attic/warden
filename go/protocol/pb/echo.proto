@@ -1,0 +1,9 @@
+package warden;
+
+message EchoRequest {
+  required string message = 1;
+}
+
+message EchoResponse {
+  required string message = 1;
+}
