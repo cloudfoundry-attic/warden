@@ -1182,7 +1182,7 @@ func (*ListResponse) ProtoMessage()       {}
 
 type Message struct {
 	Type             *Message_Type `protobuf:"varint,1,req,name=type,enum=protocol.Message_Type" json:"type,omitempty"`
-	Payload          *string       `protobuf:"bytes,2,req,name=payload" json:"payload,omitempty"`
+	Payload          []byte        `protobuf:"bytes,2,req,name=payload" json:"payload,omitempty"`
 	XXX_unrecognized []byte        `json:"-"`
 }
 
@@ -1197,11 +1197,11 @@ func (this *Message) GetType() Message_Type {
 	return 0
 }
 
-func (this *Message) GetPayload() string {
-	if this != nil && this.Payload != nil {
-		return *this.Payload
+func (this *Message) GetPayload() []byte {
+	if this != nil {
+		return this.Payload
 	}
-	return ""
+	return nil
 }
 
 type NetInRequest struct {

@@ -30,5 +30,5 @@ message Message {
   }
 
   required Type type = 1;
-  required string payload = 2;
+  required bytes payload = 2;
 }
