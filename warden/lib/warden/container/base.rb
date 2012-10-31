@@ -681,7 +681,7 @@ module Warden
         Fiber.yield
 
         # Wait for the spawned child to be continued
-        job = Job.new(self, job_id, "spawner" => spawner)
+        job = Job.new(self, job_id)
         job.logger = logger
         job.run
 
@@ -733,7 +733,6 @@ module Warden
           @options = options
 
           @yielded = []
-          @spawner = options["spawner"]
         end
 
         def job_root_path
