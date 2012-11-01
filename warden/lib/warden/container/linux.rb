@@ -5,6 +5,7 @@ require "warden/container/features/cgroup"
 require "warden/container/features/mem_limit"
 require "warden/container/features/net"
 require "warden/container/features/quota"
+require "warden/pool/loop_device"
 require "warden/errors"
 
 require "shellwords"
@@ -143,7 +144,107 @@ module Warden
         nil
       end
 
+      def do_attach_image(request, response)
+
+        image_path = request.image_path
+        device_path = request.device_path
+
+        @acquired ||= {}
+        if @acquired.has_key?("loop_device") && @acquired["loop_device"].has_key?(image_path)
+          response.exit_status = 1
+          response.message = "Disk image has already been attached."
+          return
+        end
+
+        minor = self.class.loop_device_pool.acquire
+        raise WardenError.new("Could not acquire loop device") unless minor
+
+        device = LoopDevice.new(image_path, device_path, minor)
+        response.exit_status, response.message = create_loop_device(device)
+        if response.exit_status != 0
+          self.class.loop_device_pool.release(minor)
+          return
+        end
+
+        @acquired["loop_device"] = {} unless @acquired.has_key?("loop_device")
+        @acquired["loop_device"]["#{image_path}"] = device
+        nil
+      end
+
+      def do_detach_image(request, response)
+
+        @acquired ||= {}
+        image_path = request.image_path
+        unless @acquired.has_key?("loop_device") && @acquired["loop_device"].has_key?(image_path)
+          response.exit_status = 1
+          response.message = "Disk image has not been attached yet."
+          return
+        end
+
+        device = @acquired["loop_device"]["#{image_path}"]
+        response.exit_status, response.message = destroy_loop_device(device)
+        return unless response.exit_status == 0
+
+        self.class.loop_device_pool.release(device.minor)
+        @acquired["loop_device"].delete(image_path)
+        nil
+      end
+
       private
+
+      def create_loop_device(device)
+
+        abs_device_path = File.join(container_path, "rootfs", device.device_path)
+        return 1, "Device exists." if File.exist?(abs_device_path)
+
+        return 1, "Disk image not exists." unless File.exist?(device.image_path)
+
+        option = { :timeout => nil }
+        begin
+          sh File.join(container_path, "image_attach.sh"), device.image_path.to_s, abs_device_path.to_s, device.minor.to_s, option
+        rescue => e
+          return 1, "#{e.inspect}"
+        end
+
+        return 0, "ok"
+      end
+
+      def destroy_loop_device(device)
+
+        abs_device_path = File.join(container_path, "rootfs", device.device_path)
+        option = { :timeout => nil }
+        begin
+          sh File.join(container_path, "image_detach.sh"), abs_device_path.to_s, option
+        rescue => e
+          return 1, "#{e.inspect}"
+        end
+
+        return 0, "ok"
+      end
+
+      def release_loop_device
+
+        @acquired ||= {}
+
+        device_list = @acquired.delete("loop_device")
+        return unless device_list
+
+        option = { :timeout => nil }
+        device_list.each_value do |device|
+          args  = ["losetup"]
+          args += ["-d"]
+          args += ["/dev/loop#{device.minor}"]
+
+          args << { :timeout => nil }
+
+          begin
+            sh *args
+          rescue => e
+            # ignore the exception
+          end
+          self.class.loop_device_pool.release(device.minor)
+        end
+      end
 
       def perform_rsync(src_path, dst_path)
         ssh_config_path = File.join(container_path, "ssh", "ssh_config")
