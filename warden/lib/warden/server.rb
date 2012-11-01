@@ -8,6 +8,7 @@ require "warden/network"
 require "warden/pool/network"
 require "warden/pool/port"
 require "warden/pool/uid"
+require "warden/pool/loop_device"
 
 require "eventmachine"
 require "fiber"
@@ -170,6 +171,13 @@ module Warden
       container_klass.uid_pool = uid_pool
     end
 
+    def self.setup_loop_device
+      device_pool_start_num = config.loop_device["pool_start_num"]
+      device_pool_size = config.loop_device["pool_size"]
+      loop_device_pool = Pool::LoopDevice.new(device_pool_start_num, device_pool_size)
+      container_klass.loop_device_pool = loop_device_pool
+    end
+
     def self.setup(config)
       @config = Config.new(config)
 
@@ -177,6 +185,7 @@ module Warden
       setup_logging
       setup_network
       setup_user
+      setup_loop_device
     end
 
     # Must be called after pools are setup

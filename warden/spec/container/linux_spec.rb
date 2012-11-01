@@ -116,6 +116,9 @@ describe "linux", :platform => "linux", :needs_root => true do
           "pool_size" => 64,
           "allow_networks" => ["4.2.2.3/32"],
           "deny_networks" => ["4.2.2.0/24"] },
+        "loop_device" => {
+          "pool_start_num" => 600,
+          "pool_size" => 20 },
         "logging" => {
           "level" => "debug",
           "file" => File.join(work_path, "warden.log") }
@@ -142,6 +145,95 @@ describe "linux", :platform => "linux", :needs_root => true do
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
   it_should_behave_like "drain"
+
+  describe "attach_image" do
+    attr_reader :handle
+
+    def attach_image(options = {})
+      response = client.attach_image(options.merge(:handle => handle))
+      response
+    end
+
+    def run(script)
+      response = client.run(:handle => handle, :script => script)
+      response
+    end
+
+    before(:all) do
+      `truncate -s 10M /tmp/10M.img`
+    end
+
+    after(:all) do
+      `rm -f /tmp/10M.img`
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should find the device in container after attaching" do
+      run("ls /dev/loop_test").exit_status.should_not == 0
+      attach_image(:image_path => "/tmp/10M.img", :device_path => "/dev/loop_test").exit_status.should == 0
+      run("ls /dev/loop_test").exit_status.should == 0
+      run("losetup -d /dev/loop_test").exit_status.should == 0
+    end
+
+    it "should fail if re-attaching without detaching" do
+      attach_image(:image_path => "/tmp/10M.img", :device_path => "/dev/loop_test").exit_status.should == 0
+      attach_image(:image_path => "/tmp/10M.img", :device_path => "/dev/loop_test1").exit_status.should_not == 0
+      run("losetup -d /dev/loop_test").exit_status.should == 0
+    end
+
+    it "should fail if attaching to a non-existed dir" do
+      attach_image(:image_path => "/tmp/10M.img", :device_path => "/not_existed/loop_test").exit_status.should_not == 0
+    end
+
+    it "should fail if attaching to an existed file" do
+      run("touch /tmp/existed").exit_status.should == 0
+      attach_image(:image_path => "/tmp/10M.img", :device_path => "/tmp/existed").exit_status.should_not == 0
+    end
+  end
+
+  describe "detach_image" do
+    attr_reader :handle
+
+    def attach_image(options = {})
+      response = client.attach_image(options.merge(:handle => handle))
+      response
+    end
+
+    def detach_image(options = {})
+      response = client.detach_image(options.merge(:handle => handle))
+      response
+    end
+
+    def run(script)
+      response = client.run(:handle => handle, :script => script)
+      response
+    end
+
+    before(:all) do
+      `truncate -s 10M /tmp/10M.img`
+    end
+
+    after(:all) do
+      `rm -f /tmp/10M.img`
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should find not the device in container after detaching" do
+      attach_image(:image_path => "/tmp/10M.img", :device_path => "/dev/loop_test").exit_status.should == 0
+      detach_image(:image_path => "/tmp/10M.img").exit_status.should == 0
+      run("ls /dev/loop_test").exit_status.should_not == 0
+    end
+
+    it "should fail if detaching an image which not attached before" do
+      detach_image(:image_path => "/tmp/10M.img").exit_status.should_not == 0
+    end
+  end
 
   describe "limit_memory" do
     attr_reader :handle
