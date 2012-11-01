@@ -143,6 +143,14 @@ module Warden
         nil
       end
 
+      def do_attach_image(request, response)
+        # to be done
+      end
+
+      def do_detach_image(request, response)
+        # to be done
+      end
+
       private
 
       def perform_rsync(src_path, dst_path)

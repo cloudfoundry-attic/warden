@@ -59,6 +59,10 @@ network:
   # Pool this many /30 networks.
   pool_size: 256
 
+loop_device:
+  pool_start_num: 256
+  pool_size: 256
+
 user:
   pool_start_uid: 10000
   pool_size: 256

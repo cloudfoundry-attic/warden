@@ -170,6 +170,10 @@ module Warden
       container_klass.uid_pool = uid_pool
     end
 
+    def self.set_loop_device
+      # to be done
+    end
+
     def self.setup(config)
       @config = Config.new(config)
 
@@ -177,6 +181,7 @@ module Warden
       setup_logging
       setup_network
       setup_user
+      setup_loop_device
     end
 
     # Must be called after pools are setup

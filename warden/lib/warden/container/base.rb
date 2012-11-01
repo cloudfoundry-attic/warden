@@ -69,6 +69,7 @@ module Warden
         attr_accessor :network_pool
         attr_accessor :port_pool
         attr_accessor :uid_pool
+        attr_accessor :loop_device_pool
 
         # Called before the server starts.
         def setup(config, drained = false)
@@ -585,6 +586,22 @@ module Warden
         response.container_path = self.container_path
 
         nil
+      end
+
+      def before_attach_image
+        # to be done
+      end 
+
+      def do_attach_image(request, response)
+        raise WardenError.new("not implemented")
+      end
+
+      def before_detach_image
+        # to be done
+      end
+
+      def do_detach_image(request, response)
+        raise WardenError.new("not implemented")
       end
 
       protected
