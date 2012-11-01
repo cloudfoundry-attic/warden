@@ -105,12 +105,29 @@ module Warden
       end
     end
 
+    def self.loop_device_defaults
+      {
+        "pool_start_num" => 512,
+        "pool_size"      => 64,
+      }
+    end
+
+    def self.loop_device_schema
+      ::Membrane::SchemaParser.parse do
+        {
+          "pool_start_num" => Integer,
+          "pool_size"      => Integer,
+        }
+      end
+    end
+
     attr_reader :config
 
     attr_reader :server
     attr_reader :logging
     attr_reader :network
     attr_reader :user
+    attr_reader :loop_device
 
     def initialize(config)
       @config = config
@@ -125,6 +142,7 @@ module Warden
       @logging = self.class.logging_defaults.merge(config["logging"] || {})
       @network = self.class.network_defaults.merge(config["network"] || {})
       @user = self.class.user_defaults.merge(config["user"] || {})
+      @loop_device = self.class.loop_device_defaults.merge(config["loop_device"] || {})
     end
 
     def validate
@@ -132,6 +150,7 @@ module Warden
       self.class.logging_schema.validate(@logging)
       self.class.network_schema.validate(@network)
       self.class.user_schema.validate(@user)
+      self.class.loop_device_schema.validate(@loop_device)
     end
 
     def transform

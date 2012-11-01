@@ -42,6 +42,19 @@ module Warden
       class Destroyed < Base; end
     end
 
+    class LoopDevice
+
+      attr_reader :image_path
+      attr_reader :device_path
+      attr_reader :minor
+
+      def initialize(image_path, device_path, minor)
+        @image_path = image_path
+        @device_path = device_path
+        @minor = minor
+      end
+    end
+
     class Base
 
       include EventEmitter
@@ -69,6 +82,7 @@ module Warden
         attr_accessor :network_pool
         attr_accessor :port_pool
         attr_accessor :uid_pool
+        attr_accessor :loop_device_pool
 
         # Called before the server starts.
         def setup(config, drained = false)
@@ -370,15 +384,9 @@ module Warden
 
       # Release resources required for every container instance.
       def release
-        @acquired ||= {}
-
-        if network = @acquired.delete("network")
-          self.class.network_pool.release(network)
-        end
-
-        if uid = @acquired.delete("uid")
-          self.class.uid_pool.release(uid)
-        end
+        release_network
+        release_uid
+        release_loop_device
       end
 
       def before_create(request, response)
@@ -585,6 +593,41 @@ module Warden
         response.container_path = self.container_path
 
         nil
+      end
+
+      def before_attach_image
+        check_state_in(State::Active, State::Stopped)
+      end 
+
+      def do_attach_image(request, response)
+        raise WardenError.new("not implemented")
+      end
+
+      def before_detach_image
+        check_state_in(State::Active, State::Stopped)
+      end
+
+      def do_detach_image(request, response)
+        raise WardenError.new("not implemented")
+      end
+
+      private
+      def release_loop_device
+        raise WardenError.new("not implemented")
+      end
+
+      def release_uid
+        @acquired ||= {}
+        if uid = @acquired.delete("uid")
+          self.class.uid_pool.release(uid)
+        end
+      end
+
+      def release_network
+        @acquired ||= {}
+        if network = @acquired.delete("network")
+          self.class.network_pool.release(network)
+        end
       end
 
       protected
