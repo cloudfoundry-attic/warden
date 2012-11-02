@@ -594,6 +594,9 @@ module Warden
         response.host_ip = self.host_ip.to_human
         response.container_ip = self.container_ip.to_human
         response.container_path = self.container_path
+        response.job_ids = jobs.select do |job_id, job|
+          !job.terminated?
+        end.keys
 
         nil
       end
@@ -749,6 +752,10 @@ module Warden
 
             setup_child_handlers
           end
+        end
+
+        def terminated?
+          !!@status
         end
 
         def yield
