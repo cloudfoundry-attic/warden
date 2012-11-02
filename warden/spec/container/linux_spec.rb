@@ -423,6 +423,21 @@ describe "linux", :platform => "linux", :needs_root => true do
         x.should >= 0
       end
     end
+
+    it "should include list of ids of jobs that are alive" do
+      response = client.spawn(:handle => handle,
+                              :script => "sleep 2; id -u")
+      job_id_1 = response.job_id
+
+      response = client.spawn(:handle => handle,
+                              :script => "id -u")
+      job_id_2 = response.job_id
+
+      sleep 0.1
+
+      response = client.info(:handle => handle)
+      response.job_ids.should == [job_id_1]
+    end
   end
 
   describe "bind mounts" do
