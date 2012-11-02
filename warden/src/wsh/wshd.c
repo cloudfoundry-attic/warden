@@ -564,6 +564,10 @@ int child_loop(wshd_t *w) {
   int sfd;
   int rv;
 
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
+
   sfd = child_signalfd();
 
   for (;;) {
