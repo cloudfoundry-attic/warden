@@ -113,4 +113,13 @@ describe Warden::Protocol::InfoResponse do
       subject.should be_valid
     end
   end
+
+  field :job_ids do
+    it_should_be_optional
+
+    it "should allow one or more job ids" do
+      subject.job_ids = [1, 2]
+      subject.should be_valid
+    end
+  end
 end
