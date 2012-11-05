@@ -27,7 +27,7 @@ server:
 
   # See getrlimit(2) for details. Integer values are passed verbatim.
   container_rlimits:
-    as: 4194304
+    as: 4294967296
     nofile: 8192
     nproc: 512
 
