@@ -76,7 +76,7 @@ shared_examples "lifecycle" do
 
       # Test that no exit status is returned (because of SIGKILL)
       response = client.link(:handle => handle, :job_id => job_id)
-      response.exit_status.should == nil
+      response.exit_status.should == 255
     end
   end
 
