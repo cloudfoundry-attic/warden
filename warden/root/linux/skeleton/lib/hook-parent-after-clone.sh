@@ -5,10 +5,9 @@ set -o nounset
 set -o errexit
 shopt -s nullglob
 
-cd $(dirname "${0}")
+cd $(dirname $0)/../
 
-source ./common.sh
-source ./config
+source ./lib/common.sh
 
 # Add new group for every subsystem
 for system_path in /sys/fs/cgroup/*
@@ -27,10 +26,12 @@ do
   echo $PID > $instance_path/tasks
 done
 
-echo ${PPID} >> ppid
+echo $PID > ./run/wshd.pid
 
-ip link add name ${network_host_iface} type veth peer name ${network_container_iface}
-ip link set ${network_host_iface} netns 1
-ip link set ${network_container_iface} netns ${PID}
+ip link add name $network_host_iface type veth peer name $network_container_iface
+ip link set $network_host_iface netns 1
+ip link set $network_container_iface netns $PID
+
+ifconfig $network_host_iface $network_host_ip netmask $network_netmask
 
 exit 0

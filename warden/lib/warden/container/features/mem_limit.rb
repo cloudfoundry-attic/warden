@@ -23,6 +23,8 @@ module Warden
 
             oom_notifier_path = Warden::Util.path("src/oom/oom")
             @child = DeferredChild.new(oom_notifier_path, container.cgroup_path(:memory))
+            @child.logger = logger
+            @child.run
             @child_exited = false
 
             # Zero exit status means a process OOMed, non-zero means an error occurred

@@ -1,7 +1,10 @@
-#include <unistd.h>
+#define _GNU_SOURCE
+
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
+
 #include "barrier.h"
 #include "util.h"
 
@@ -11,17 +14,12 @@ int barrier_open(barrier_t *bar) {
 
   rv = pipe(aux);
   if (rv == -1) {
-    fprintf(stderr, "pipe: %s\n", strerror(errno));
+    perror("pipe");
     goto err;
   }
 
-  if (fcntl_mix_cloexec(aux[0]) == -1) {
-    goto err;
-  }
-
-  if (fcntl_mix_cloexec(aux[1]) == -1) {
-    goto err;
-  }
+  fcntl_mix_cloexec(aux[0]);
+  fcntl_mix_cloexec(aux[1]);
 
   bar->fd[0] = aux[0];
   bar->fd[1] = aux[1];
@@ -55,10 +53,9 @@ int barrier_wait(barrier_t *bar) {
 
   nread = read(bar->fd[0], buf, sizeof(buf));
   if (nread == -1) {
-    fprintf(stderr, "read: %s\n", strerror(errno));
+    perror("read");
     return -1;
   } else if (nread == 0) {
-    fprintf(stderr, "read: eof\n");
     return -1;
   }
 
@@ -74,7 +71,7 @@ int barrier_signal(barrier_t *bar) {
 
   rv = write(bar->fd[1], &byte, 1);
   if (rv == -1) {
-    fprintf(stderr, "write: %s\n", strerror(errno));
+    perror("write");
     return -1;
   }
 

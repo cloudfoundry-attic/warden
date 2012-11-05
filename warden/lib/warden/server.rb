@@ -469,15 +469,6 @@ module Warden
           container.register_connection(self)
         end
       end
-
-      class Request < Array
-
-        def require_arguments
-          unless yield(size)
-            raise WardenError.new("invalid number of arguments")
-          end
-        end
-      end
     end
   end
 end

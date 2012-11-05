@@ -94,19 +94,19 @@ module Warden
           @job_id += 1
         end
 
-        def generate_handle
-          @handle ||= begin
-                        t = Time.now
-                        t.tv_sec * 1_000_000 + t.tv_usec
-                      end
-          @handle += 1
+        def generate_container_id
+          @container_id ||= begin
+                              t = Time.now
+                              t.tv_sec * 1_000_000 + t.tv_usec
+                            end
+          @container_id += 1
 
           # Explicit loop because we MUST have 11 characters.
           # This is required because we use the handle to name a network
           # interface for the container, this name has a 2 character prefix and
           # suffix, and has a maximum length of 15 characters (IFNAMSIZ).
           11.times.map do |i|
-            ((@handle >> (55 - (i + 1) * 5)) & 31).to_s(32)
+            ((@container_id >> (55 - (i + 1) * 5)) & 31).to_s(32)
           end.join
         end
 
@@ -161,7 +161,12 @@ module Warden
       end
 
       def handle
-        @handle ||= resources["handle"]
+        @handle ||= resources["handle"] if resources.has_key?("handle")
+        @handle ||= container_id
+      end
+
+      def container_id
+        @container_id ||= self.class.generate_container_id
       end
 
       def host_ip
@@ -336,11 +341,17 @@ module Warden
       end
 
       # Acquire resources required for every container instance.
-      def acquire
+      def acquire(opts = {})
         if @resources.has_key?("handle")
           # Restored from snapshot
+        elsif opts[:handle]
+          if self.class.registry[opts[:handle]]
+            raise WardenError.new("container with handle: #{opts[:handle]} already exists.")
+          end
+
+          @resources["handle"] = opts[:handle]
         else
-          @resources["handle"] = self.class.generate_handle
+          @resources["handle"] = handle
         end
 
         if @resources.has_key?("network")
@@ -385,7 +396,7 @@ module Warden
         check_state_in(State::Born)
 
         begin
-          acquire
+          acquire(:handle => request.handle)
 
           if request.grace_time
             self.grace_time = request.grace_time
@@ -499,16 +510,19 @@ module Warden
       end
 
       def do_run(request, response)
-        spawn_request = Protocol::SpawnRequest.new \
+        spawn_request = Protocol::SpawnRequest.new({
           :handle => request.handle,
           :script => request.script,
-          :privileged => request.privileged
+          :privileged => request.privileged,
+          :rlimits => request.rlimits,
+        })
 
         spawn_response = dispatch(spawn_request)
 
-        link_request = Protocol::LinkRequest.new \
+        link_request = Protocol::LinkRequest.new({
           :handle => handle,
-          :job_id => spawn_response.job_id
+          :job_id => spawn_response.job_id,
+        })
 
         link_response = dispatch(link_request)
 
@@ -583,6 +597,9 @@ module Warden
         response.host_ip = self.host_ip.to_human
         response.container_ip = self.container_ip.to_human
         response.container_path = self.container_path
+        response.job_ids = jobs.select do |job_id, job|
+          !job.terminated?
+        end.keys
 
         nil
       end
@@ -608,6 +625,25 @@ module Warden
         end
       end
 
+      # Converts resource limits mentioned in a spawn/run request into a hash of
+      # environment variables that can be passed to the job being spawned.
+      def resource_limits(request)
+        rlimits = Server.config.rlimits
+
+        if request.rlimits
+          request.rlimits.to_hash.each do |key, value|
+            rlimits[key.to_s] = value
+          end
+        end
+
+        rlimits_env = {}
+        rlimits.each do |key, value|
+          rlimits_env["RLIMIT_#{key.to_s.upcase}"] = value.to_s
+        end
+
+        rlimits_env
+      end
+
       def spawn_job(*args)
         job_id = self.class.generate_job_id
 
@@ -616,6 +652,8 @@ module Warden
 
         spawn_path = File.join(bin_path, "iomux-spawn")
         spawner = DeferredChild.new(spawn_path, job_root, *args)
+        spawner.logger = logger
+        spawner.run
 
         # iomux-spawn indicates it is ready to receive connections by writing
         # the child's pid to stdout. Wait for that before attempting to
@@ -646,7 +684,10 @@ module Warden
         Fiber.yield
 
         # Wait for the spawned child to be continued
-        job = Job.new(self, job_id, "spawner" => spawner)
+        job = Job.new(self, job_id)
+        job.logger = logger
+        job.run
+
         Fiber.yield
 
         job
@@ -656,19 +697,27 @@ module Warden
         jobs = {}
 
         jobs_snapshot.each do |job_id, job_snapshot|
-          job_id = Integer(job_id)
-          jobs[job_id] = Job.new(self, job_id, job_snapshot)
+          job = Job.new(self, Integer(job_id), job_snapshot)
+          job.logger = logger
+          job.run
+
+          jobs[job.job_id] = job
         end
 
         jobs
       end
 
       def logger
-        if resources.has_key?("handle")
-          self.class.logger.tag(:handle => resources["handle"])
-        else
-          self.class.logger
+        if @logger
+          return @logger
         end
+
+        if resources.has_key?("handle")
+          @logger = self.class.logger.tag(:handle => resources["handle"])
+          return @logger
+        end
+
+        self.class.logger
       end
 
       class Job
@@ -677,27 +726,43 @@ module Warden
 
         attr_reader :container
         attr_reader :job_id
-        attr_reader :job_root_path
+        attr_reader :options
 
-        def initialize(container, job_id, opts = {})
+        attr_accessor :logger
+
+        def initialize(container, job_id, options = {})
           @container = container
           @job_id = job_id
-          @job_root_path = container.job_path(job_id)
-
-          @cursors_path = File.join(@job_root_path, "cursors")
+          @options = options
 
           @yielded = []
-          @spawner = opts["spawner"]
+        end
 
-          if opts["status"]
-            @status = opts["status"]
+        def job_root_path
+          container.job_path(job_id)
+        end
+
+        def cursors_path
+          File.join(job_root_path, "cursors")
+        end
+
+        def run
+          if options["status"]
+            @status = options["status"]
           else
             @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
-                                       "-w", @cursors_path, @job_root_path,
-                                       :prepend_stdout => opts["stdout"],
-                                       :prepend_stderr => opts["stderr"])
+                                       "-w", cursors_path, job_root_path,
+                                       :prepend_stdout => options["stdout"],
+                                       :prepend_stderr => options["stderr"])
+            @child.logger = logger
+            @child.run
+
             setup_child_handlers
           end
+        end
+
+        def terminated?
+          !!@status
         end
 
         def yield

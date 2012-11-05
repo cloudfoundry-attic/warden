@@ -6,6 +6,19 @@ shared_examples "lifecycle" do
     response.handle.should_not be_nil
   end
 
+  it "should allow to create a container with a custom handle" do
+    response = client.create(:handle => "test_handle")
+    response.handle.should == "test_handle"
+  end
+
+  it "should not allow to recreate a container that already exists" do
+    response = client.create(:handle => "test_handle")
+    response.handle.should == "test_handle"
+    expect do
+      response = client.create(:handle => "test_handle")
+    end.to raise_error(/container with handle: test_handle already exists/)
+  end
+
   it "should allow to destroy a container" do
     handle = client.create.handle
 

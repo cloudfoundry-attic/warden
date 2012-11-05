@@ -13,7 +13,7 @@ module Warden
 
         include Spawn
 
-        INREG = /qdisc tbf \d+: root refcnt \d+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b lat 25.0ms/
+        INREG = /qdisc tbf [0-9a-f]+: root refcnt \d+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b lat 25.0ms/
         OUTREG = /\s*police 0x[0-9a-f]+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b mtu \d+[KM]?b action drop overhead \d+b/
 
         def self.included(base)
@@ -102,7 +102,7 @@ module Warden
           }
         end
 
-        def acquire
+        def acquire(opts = {})
           if !@resources.has_key?("ports")
             @resources["ports"] = []
             @acquired["ports"] = []
