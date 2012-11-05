@@ -24,7 +24,11 @@ void pump_pair_init(pump_pair_t *pp, pump_t *p, int rfd, int wfd) {
   pp->rfd = rfd;
   pp->wfd = wfd;
 
-  fcntl_mix_nonblock(rfd);
+  /* The read side must be non-blocking */
+  fcntl_set_nonblock(rfd, 1);
+
+  /* The write side must be blocking */
+  fcntl_set_nonblock(wfd, 0);
 }
 
 void pump_pair_close(pump_pair_t *pp) {

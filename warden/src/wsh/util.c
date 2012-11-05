@@ -14,13 +14,21 @@
 
 #include "util.h"
 
-void fcntl_mix_cloexec(int fd) {
+void fcntl_set_cloexec(int fd, int on) {
   int rv;
+  int fl;
 
   rv = fcntl(fd, F_GETFD);
   if (rv == -1) {
     perror("fcntl");
     abort();
+  }
+
+  fl = rv;
+  if (on) {
+    fl |= FD_CLOEXEC;
+  } else {
+    fl &= ~FD_CLOEXEC;
   }
 
   rv = fcntl(fd, F_SETFD, rv | FD_CLOEXEC);
@@ -30,8 +38,9 @@ void fcntl_mix_cloexec(int fd) {
   }
 }
 
-void fcntl_mix_nonblock(int fd) {
+void fcntl_set_nonblock(int fd, int on) {
   int rv;
+  int fl;
 
   rv = fcntl(fd, F_GETFL);
   if (rv == -1) {
@@ -39,7 +48,14 @@ void fcntl_mix_nonblock(int fd) {
     abort();
   }
 
-  rv = fcntl(fd, F_SETFL, rv | O_NONBLOCK);
+  fl = rv;
+  if (on) {
+    fl |= O_NONBLOCK;
+  } else {
+    fl &= ~O_NONBLOCK;
+  }
+
+  rv = fcntl(fd, F_SETFL, fl);
   if (rv == -1) {
     perror("fcntl");
     abort();
