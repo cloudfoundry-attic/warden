@@ -41,6 +41,9 @@ module Warden
       LimitDisk   = 52
       LimitBandwidth  = 53
 
+      AttachImage = 61
+      DetachImage = 62
+
       Ping = 91
       List = 92
       Echo = 93

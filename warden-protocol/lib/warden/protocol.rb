@@ -24,6 +24,9 @@ require "warden/protocol/limit_memory"
 require "warden/protocol/limit_disk"
 require "warden/protocol/limit_bandwidth"
 
+require "warden/protocol/attach_image"
+require "warden/protocol/detach_image"
+
 require "warden/protocol/ping"
 require "warden/protocol/list"
 require "warden/protocol/echo"
