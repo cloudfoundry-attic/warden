@@ -42,10 +42,27 @@ module Warden
         return nil
       end
 
+      def fetch(entry)
+        pair = @pool.find do |e|
+          e[1] == entry && (e[0] == nil || e[0] < Time.now)
+        end
+
+        if pair
+          @pool.delete(pair)
+          return entry
+        end
+
+        return nil
+      end
+
       def release(entry)
         return unless belongs?(entry)
 
         @pool.push [Time.now + @release_delay, entry]
+      end
+
+      def include?(entry)
+        @pool.include?(entry)
       end
 
       private
