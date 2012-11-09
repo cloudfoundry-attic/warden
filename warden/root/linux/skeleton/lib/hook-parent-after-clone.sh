@@ -22,6 +22,22 @@ do
     cat $system_path/cpuset.mems > $instance_path/cpuset.mems
   fi
 
+  if [ $(basename $system_path) == "devices" ]
+  then
+	  # disallow everything, allow explicitly
+    echo a > $instance_path/devices.deny
+    # /dev/null
+    echo "c 1:3 rw" > $instance_path/devices.allow
+    # /dev/zero
+    echo "c 1:5 rw" > $instance_path/devices.allow
+    # /dev/random
+    echo "c 1:8 rw" > $instance_path/devices.allow
+    # /dev/urandom
+    echo "c 1:9 rw" > $instance_path/devices.allow
+    # /dev/tty
+    echo "c 5:0 rw" > $instance_path/devices.allow
+  fi
+
   echo 1 > $instance_path/cgroup.clone_children
   echo $PID > $instance_path/tasks
 done
