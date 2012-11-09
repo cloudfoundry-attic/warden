@@ -1,7 +1,6 @@
 source "http://rubygems.org"
 
 gem "rake"
-gem "vcap_common", :git => 'https://github.com/cloudfoundry/vcap-common.git', :ref => '72b230b6'
 gem "steno", "~> 0.0.15", :git => 'https://github.com/cloudfoundry/steno.git'
 gem "membrane", :git => 'https://github.com/cloudfoundry/membrane.git'
 gem "eventmachine", "0.12.11.cloudfoundry.3", :git => 'https://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
