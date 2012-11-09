@@ -7,13 +7,6 @@ GIT
       posix-spawn
 
 GIT
-  remote: https://github.com/cloudfoundry/eventmachine.git
-  revision: 2806c630d8631d5dcf9fb2555f665b829052aabe
-  branch: release-0.12.11-cf
-  specs:
-    eventmachine (0.12.11.cloudfoundry.3)
-
-GIT
   remote: https://github.com/cloudfoundry/membrane.git
   revision: b33b45c7b8a89af2b40aae1e1cb16e394877681f
   specs:
@@ -42,6 +35,7 @@ GEM
   specs:
     beefcake (0.3.7)
     diff-lcs (1.1.3)
+    eventmachine (1.0.0)
     ffi (1.0.11)
     grape (0.2.1)
       hashie (~> 1.2)
@@ -74,7 +68,7 @@ PLATFORMS
 
 DEPENDENCIES
   em-posix-spawn!
-  eventmachine (= 0.12.11.cloudfoundry.3)!
+  eventmachine (~> 1.0.0)
   membrane!
   rake
   rspec
