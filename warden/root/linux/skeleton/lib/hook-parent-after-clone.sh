@@ -36,6 +36,10 @@ do
     echo "c 1:9 rw" > $instance_path/devices.allow
     # /dev/tty
     echo "c 5:0 rw" > $instance_path/devices.allow
+    # /dev/ptmx
+    echo "c 5:2 rw" > $instance_path/devices.allow
+    # /dev/pts/*
+    echo "c 136:* rw" > $instance_path/devices.allow
   fi
 
   echo 1 > $instance_path/cgroup.clone_children
