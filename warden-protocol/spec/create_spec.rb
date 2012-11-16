@@ -42,6 +42,11 @@ describe Warden::Protocol::CreateRequest do
     it_should_be_typed_as_string
   end
 
+  field :rootfs do
+    it_should_be_optional
+    it_should_be_typed_as_string
+  end
+
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::CreateResponse)
   end
