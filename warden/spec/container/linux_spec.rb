@@ -25,6 +25,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:container_depot_path) { File.join(work_path, "containers") }
   let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { true }
+  let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -98,7 +99,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     FileUtils.rm_f(unix_domain_path)
 
     # Grab new network for every test to avoid resource contention
-    start_address = next_class_c.to_human
+    @start_address = next_class_c.to_human
 
     @pid = fork do
       Process.setsid
@@ -112,7 +113,7 @@ describe "linux", :platform => "linux", :needs_root => true do
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5 },
         "network" => {
-          "pool_start_address" => start_address,
+          "pool_start_address" => @start_address,
           "pool_size" => 64,
           "allow_networks" => ["4.2.2.3/32"],
           "deny_networks" => ["4.2.2.0/24"] },
@@ -513,6 +514,33 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.exit_status.should == 0
       response.stdout.should be_empty
       response.stderr.should be_empty
+    end
+  end
+
+  describe "create with network" do
+    it "should be able to specify network" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = @start_address
+
+      response = client.call(create_request)
+      response.should be_ok
+
+      info_request = Warden::Protocol::InfoRequest.new
+      info_request.handle = response.handle
+
+      response = client.call(info_request)
+      network = Warden::Network::Address.new(response.container_ip).network(netmask)
+
+      network.to_human.should == @start_address
+    end
+
+    it "should raise error to use network not in the pool" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = '1.1.1.1'
+
+      expect {
+        response = client.call(create_request)
+      }.to raise_error
     end
   end
 
