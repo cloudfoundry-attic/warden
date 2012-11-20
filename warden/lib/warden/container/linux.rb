@@ -71,9 +71,17 @@ module Warden
 
       def do_create(request, response)
         options = {
-          :env => env,
+          :env => env.dup,
           :timeout => nil
         }
+
+        if request.rootfs
+          unless Dir.exist? request.rootfs
+            raise WardenError.new("rootfs #{request.rootfs} not found")
+          end
+
+          options[:env]["rootfs_path"] = request.rootfs
+        end
 
         sh File.join(root_path, "create.sh"), container_path, options
         logger.debug("Container created")
