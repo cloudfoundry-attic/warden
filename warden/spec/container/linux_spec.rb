@@ -555,6 +555,34 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "create with rootfs" do
+    let(:another_rootfs_path) { File.join(work_path, "rootfs2") }
+    let(:bad_rootfs_path) { File.join(work_path, "bad_rootfs") }
+
+    before do
+      unless File.exist? another_rootfs_path
+        FileUtils.ln_s(container_rootfs_path, another_rootfs_path)
+      end
+    end
+
+    it "should be able to use another rootfs" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.rootfs = another_rootfs_path
+
+      response = client.call(create_request)
+      response.should be_ok
+    end
+
+    it "should raise error on bad rootfs path" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.rootfs = bad_rootfs_path
+
+      expect {
+        response = client.call(create_request)
+      }.to raise_error Warden::Client::ServerError
+    end
+  end
+
   describe "run with privileged flag" do
     attr_reader :handle
 
