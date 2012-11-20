@@ -356,6 +356,17 @@ module Warden
 
         if @resources.has_key?("network")
           @acquired["network"] = network
+        elsif opts[:network]
+          # Translate to network address by network pool netmask
+          container = Warden::Network::Address.new(opts[:network])
+          network = container.network(self.class.network_pool.netmask)
+
+          unless self.class.network_pool.fetch(network)
+            raise WardenError.new("Could not acquire network: #{network.to_human}")
+          end
+
+          @acquired["network"] = network
+          @resources["network"] = network
         else
           network = self.class.network_pool.acquire
           unless network
@@ -396,7 +407,7 @@ module Warden
         check_state_in(State::Born)
 
         begin
-          acquire(:handle => request.handle)
+          acquire(:handle => request.handle, :network => request.network)
 
           if request.grace_time
             self.grace_time = request.grace_time
