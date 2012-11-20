@@ -39,6 +39,25 @@ describe Warden::Pool::Base do
     end
   end
 
+  context "fetch" do
+
+    it "should return nil when empty" do
+      pool = Warden::Pool::Base.new(0) { |i| i }
+      pool.fetch(0).should == nil
+    end
+
+    it "should return entry when it exists" do
+      pool = Warden::Pool::Base.new(5) { |i| i }
+      pool.fetch(1).should == 1
+      pool.fetch(1).should == nil
+    end
+
+    it "should return nil when not available" do
+      pool = Warden::Pool::Base.new(5) { |i| i }
+      pool.fetch(10).should == nil
+    end
+  end
+
   context "release" do
 
     it "should make entry size again" do
