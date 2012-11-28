@@ -661,9 +661,26 @@ module Warden
         job_root = job_path(job_id)
         FileUtils.mkdir_p(job_root)
 
+        f = Fiber.current
+
         spawn_path = File.join(bin_path, "iomux-spawn")
         spawner = DeferredChild.new(spawn_path, job_root, *args)
         spawner.logger = logger
+
+        # When iomux-spawn starts up, there is a chance that it can fail before
+        # it reaches the state where iomux-link can connect to it. We need to
+        # handle this failure, as otherwise the client connection will be stuck
+        # forever (the current fiber is never resumed). Therefore, within the
+        # callbacks for the iomux-spawn job, we resume the yielded fiber
+        # along with an indication of the failure in iomux-spawn.
+        #
+        # The flag: catch_spawner_failure ensures that the callbacks for
+        # iomux-spawn perform their duty *only* when failures are detected
+        # during iomux-spawn startup. Otherwise, these callbacks may be
+        # triggered during the wrong time.
+        catch_spawner_failure = true
+        spawner.errback { f.resume(:no) if f.alive? && catch_spawner_failure }
+        spawner.callback { f.resume(:no) if f.alive? && catch_spawner_failure }
         spawner.run
 
         # iomux-spawn indicates it is ready to receive connections by writing
@@ -671,7 +688,7 @@ module Warden
         # link. In the event that the spawner fails this code will still be
         # invoked, causing the linker to exit with status 255 (the desired
         # behavior).
-        f = Fiber.current
+
         out = ""
         state = :wait_ready
         spawner.add_streams_listener do |_, data|
@@ -692,16 +709,20 @@ module Warden
         end
 
         # Wait for the spawner to be ready to receive connections
-        Fiber.yield
+        spawner_alive = Fiber.yield
+        raise WardenError.new("iomux-spawn failed")  if spawner_alive == :no
 
         # Wait for the spawned child to be continued
         job = Job.new(self, job_id)
         job.logger = logger
         job.run
 
-        Fiber.yield
+        spawner_alive = Fiber.yield
+        raise WardenError.new("iomux-spawn failed")  if spawner_alive == :no
 
         job
+      ensure
+        catch_spawner_failure = false
       end
 
       def recover_jobs(jobs_snapshot)
