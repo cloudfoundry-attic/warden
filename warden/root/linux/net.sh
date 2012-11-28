@@ -11,6 +11,8 @@ filter_instance_prefix="warden-instance-"
 nat_prerouting_chain="warden-prerouting"
 nat_instance_prefix="warden-instance-"
 
+throughput_chain="throughput-count"
+
 # Default ALLOW_NETWORKS/DENY_NETWORKS to empty
 ALLOW_NETWORKS=${ALLOW_NETWORKS:-}
 DENY_NETWORKS=${DENY_NETWORKS:-}
@@ -51,6 +53,9 @@ function teardown_filter() {
 
   # Flush default chain
   iptables -F ${filter_default_chain} 2> /dev/null || true
+
+  # Flush default throughput count chain
+  iptables -F ${throughput_chain} 2> /dev/null || true
 }
 
 function setup_filter() {
@@ -60,8 +65,11 @@ function setup_filter() {
   iptables -N ${filter_dispatch_chain} 2> /dev/null || iptables -F ${filter_dispatch_chain}
   iptables -A ${filter_dispatch_chain} -j DROP
 
+  # Create or flush throughput count chain
+  iptables -N ${throughput_chain} 2> /dev/null || iptables -F ${throughput_chain}
+
   # If the packet is NOT a canonical SYN packet, allow immediately
-  iptables -I ${filter_dispatch_chain} 1 -p tcp ! --syn --jump ACCEPT
+  iptables -I ${filter_dispatch_chain} 1 -p tcp ! --syn --jump ${throughput_chain}
 
   # Create or flush default chain
   iptables -N ${filter_default_chain} 2> /dev/null || iptables -F ${filter_default_chain}
@@ -80,6 +88,9 @@ function setup_filter() {
   # Bind chain
   iptables -A INPUT -i w-+ --jump ${filter_dispatch_chain}
   iptables -A FORWARD -i w-+ --jump ${filter_dispatch_chain}
+
+  # Bind throughput_chain
+  iptables -A FORWARD -o w-+ --jump ${throughput_chain}
 }
 
 function teardown_nat() {

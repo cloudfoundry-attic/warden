@@ -17,6 +17,8 @@ nat_prerouting_chain="warden-prerouting"
 nat_instance_prefix="warden-instance-"
 nat_instance_chain="${filter_instance_prefix}${id}"
 
+throughput_chain="throughput-count"
+
 function teardown_filter() {
   # Prune dispatch chain
   iptables -S ${filter_dispatch_chain} 2> /dev/null |
@@ -27,6 +29,16 @@ function teardown_filter() {
   # Flush and delete instance chain
   iptables -F ${filter_instance_chain} 2> /dev/null || true
   iptables -X ${filter_instance_chain} 2> /dev/null || true
+
+  # Delete rules in throughput chain
+  iptables -D ${throughput_chain} \
+    -i ${network_host_iface} -j ACCEPT 2> /dev/null || true
+  iptables -D ${throughput_chain} \
+    -o ${network_host_iface} -j ACCEPT 2> /dev/null || true
+  iptables -D ${throughput_chain} \
+    -i ${network_host_iface} -j DROP 2> /dev/null || true
+  iptables -D ${throughput_chain} \
+    -o ${network_host_iface} -j DROP 2> /dev/null || true
 }
 
 function setup_filter() {
@@ -36,6 +48,12 @@ function setup_filter() {
   iptables -N ${filter_instance_chain}
   iptables -A ${filter_instance_chain} \
     --goto ${filter_default_chain}
+
+  # Init rules in throughput chain
+  iptables -A ${throughput_chain} \
+    -i ${network_host_iface} -j ACCEPT
+  iptables -A ${throughput_chain} \
+    -o ${network_host_iface} -j ACCEPT
 
   # Bind instance chain to dispatch chain
   iptables -I ${filter_dispatch_chain} 2 \
