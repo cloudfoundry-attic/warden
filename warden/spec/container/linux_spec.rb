@@ -436,6 +436,16 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
     end
 
+    it "should include throughput stat" do
+      response = client.info(:handle => handle)
+      [response.throughput_stat.out_size, response.throughput_stat.in_size].each do |x|
+        x.should >= 0
+      end
+      [response.throughput_stat.in_isblock, response.throughput_stat.out_isblock].each do |x|
+        x.should == 0
+      end
+    end
+
     it "should include list of ids of jobs that are alive" do
       response = client.spawn(:handle => handle,
                               :script => "sleep 2; id -u")

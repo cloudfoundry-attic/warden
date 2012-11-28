@@ -62,6 +62,13 @@ module Warden
         optional :out_burst, :uint64, 4
       end
 
+      class ThroughputStat < BaseMessage
+        optional :in_size, :uint64, 1
+        optional :in_isblock, :uint32, 2  # 1 for block, 1 for unblock
+        optional :out_size, :uint64, 3
+        optional :out_isblock, :uint32, 4 # 1 for block, 0 for unblock
+      end
+
       optional :state, :string, 10
 
       repeated :events, :string, 20
@@ -74,8 +81,9 @@ module Warden
       optional :cpu_stat, CpuStat, 41
       optional :disk_stat, DiskStat, 42
       optional :bandwidth_stat, BandwidthStat, 43
+      optional :throughput_stat, ThroughputStat, 44
 
-      repeated :job_ids, :uint64, 44
+      repeated :job_ids, :uint64, 45
     end
   end
 end
