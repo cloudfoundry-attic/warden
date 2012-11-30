@@ -143,6 +143,8 @@ describe "linux", :platform => "linux", :needs_root => true do
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
   it_should_behave_like "drain"
+  it_should_behave_like "snapshotting_common"
+  it_should_behave_like "snapshotting_net_in"
 
   describe "limit_memory" do
     attr_reader :handle

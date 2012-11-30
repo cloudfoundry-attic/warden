@@ -187,6 +187,8 @@ module Warden
         next unless File.exist?(container_klass.snapshot_path(path))
 
         c = container_klass.from_snapshot(path)
+        next unless c
+
         logger.info("Recovered container from #{path}")
         logger.debug("Container resources: #{c.resources}")
 

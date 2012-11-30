@@ -114,6 +114,10 @@ module Warden
           File.join(container_path, "snapshot.json")
         end
 
+        def dirty_snapshot_marker_path(container_path)
+          File.join(container_path, "snapshot_dirty")
+        end
+
         def empty_snapshot
           { "events"     => [],
             "grace_time" => Server.container_grace_time,
@@ -125,6 +129,7 @@ module Warden
         end
 
         def from_snapshot(container_path)
+          return nil if File.exists?(dirty_snapshot_marker_path(container_path))
           snapshot = JSON.parse(File.read(snapshot_path(container_path)))
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
@@ -281,6 +286,10 @@ module Warden
         self.class.snapshot_path(container_path)
       end
 
+      def dirty_snapshot_marker_path
+        self.class.dirty_snapshot_marker_path(container_path)
+      end
+
       def dispatch(request, &blk)
         logger.debug2("Request: #{request.inspect}")
 
@@ -318,11 +327,20 @@ module Warden
         end
       end
 
-      def write_snapshot
+      def write_snapshot(opts = {})
         logger.info("Writing snapshot for container #{handle}")
 
+        FileUtils.touch(dirty_snapshot_marker_path)
+
         jobs_snapshot = {}
-        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+
+        if opts[:ignore_alive_jobs]
+          jobs.each do |id, job|
+            jobs_snapshot[id] = job.create_snapshot if job.terminated?
+          end
+        else
+          jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+        end
 
         snapshot = {
           "events"     => events.to_a,
@@ -336,6 +354,8 @@ module Warden
         File.open(snapshot_path, "w+") do |f|
           f.write(JSON.dump(snapshot))
         end
+
+        FileUtils.remove_file(dirty_snapshot_marker_path, true)
 
         nil
       end
@@ -425,6 +445,8 @@ module Warden
         # Clients should be able to look this container up
         self.class.registry[handle] = self
 
+        write_snapshot
+
         # Pass handle back to client
         response.handle = handle
       end
@@ -458,6 +480,10 @@ module Warden
 
       def do_stop(request, response)
         raise WardenError.new("not implemented")
+      end
+
+      def after_stop(request, response)
+        write_snapshot
       end
 
       def before_destroy
@@ -805,6 +831,7 @@ module Warden
 
         def resume(status)
           @status = status
+          @container.write_snapshot(:ignore_alive_jobs => true)
           @yielded.each { |f| f.resume(@status) }
         end
 
@@ -838,8 +865,8 @@ module Warden
           exit_status
         end
 
-        # This is only called during drain when it is guaranteed that there
-        # are no connections linked to the job.
+        # This is called during drain or after a job exits, so it is guaranteed
+        # that there are no connections linked to the job.
         def create_snapshot
           if @status
             return { "status" => @status }

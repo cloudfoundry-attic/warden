@@ -96,6 +96,7 @@ describe "insecure" do
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
   it_should_behave_like "drain"
+  it_should_behave_like "snapshotting_common"
 
   describe "net_in", :netfilter => true do
     attr_reader :handle

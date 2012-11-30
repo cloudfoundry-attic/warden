@@ -53,6 +53,7 @@ describe Warden::Container::Base do
     container.stub(:do_create)
     container.stub(:do_stop)
     container.stub(:do_destroy)
+    container.stub(:write_snapshot)
     container.acquire
     container
   end
@@ -62,6 +63,7 @@ describe Warden::Container::Base do
 
     before do
       container.stub(:do_create)
+      container.should_receive(:write_snapshot)
     end
 
     it "should call #do_create" do
@@ -168,6 +170,7 @@ describe Warden::Container::Base do
 
     it "should call #do_stop" do
       @container.should_receive(:do_stop)
+      @container.should_receive(:write_snapshot)
       @container.dispatch(Warden::Protocol::StopRequest.new)
     end
   end
