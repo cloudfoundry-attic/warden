@@ -45,7 +45,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     features << "^has_journal" # don't include a journal
     features << "uninit_bg"    # skip initialization of block groups
 
-    `mkfs.ext4 -q -F -O #{features.join(",")} #{container_depot_file}`
+    `mkfs.ext4 -b 4096 -q -F -O #{features.join(",")} #{container_depot_file}`
     $?.should be_success
 
     `mount -o loop #{container_depot_file} #{container_depot_path}`
@@ -228,12 +228,21 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.block_limit.should == 0
     end
 
-    it "should enforce the quota" do
-      limit_disk(:byte_limit => 2 * 1024 * 1024)
+    context "with a 2M disk limit" do
+      before do
+        limit_disk(:byte_limit => 2 * 1024 * 1024)
+      end
 
-      response = run("dd if=/dev/zero of=/tmp/test bs=1MB count=4")
-      response.exit_status.should == 1
-      response.stderr.should =~ /quota exceeded/i
+      it "should succeed to write a 1M file" do
+        response = run("dd if=/dev/zero of=/tmp/test bs=1M count=1")
+        response.exit_status.should == 0
+      end
+
+      it "should fail to write a 4M file" do
+        response = run("dd if=/dev/zero of=/tmp/test bs=1M count=4")
+        response.exit_status.should == 1
+        response.stderr.should =~ /quota exceeded/i
+      end
     end
   end
 

@@ -141,9 +141,11 @@ module Warden
               Sys::Filesystem.mount_point(container_depot_path)
           end
 
+          # We're interested in the quota blocksize, which is hardcoded by the
+          # Linux kernel and may be different from the filesystem blocksize.
+          # See <sys/mount.h> for the accurate BLOCK_SIZE.
           def container_depot_block_size
-            @container_depot_block_size ||=
-              Sys::Filesystem.stat(container_depot_mount_point_path).block_size
+            1024
           end
 
           def setup(config)
