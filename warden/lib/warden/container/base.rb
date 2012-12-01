@@ -483,6 +483,9 @@ module Warden
       end
 
       def after_stop(request, response)
+        # Wait for all jobs to terminate before writing a snapshot
+        jobs.each_value(&:yield)
+
         write_snapshot
       end
 
