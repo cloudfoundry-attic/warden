@@ -334,9 +334,13 @@ module Warden
 
         jobs_snapshot = {}
 
-        if opts[:ignore_alive_jobs]
+        if opts[:keep_alive]
           jobs.each do |id, job|
-            jobs_snapshot[id] = job.create_snapshot if job.terminated?
+            if job.terminated?
+              jobs_snapshot[id] = job.create_snapshot
+            else
+              jobs_snapshot[id] = job.create_empty_snapshot
+            end
           end
         else
           jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
@@ -523,6 +527,10 @@ module Warden
         jobs[job.job_id] = job
 
         response.job_id = job.job_id
+      end
+
+      def after_spawn(request, response)
+        write_snapshot(:keep_alive => true)
       end
 
       def do_link(request, response)
@@ -834,7 +842,7 @@ module Warden
 
         def resume(status)
           @status = status
-          @container.write_snapshot(:ignore_alive_jobs => true)
+          @container.write_snapshot(:keep_alive => true)
           @yielded.each { |f| f.resume(@status) }
         end
 
@@ -868,9 +876,13 @@ module Warden
           exit_status
         end
 
+        def create_empty_snapshot
+          return { "stdout" => "", "stderr" => "" }
+        end
+
         # This is called during drain or after a job exits, so it is guaranteed
         # that there are no connections linked to the job.
-        def create_snapshot
+        def create_snapshot(opts = {})
           if @status
             return { "status" => @status }
           end
