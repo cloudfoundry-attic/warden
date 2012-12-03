@@ -789,6 +789,21 @@ int main(int argc, char **argv) {
   assert_directory(w->lib_path);
   assert_directory(w->root_path);
 
+  /*
+   * Trigger NSS initialization.
+   *
+   * NSS is initialized on the first call to a function defined in <pwd.h>,
+   * such as getpwnam, getpwuid, getpwent, etc.
+   *
+   * If this initialization step happens _after_ pivot_root(2) the shared
+   * libraries that are picked up may be different from the ones that the
+   * already loaded libc expects, causing inexplicable crashes.
+   *
+   * To prevent a shared library incompatibility, trigger initialization of the
+   * NSS before modifying the environment.
+   */
+  getpwuid(0);
+
   parent_run(w);
 
   return 0;
