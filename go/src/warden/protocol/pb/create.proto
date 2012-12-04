@@ -17,6 +17,10 @@ message CreateRequest {
   optional uint32 grace_time = 2;
 
   optional string handle = 3;
+
+  optional string network = 4;
+
+  optional string rootfs = 5;
 }
 
 message CreateResponse {

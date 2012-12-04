@@ -228,6 +228,8 @@ type CreateRequest struct {
 	BindMounts       []*CreateRequest_BindMount `protobuf:"bytes,1,rep,name=bind_mounts" json:"bind_mounts,omitempty"`
 	GraceTime        *uint32                    `protobuf:"varint,2,opt,name=grace_time" json:"grace_time,omitempty"`
 	Handle           *string                    `protobuf:"bytes,3,opt,name=handle" json:"handle,omitempty"`
+	Network          *string                    `protobuf:"bytes,4,opt,name=network" json:"network,omitempty"`
+	Rootfs           *string                    `protobuf:"bytes,5,opt,name=rootfs" json:"rootfs,omitempty"`
 	XXX_unrecognized []byte                     `json:"-"`
 }
 
@@ -245,6 +247,20 @@ func (this *CreateRequest) GetGraceTime() uint32 {
 func (this *CreateRequest) GetHandle() string {
 	if this != nil && this.Handle != nil {
 		return *this.Handle
+	}
+	return ""
+}
+
+func (this *CreateRequest) GetNetwork() string {
+	if this != nil && this.Network != nil {
+		return *this.Network
+	}
+	return ""
+}
+
+func (this *CreateRequest) GetRootfs() string {
+	if this != nil && this.Rootfs != nil {
+		return *this.Rootfs
 	}
 	return ""
 }
@@ -404,6 +420,7 @@ type InfoResponse struct {
 	CpuStat          *InfoResponse_CpuStat       `protobuf:"bytes,41,opt,name=cpu_stat" json:"cpu_stat,omitempty"`
 	DiskStat         *InfoResponse_DiskStat      `protobuf:"bytes,42,opt,name=disk_stat" json:"disk_stat,omitempty"`
 	BandwidthStat    *InfoResponse_BandwidthStat `protobuf:"bytes,43,opt,name=bandwidth_stat" json:"bandwidth_stat,omitempty"`
+	JobIds           []uint64                    `protobuf:"varint,44,rep,name=job_ids" json:"job_ids,omitempty"`
 	XXX_unrecognized []byte                      `json:"-"`
 }
 

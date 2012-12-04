@@ -66,4 +66,6 @@ message InfoResponse {
   optional CpuStat cpu_stat             = 41;
   optional DiskStat disk_stat           = 42;
   optional BandwidthStat bandwidth_stat = 43;
+
+  repeated uint64 job_ids = 44;
 }
