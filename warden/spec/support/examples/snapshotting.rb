@@ -34,10 +34,9 @@ shared_examples "snapshotting_common" do
     snapshot["jobs"].keys.size.should == 1
   end
 
-  it "should not snapshot alive processes when a spawned process exits" do
+  it "should create empty snapshots for alive processes" do
     handle = client.create.handle
 
-    client.spawn(:handle => handle, :script => "echo abc")
     client.spawn(:handle => handle, :script => "sleep 2; echo abc")
     sleep 0.1
 
@@ -45,6 +44,11 @@ shared_examples "snapshotting_common" do
     File.exist?(snapshot_path).should be_true
     snapshot = JSON.parse(File.read(snapshot_path))
     snapshot["jobs"].keys.size.should == 1
+
+    job_snapshot = snapshot["jobs"].values.first
+    job_snapshot.should be_an_instance_of Hash
+    job_snapshot["stdout"].should == ""
+    job_snapshot["stderr"].should == ""
   end
 end
 
@@ -59,7 +63,7 @@ shared_examples "snapshotting_net_in" do
     snapshot["resources"]["ports"].size.should == 1
   end
 
-  it "should not snapshot alive processes after net_in request" do
+  it "should create empty snapshot for alive processes after net_in request" do
     handle = client.create.handle
     client.spawn(:handle => handle, :script => "sleep 2; echo abc")
     client.net_in(:handle => handle)
@@ -67,6 +71,11 @@ shared_examples "snapshotting_net_in" do
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
     snapshot = JSON.parse(File.read(snapshot_path))
-    snapshot["jobs"].keys.size.should == 0
+    snapshot["jobs"].keys.size.should == 1
+
+    job_snapshot = snapshot["jobs"].values.first
+    job_snapshot.should be_an_instance_of Hash
+    job_snapshot["stdout"].should == ""
+    job_snapshot["stderr"].should == ""
   end
 end

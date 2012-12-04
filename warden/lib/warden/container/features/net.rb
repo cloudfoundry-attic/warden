@@ -95,7 +95,7 @@ module Warden
         end
 
         def after_net_in(request, response)
-          write_snapshot(:ignore_alive_jobs => true)
+          write_snapshot(:keep_alive => true)
         end
 
         def do_net_out(request, response)
