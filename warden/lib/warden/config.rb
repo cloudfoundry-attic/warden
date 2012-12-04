@@ -16,6 +16,12 @@ module Warden
       }
     end
 
+    def self.health_check_server_defaults
+      {
+        "port" => 2345,
+      }
+    end
+
     def self.server_schema
       ::Membrane::SchemaParser.parse do
         {
@@ -108,6 +114,7 @@ module Warden
     attr_reader :config
 
     attr_reader :server
+    attr_reader :health_check_server
     attr_reader :logging
     attr_reader :network
     attr_reader :user
@@ -122,6 +129,8 @@ module Warden
 
     def populate
       @server = self.class.server_defaults.merge(config["server"] || {})
+      @health_check_server = self.class.health_check_server_defaults.
+        merge(config["health_check_server"] || {})
       @logging = self.class.logging_defaults.merge(config["logging"] || {})
       @network = self.class.network_defaults.merge(config["network"] || {})
       @user = self.class.user_defaults.merge(config["user"] || {})

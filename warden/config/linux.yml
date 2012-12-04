@@ -34,6 +34,9 @@ server:
   quota:
     disk_quota_enabled: true
 
+health_check_server:
+  port: 2345
+
 logging:
   level: debug2
 
