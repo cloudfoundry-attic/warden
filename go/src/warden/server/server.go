@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"warden/protocol"
 	"warden/server/config"
 )
 
@@ -87,7 +88,85 @@ func Start() {
 			continue
 		}
 
-		c := NewConnection(s, nc)
-		go c.Run()
+		go s.serve(nc)
 	}
+}
+
+func (s *Server) servePing(x *Connection, y *protocol.PingRequest) {
+	z := &protocol.PingResponse{}
+	x.WriteResponse(z)
+}
+
+func (s *Server) serveEcho(x *Connection, y *protocol.EchoRequest) {
+	m := y.GetMessage()
+
+	z := &protocol.EchoResponse{}
+	z.Message = &m
+
+	x.WriteResponse(z)
+}
+
+func (s *Server) serveCreate(x *Connection, y *protocol.CreateRequest) {
+	var c *Container
+
+	c = s.FindContainer(y.GetHandle())
+	if c != nil {
+		x.WriteErrorResponse("Handle exists")
+		return
+	}
+
+	c = s.NewContainer()
+
+	// Start container loop
+	go c.Run()
+
+	c.Execute(x, y)
+}
+
+type containerRequest interface {
+	protocol.Request
+	GetHandle() string
+}
+
+func (s *Server) serveContainerRequest(x *Connection, y containerRequest) {
+	var c *Container
+
+	c = s.FindContainer(y.GetHandle())
+	if c == nil {
+		x.WriteErrorResponse("Handle does not exist")
+		return
+	}
+
+	c.Execute(x, y)
+}
+
+func (s *Server) serve(x net.Conn) {
+	y := NewConnection(x)
+
+	for {
+		u, e := y.ReadRequest()
+		if e != nil {
+			log.Printf("Error reading request: %s\n", e)
+			break
+		}
+
+		log.Printf("Request: %#v\n", u)
+
+		switch v := u.(type) {
+		case *protocol.PingRequest:
+			s.servePing(y, v)
+		case *protocol.EchoRequest:
+			s.serveEcho(y, v)
+		case *protocol.CreateRequest:
+			s.serveCreate(y, v)
+		case containerRequest:
+			s.serveContainerRequest(y, v)
+		default:
+			y.WriteErrorResponse("Unknown request")
+		}
+
+		y.Flush()
+	}
+
+	y.Close()
 }
