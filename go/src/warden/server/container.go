@@ -177,7 +177,7 @@ func (c *Container) runDestroyed(r *request) {
 
 func runCommand(cmd *exec.Cmd) error {
 	log.Printf("Run: %#v\n", cmd.Args)
-	out, err = cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Error running %s: %s\n", cmd.Args[0], err)
 		log.Printf("Output: %s\n", out)
@@ -188,7 +188,6 @@ func runCommand(cmd *exec.Cmd) error {
 
 func (c *Container) DoCreate(conn *Connection, req *protocol.CreateRequest) {
 	var cmd *exec.Cmd
-	var out []byte
 	var err error
 
 	// Override handle if specified
@@ -229,8 +228,6 @@ func (c *Container) DoCreate(conn *Connection, req *protocol.CreateRequest) {
 
 func (c *Container) DoStop(conn *Connection, req *protocol.StopRequest) {
 	var cmd *exec.Cmd
-	var out []byte
-	var err error
 
 	done := make(chan error, 1)
 
@@ -259,10 +256,11 @@ func (c *Container) DoStop(conn *Connection, req *protocol.StopRequest) {
 
 func (c *Container) DoDestroy(conn *Connection, req *protocol.DestroyRequest) {
 	var cmd *exec.Cmd
-	var out []byte
 	var err error
 
 	cmd = exec.Command(path.Join(c.ContainerPath(), "destroy.sh"))
+
+	err = runCommand(cmd)
 	if err != nil {
 		conn.WriteErrorResponse("error")
 		return
