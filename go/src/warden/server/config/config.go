@@ -88,14 +88,16 @@ type Config struct {
 	User    userConfig    "user"
 }
 
-var defaultConfig = Config{
-	Server:  defaultServerConfig,
-	Network: defaultNetworkConfig,
-	User:    defaultUserConfig,
-}
+func DefaultConfig() Config {
+	var c = Config{
+		Server:  defaultServerConfig,
+		Network: defaultNetworkConfig,
+		User:    defaultUserConfig,
+	}
 
-func init() {
-	defaultConfig.sanitize()
+	c.sanitize()
+
+	return c
 }
 
 func (c *Config) sanitize() {
@@ -108,7 +110,7 @@ func (c *Config) sanitize() {
 }
 
 func InitConfigFromFile(path string) *Config {
-	var c Config = defaultConfig
+	var c Config = DefaultConfig()
 	var e error
 
 	b, e := ioutil.ReadFile(path)

@@ -12,7 +12,7 @@ type ConfigSuite struct {
 var _ = Suite(&ConfigSuite{})
 
 func (s *ConfigSuite) SetUpTest(c *C) {
-	s.Config = defaultConfig
+	s.Config = DefaultConfig()
 }
 
 func (s *ConfigSuite) TestServerUnixDomain(c *C) {
