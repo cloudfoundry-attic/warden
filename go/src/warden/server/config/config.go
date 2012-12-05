@@ -35,6 +35,7 @@ type serverConfig struct {
 
 	ContainerRootfsPath string "container_rootfs_path"
 	ContainerDepotPath  string "container_depot_path"
+	ContainerScriptPath string "container_script_path"
 
 	ContainerGraceTime uint "container_grace_time"
 

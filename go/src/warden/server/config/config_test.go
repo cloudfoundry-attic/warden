@@ -36,15 +36,18 @@ func (s *ConfigSuite) TestServerContainerPath(c *C) {
 server:
   container_rootfs_path: /tmp/rootfs
   container_depot_path: /tmp/depot
+  container_script_path: /tmp/script
 `)
 
 	c.Check(s.Server.ContainerRootfsPath, Equals, "")
 	c.Check(s.Server.ContainerDepotPath, Equals, "")
+	c.Check(s.Server.ContainerScriptPath, Equals, "")
 
 	goyaml.Unmarshal(b, &s.Config)
 
 	c.Check(s.Server.ContainerRootfsPath, Equals, "/tmp/rootfs")
 	c.Check(s.Server.ContainerDepotPath, Equals, "/tmp/depot")
+	c.Check(s.Server.ContainerScriptPath, Equals, "/tmp/script")
 }
 
 func (s *ConfigSuite) TestServerContainerGraceTime(c *C) {
