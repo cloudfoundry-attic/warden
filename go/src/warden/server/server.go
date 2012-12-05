@@ -1,19 +1,19 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"sync"
+	"warden/server/config"
 )
 
 type Server struct {
 	sync.Mutex
 	Containers map[string]*Container
 
-	RootPath            string
-	ContainerRootfsPath string
-	ContainerDepotPath  string
+	c *config.Config
 }
 
 func NewServer() *Server {
@@ -23,7 +23,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) NewContainer() *Container {
-	return NewContainer(s)
+	return NewContainer(s, s.c)
 }
 
 func (s *Server) RegisterContainer(c *Container) {
@@ -52,24 +52,33 @@ func (s *Server) FindContainer(h string) *Container {
 	return c
 }
 
-func Start() {
-	s := NewServer()
+func (s *Server) Listen() net.Listener {
+	var err error
 
-	s.RootPath = "/home/pieter/dev/cf/warden/warden/root/linux"
-	s.ContainerRootfsPath = "/tmp/warden/rootfs"
-	s.ContainerDepotPath = "/home/pieter/dev/cf/warden/warden/root/linux/instances"
+	p := s.c.Server.UnixDomainPath
 
-	os.Remove("/tmp/warden.sock")
+	// Unlink before bind
+	os.Remove(p)
 
-	addr, err := net.ResolveUnixAddr("unix", "/tmp/warden.sock")
+	x, err := net.ResolveUnixAddr("unix", p)
 	if err != nil {
 		panic(err)
 	}
 
-	l, err := net.ListenUnix("unix", addr)
+	l, err := net.ListenUnix("unix", x)
 	if err != nil {
-		log.Panic("Can't listen on /tmp/warden.sock")
+		panic(fmt.Sprintf("Can't listen on %s", p))
 	}
+
+	return l
+}
+
+func Start() {
+	s := NewServer()
+
+	s.c = config.InitConfigFromFile("../warden/config/linux.yml")
+
+	l := s.Listen()
 
 	for {
 		nc, err := l.Accept()

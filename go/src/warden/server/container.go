@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 	"warden/protocol"
+	"warden/server/config"
 )
 
 type request struct {
@@ -26,6 +27,8 @@ type Job struct {
 }
 
 type Container struct {
+	Config *config.Config
+
 	r chan *request
 	s *Server
 
@@ -56,8 +59,10 @@ func NextId() string {
 	return s
 }
 
-func NewContainer(s *Server) *Container {
+func NewContainer(s *Server, cfg *config.Config) *Container {
 	c := &Container{}
+
+	c.Config = cfg
 
 	c.r = make(chan *request)
 	c.s = s
@@ -81,7 +86,7 @@ func (c *Container) Execute(c_ *Connection, r_ protocol.Request) {
 }
 
 func (c *Container) ContainerPath() string {
-	return path.Join(c.s.ContainerDepotPath, c.Handle)
+	return path.Join(c.Config.Server.ContainerDepotPath, c.Handle)
 }
 
 func (c *Container) Run() {
@@ -199,12 +204,12 @@ func (c *Container) DoCreate(conn *Connection, req *protocol.CreateRequest) {
 	res.Handle = &c.Handle
 
 	// Create
-	cmd = exec.Command(path.Join(c.s.RootPath, "create.sh"), c.ContainerPath())
+	cmd = exec.Command(path.Join(c.Config.Server.ContainerScriptPath, "create.sh"), c.ContainerPath())
 	cmd.Env = append(cmd.Env, fmt.Sprintf("id=%s", c.Id))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("network_host_ip=%s", "10.0.0.1"))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("network_container_ip=%s", "10.0.0.2"))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("user_uid=%d", 10000))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("rootfs_path=%s", c.s.ContainerRootfsPath))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("rootfs_path=%s", c.Config.Server.ContainerRootfsPath))
 
 	err = runCommand(cmd)
 	if err != nil {
