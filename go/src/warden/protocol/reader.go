@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"bufio"
-	proto "code.google.com/p/goprotobuf/proto"
+	"code.google.com/p/goprotobuf/proto"
 	"io"
 	"strconv"
 )
