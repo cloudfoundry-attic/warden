@@ -5,14 +5,14 @@ import (
 	"warden/protocol"
 )
 
-type Connection struct {
+type Conn struct {
 	net.Conn
 	*protocol.Reader
 	*protocol.Writer
 }
 
-func NewConnection(nc net.Conn) *Connection {
-	c := &Connection{}
+func NewConn(nc net.Conn) *Conn {
+	c := &Conn{}
 
 	c.Conn = nc
 	c.Reader = protocol.NewReader(nc)
@@ -21,7 +21,7 @@ func NewConnection(nc net.Conn) *Connection {
 	return c
 }
 
-func (c *Connection) WriteErrorResponse(x string) {
+func (c *Conn) WriteErrorResponse(x string) {
 	y := &protocol.ErrorResponse{}
 	y.Message = &x
 	c.WriteResponse(y)

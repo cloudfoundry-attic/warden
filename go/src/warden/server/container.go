@@ -12,12 +12,12 @@ import (
 )
 
 type request struct {
-	c    *Connection
+	c    *Conn
 	r    protocol.Request
 	done chan bool
 }
 
-func newRequest(c_ *Connection, r_ protocol.Request) *request {
+func newRequest(c_ *Conn, r_ protocol.Request) *request {
 	r := &request{c: c_, r: r_}
 	r.done = make(chan bool)
 	return r
@@ -75,7 +75,7 @@ func NewContainer(s *Server, cfg *config.Config) *Container {
 	return c
 }
 
-func (c *Container) Execute(c_ *Connection, r_ protocol.Request) {
+func (c *Container) Execute(c_ *Conn, r_ protocol.Request) {
 	r := newRequest(c_, r_)
 
 	// Send request
@@ -191,7 +191,7 @@ func runCommand(cmd *exec.Cmd) error {
 	return err
 }
 
-func (c *Container) DoCreate(conn *Connection, req *protocol.CreateRequest) {
+func (c *Container) DoCreate(x *Conn, req *protocol.CreateRequest) {
 	var cmd *exec.Cmd
 	var err error
 
@@ -213,7 +213,7 @@ func (c *Container) DoCreate(conn *Connection, req *protocol.CreateRequest) {
 
 	err = runCommand(cmd)
 	if err != nil {
-		conn.WriteErrorResponse("error")
+		x.WriteErrorResponse("error")
 		return
 	}
 
@@ -221,17 +221,17 @@ func (c *Container) DoCreate(conn *Connection, req *protocol.CreateRequest) {
 	cmd = exec.Command(path.Join(c.ContainerPath(), "start.sh"))
 	err = runCommand(cmd)
 	if err != nil {
-		conn.WriteErrorResponse("error")
+		x.WriteErrorResponse("error")
 		return
 	}
 
 	c.State = "active"
 	c.s.RegisterContainer(c)
 
-	conn.WriteResponse(res)
+	x.WriteResponse(res)
 }
 
-func (c *Container) DoStop(conn *Connection, req *protocol.StopRequest) {
+func (c *Container) DoStop(x *Conn, req *protocol.StopRequest) {
 	var cmd *exec.Cmd
 
 	done := make(chan error, 1)
@@ -256,10 +256,10 @@ func (c *Container) DoStop(conn *Connection, req *protocol.StopRequest) {
 	c.State = "stopped"
 
 	res := &protocol.StopResponse{}
-	conn.WriteResponse(res)
+	x.WriteResponse(res)
 }
 
-func (c *Container) DoDestroy(conn *Connection, req *protocol.DestroyRequest) {
+func (c *Container) DoDestroy(x *Conn, req *protocol.DestroyRequest) {
 	var cmd *exec.Cmd
 	var err error
 
@@ -267,7 +267,7 @@ func (c *Container) DoDestroy(conn *Connection, req *protocol.DestroyRequest) {
 
 	err = runCommand(cmd)
 	if err != nil {
-		conn.WriteErrorResponse("error")
+		x.WriteErrorResponse("error")
 		return
 	}
 
@@ -275,5 +275,5 @@ func (c *Container) DoDestroy(conn *Connection, req *protocol.DestroyRequest) {
 	c.s.UnregisterContainer(c)
 
 	res := &protocol.DestroyResponse{}
-	conn.WriteResponse(res)
+	x.WriteResponse(res)
 }

@@ -84,7 +84,7 @@ func Start() {
 	for {
 		nc, err := l.Accept()
 		if err != nil {
-			log.Printf("Error accepting connection: %s\n", err)
+			log.Printf("Error accepting xection: %s\n", err)
 			continue
 		}
 
@@ -92,12 +92,12 @@ func Start() {
 	}
 }
 
-func (s *Server) servePing(x *Connection, y *protocol.PingRequest) {
+func (s *Server) servePing(x *Conn, y *protocol.PingRequest) {
 	z := &protocol.PingResponse{}
 	x.WriteResponse(z)
 }
 
-func (s *Server) serveEcho(x *Connection, y *protocol.EchoRequest) {
+func (s *Server) serveEcho(x *Conn, y *protocol.EchoRequest) {
 	m := y.GetMessage()
 
 	z := &protocol.EchoResponse{}
@@ -106,7 +106,7 @@ func (s *Server) serveEcho(x *Connection, y *protocol.EchoRequest) {
 	x.WriteResponse(z)
 }
 
-func (s *Server) serveCreate(x *Connection, y *protocol.CreateRequest) {
+func (s *Server) serveCreate(x *Conn, y *protocol.CreateRequest) {
 	var c *Container
 
 	c = s.FindContainer(y.GetHandle())
@@ -128,7 +128,7 @@ type containerRequest interface {
 	GetHandle() string
 }
 
-func (s *Server) serveContainerRequest(x *Connection, y containerRequest) {
+func (s *Server) serveContainerRequest(x *Conn, y containerRequest) {
 	var c *Container
 
 	c = s.FindContainer(y.GetHandle())
@@ -141,7 +141,7 @@ func (s *Server) serveContainerRequest(x *Connection, y containerRequest) {
 }
 
 func (s *Server) serve(x net.Conn) {
-	y := NewConnection(x)
+	y := NewConn(x)
 
 	for {
 		u, e := y.ReadRequest()
