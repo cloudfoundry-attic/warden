@@ -51,7 +51,10 @@ struct wshd_s {
   pid_t pid;
 
   /* Map pids to exit status fds */
-  int *pid_to_fd;
+  struct {
+    pid_t pid;
+    int fd;
+  } *pid_to_fd;
   size_t pid_to_fd_len;
 };
 
@@ -138,7 +141,6 @@ void assert_directory(const char *path) {
 
 void child_pid_to_fd_add(wshd_t *w, pid_t pid, int fd) {
   int len = w->pid_to_fd_len;
-  int diff = 2 * sizeof(int);
 
   /* Store a copy */
   fd = dup(fd);
@@ -147,32 +149,30 @@ void child_pid_to_fd_add(wshd_t *w, pid_t pid, int fd) {
     abort();
   }
 
-  w->pid_to_fd = realloc(w->pid_to_fd, len + diff);
+  w->pid_to_fd = realloc(w->pid_to_fd, (len + 1) * sizeof(w->pid_to_fd[0]));
   assert(w->pid_to_fd != NULL);
 
-  w->pid_to_fd[len+0] = pid;
-  w->pid_to_fd[len+1] = fd;
-  w->pid_to_fd_len = len + diff;
+  w->pid_to_fd[len].pid = pid;
+  w->pid_to_fd[len].fd = fd;
+  w->pid_to_fd_len++;
 }
 
 int child_pid_to_fd_remove(wshd_t *w, pid_t pid) {
+  int i;
   int len = w->pid_to_fd_len;
-  int diff = 2 * sizeof(int);
-  int *cur;
-  int offset;
   int fd = -1;
 
-  for (cur = w->pid_to_fd; cur < (w->pid_to_fd + len); cur += diff) {
-    if (cur[0] == pid) {
-      fd = cur[1];
-      offset = cur - w->pid_to_fd;
+  for (i = 0; i < len; i++) {
+    if (w->pid_to_fd[i].pid == pid) {
+      fd = w->pid_to_fd[i].fd;
 
-      if ((offset + diff) < len) {
-        memmove(cur, cur + diff, len - offset - diff);
+      /* Move tail if there is one */
+      if ((i + 1) < len) {
+        memmove(&w->pid_to_fd[i], &w->pid_to_fd[i+1], (len - i - 1) * sizeof(w->pid_to_fd[0]));
       }
 
-      w->pid_to_fd = realloc(w->pid_to_fd, len - diff);
-      w->pid_to_fd_len = len - diff;
+      w->pid_to_fd = realloc(w->pid_to_fd, (w->pid_to_fd_len - 1) * sizeof(w->pid_to_fd[0]));
+      w->pid_to_fd_len--;
 
       if (w->pid_to_fd_len) {
         assert(w->pid_to_fd != NULL);
