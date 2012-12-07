@@ -71,7 +71,7 @@ func (n *Network) init() {
 	}
 }
 
-func (n *Network) Acquire() *net.IP {
+func (n *Network) Acquire() (x net.IP, ok bool) {
 	n.Lock()
 	defer n.Unlock()
 
@@ -79,12 +79,11 @@ func (n *Network) Acquire() *net.IP {
 
 	e := n.pool.Front()
 	if e == nil {
-		return nil
+		return
 	}
 
-	ip := n.pool.Remove(e).(net.IP)
-
-	return &ip
+	x = n.pool.Remove(e).(net.IP)
+	return x, true
 }
 
 func (n *Network) Release(ip net.IP) {
@@ -96,15 +95,15 @@ func (n *Network) Release(ip net.IP) {
 	n.pool.PushBack(ip)
 }
 
-func (n *Network) Remove(ip net.IP) bool {
+func (n *Network) Remove(x net.IP) bool {
 	n.Lock()
 	defer n.Unlock()
 
 	n.init()
 
 	for e := n.pool.Front(); e != nil; e = e.Next() {
-		ip_ := e.Value.(net.IP)
-		if bytes.Equal(ip, ip_) {
+		y := e.Value.(net.IP)
+		if bytes.Equal(x, y) {
 			n.pool.Remove(e)
 			return true
 		}

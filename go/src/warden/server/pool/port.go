@@ -69,7 +69,7 @@ func (p *Port) init() {
 	}
 }
 
-func (p *Port) Acquire() *uint {
+func (p *Port) Acquire() (x uint, ok bool) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -77,12 +77,11 @@ func (p *Port) Acquire() *uint {
 
 	e := p.pool.Front()
 	if e == nil {
-		return nil
+		return
 	}
 
-	i := p.pool.Remove(e).(uint)
-
-	return &i
+	x = p.pool.Remove(e).(uint)
+	return x, true
 }
 
 func (p *Port) Release(i uint) {
@@ -94,15 +93,15 @@ func (p *Port) Release(i uint) {
 	p.pool.PushBack(i)
 }
 
-func (p *Port) Remove(i uint) bool {
+func (p *Port) Remove(x uint) bool {
 	p.Lock()
 	defer p.Unlock()
 
 	p.init()
 
 	for e := p.pool.Front(); e != nil; e = e.Next() {
-		i_ := e.Value.(uint)
-		if i == i_ {
+		y := e.Value.(uint)
+		if x == y {
 			p.pool.Remove(e)
 			return true
 		}
