@@ -1,77 +1,52 @@
 package pool
 
 import (
+	. "launchpad.net/gocheck"
 	"net"
-	"testing"
 )
 
-func testIP(t *testing.T, ip net.IP, expected string) {
-	actual := ip.String()
+type NetworkSuite struct{}
 
-	if expected != actual {
-		t.Errorf("Expected %s, was: %s\n", expected, actual)
-	}
-}
+var _ = Suite(&NetworkSuite{})
 
-func TestNetworkAcquire(t *testing.T) {
+func (s *NetworkSuite) TestAcquire(c *C) {
 	n := &Network{StartAddress: "10.0.0.0", Size: 256}
 
-	var ip *net.IP
-
-	ip = n.Acquire()
-	testIP(t, *ip, "10.0.0.0")
-
-	ip = n.Acquire()
-	testIP(t, *ip, "10.0.0.4")
+	c.Check(n.Acquire().String(), Equals, "10.0.0.0")
+	c.Check(n.Acquire().String(), Equals, "10.0.0.4")
 }
 
-func TestNetworkAcquireAll(t *testing.T) {
+func (s *NetworkSuite) TestAcquireAll(c *C) {
 	n := &Network{StartAddress: "10.0.0.0", Size: 256}
 
 	for i := 0; i < 256; i++ {
-		ip := n.Acquire()
-		if ip == nil {
-			t.Errorf("Expected Acquire() not to return nil\n")
-			return
-		}
+		c.Check(n.Acquire(), Not(IsNil))
 	}
 
-	ip := n.Acquire()
-	if ip != nil {
-		t.Errorf("Expected Acquire() to return nil\n")
-		return
-	}
+	c.Check(n.Acquire(), IsNil)
 }
 
-func TestNetworkRelease(t *testing.T) {
-	n := &Network{StartAddress: "10.0.0.0", Size: 1}
-
+func (s *NetworkSuite) TestRelease(c *C) {
 	var ip1, ip2 *net.IP
 
+	n := &Network{StartAddress: "10.0.0.0", Size: 1}
+
 	ip1 = n.Acquire()
+	c.Check(ip1, Not(IsNil))
 
 	ip2 = n.Acquire()
-	if ip2 != nil {
-		t.Errorf("Expected Acquire() to return nil\n")
-		return
-	}
+	c.Check(ip2, IsNil)
 
 	n.Release(*ip1)
 
 	ip2 = n.Acquire()
-	if ip2 == nil {
-		t.Errorf("Expected Acquire() not to return nil\n")
-		return
-	}
+	c.Check(ip2, Not(IsNil))
 }
 
-func TestNetworkRemove(t *testing.T) {
+func (s *NetworkSuite) TestRemove(c *C) {
 	n := &Network{StartAddress: "10.0.0.0", Size: 2}
 
 	n.Remove(net.ParseIP("10.0.0.0"))
 
-	var ip *net.IP
-
-	ip = n.Acquire()
-	testIP(t, *ip, "10.0.0.4")
+	c.Check(n.Acquire().String(), Equals, "10.0.0.4")
 }

@@ -1,89 +1,61 @@
 package pool
 
 import (
-	"testing"
+	. "launchpad.net/gocheck"
 )
 
-func testPort(t *testing.T, actual uint, expected uint) {
-	if expected != actual {
-		t.Errorf("Expected %d, was: %d\n", expected, actual)
-	}
-}
+type PoolSuite struct{}
 
-func TestPortAcquire(t *testing.T) {
+var _ = Suite(&PoolSuite{})
+
+func (s *PoolSuite) TestAcquire(c *C) {
 	p := &Port{StartPort: 61000, Size: 256}
 
-	var i *uint
-
-	i = p.Acquire()
-	testPort(t, *i, 61000)
-
-	i = p.Acquire()
-	testPort(t, *i, 61001)
+	c.Check(*p.Acquire(), Equals, uint(61000))
+	c.Check(*p.Acquire(), Equals, uint(61001))
 }
 
-func TestPortAcquireAll(t *testing.T) {
+func (s *PoolSuite) TestAcquireAll(c *C) {
 	p := &Port{StartPort: 61000, Size: 256}
 
 	for i := 0; i < 256; i++ {
-		i_ := p.Acquire()
-		if i_ == nil {
-			t.Errorf("Expected Acquire() not to return nil\n")
-			return
-		}
+		c.Check(p.Acquire(), Not(IsNil))
 	}
 
-	i_ := p.Acquire()
-	if i_ != nil {
-		t.Errorf("Expected Acquire() to return nil\n")
-		return
-	}
+	c.Check(p.Acquire(), IsNil)
 }
 
-func TestPortRelease(t *testing.T) {
-	p := &Port{StartPort: 61000, Size: 1}
-
+func (s *PoolSuite) TestRelease(c *C) {
 	var i1, i2 *uint
 
+	p := &Port{StartPort: 61000, Size: 1}
+
 	i1 = p.Acquire()
+	c.Check(i1, Not(IsNil))
 
 	i2 = p.Acquire()
-	if i2 != nil {
-		t.Errorf("Expected Acquire() to return nil\n")
-		return
-	}
+	c.Check(i2, IsNil)
 
 	p.Release(*i1)
 
 	i2 = p.Acquire()
-	if i2 == nil {
-		t.Errorf("Expected Acquire() not to return nil\n")
-		return
-	}
+	c.Check(i2, Not(IsNil))
 }
 
-func TestPortRemove(t *testing.T) {
+func (s *PoolSuite) TestRemove(c *C) {
 	p := &Port{StartPort: 61000, Size: 2}
 
 	p.Remove(61000)
 
-	var i *uint
-
-	i = p.Acquire()
-	testPort(t, *i, 61001)
+	c.Check(*p.Acquire(), Equals, uint(61001))
 }
 
-func TestPortInit(t *testing.T) {
+func (s *PoolSuite) TestInit(c *C) {
 	p := &Port{}
 
 	// Acquire to trigger init
 	_ = p.Acquire()
 
-	if p.StartPort == 0 {
-		t.Error("Expected StartPort to not be 0")
-	}
-
-	if p.Size == 0 {
-		t.Error("Expected Size to not be 0")
-	}
+	c.Check(p.StartPort, Not(Equals), 0)
+	c.Check(p.Size, Not(Equals), 0)
 }
