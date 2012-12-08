@@ -1,111 +1,91 @@
 package pool
 
 import (
-	"container/list"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sync"
 )
 
-// Don't use ports upwards of 65000
-const MaxPort = 65000
-
-type Port struct {
-	sync.Mutex
-
-	// Use this port as offset for the port pool
-	StartPort uint
-
-	// Pool this many ports
-	Size uint
-
-	// Actual pool
-	pool *list.List
-}
-
-func (p *Port) init() {
-	if p.pool == nil {
-		p.pool = list.New()
-
-		if p.StartPort == 0 {
-			f, err := os.Open("/proc/sys/net/ipv4/ip_local_port_range")
-			if err != nil {
-				panic(err)
-			}
-
-			data, err := ioutil.ReadAll(f)
-			if err != nil {
-				panic(err)
-			}
-
-			var first, last uint16
-
-			n, err := fmt.Sscan(string(data), &first, &last)
-			if n != 2 {
-				panic(err)
-			}
-
-			f.Close()
-
-			p.StartPort = uint(last + 1)
-		}
-
-		if p.StartPort < 1024 {
-			panic("Invalid StartPort")
-		}
-
-		if p.Size == 0 {
-			p.Size = MaxPort - p.StartPort + 1
-		}
-
-		if p.StartPort+p.Size > (MaxPort + 1) {
-			panic("Invalid Size")
-		}
-
-		for i := p.StartPort; i < (p.StartPort + p.Size); i++ {
-			p.pool.PushBack(i)
-		}
-	}
-}
-
-func (p *Port) Acquire() (x uint, ok bool) {
-	p.Lock()
-	defer p.Unlock()
-
-	p.init()
-
-	e := p.pool.Front()
-	if e == nil {
-		return
+func ipLocalPortRange() [2]uint16 {
+	f, err := os.Open("/proc/sys/net/ipv4/ip_local_port_range")
+	if err != nil {
+		panic(err)
 	}
 
-	x = p.pool.Remove(e).(uint)
-	return x, true
-}
+	defer f.Close()
 
-func (p *Port) Release(i uint) {
-	p.Lock()
-	defer p.Unlock()
-
-	p.init()
-
-	p.pool.PushBack(i)
-}
-
-func (p *Port) Remove(x uint) bool {
-	p.Lock()
-	defer p.Unlock()
-
-	p.init()
-
-	for e := p.pool.Front(); e != nil; e = e.Next() {
-		y := e.Value.(uint)
-		if x == y {
-			p.pool.Remove(e)
-			return true
-		}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		panic(err)
 	}
 
-	return false
+	var x [2]uint16
+
+	n, err := fmt.Sscan(string(b), &x[0], &x[1])
+	if n != 2 {
+		panic(err)
+	}
+
+	return x
+}
+
+type port struct {
+	p uint16
+}
+
+func (x port) Next() Poolable {
+	return port{x.p + 1}
+}
+
+func (x port) Equals(y Poolable) bool {
+	z, ok := y.(port)
+	return ok && x.p == z.p
+}
+
+type PortPool struct {
+	*Pool
+}
+
+func NewPortPool(start int, size int) *PortPool {
+	if start < 0 {
+		x := ipLocalPortRange()
+		start = int(x[1])
+	}
+
+	// Don't use ports >= 65000
+	max := 65000
+
+	if start < 1024 || start >= max {
+		panic("invalid start port")
+	}
+
+	if size == 0 {
+		size = max - start
+	}
+
+	if size == 0 || start+size > max {
+		panic("invalid size")
+	}
+
+	p := &PortPool{}
+	p.Pool = NewPool(port{uint16(start)}, size)
+
+	return p
+}
+
+func (p *PortPool) Acquire() (x uint16, ok bool) {
+	y, ok := p.Pool.Acquire()
+	if ok {
+		x = y.(port).p
+	}
+
+	return
+}
+
+func (p *PortPool) Release(x uint16) {
+	p.Pool.Release(port{x})
+}
+
+func (p *PortPool) Remove(x uint16) bool {
+	return p.Pool.Remove(port{x})
 }

@@ -4,27 +4,27 @@ import (
 	. "launchpad.net/gocheck"
 )
 
-type PoolSuite struct{}
+type PortPoolSuite struct{}
 
-var _ = Suite(&PoolSuite{})
+var _ = Suite(&PortPoolSuite{})
 
-func (s *PoolSuite) TestAcquire(c *C) {
-	var x uint
+func (s *PortPoolSuite) TestAcquire(c *C) {
+	var x uint16
 	var ok bool
 
-	p := &Port{StartPort: 61000, Size: 256}
+	p := NewPortPool(61000, 256)
 
 	x, ok = p.Acquire()
-	c.Check(x, Equals, uint(61000))
+	c.Check(x, Equals, uint16(61000))
 	c.Check(ok, Equals, true)
 
 	x, ok = p.Acquire()
-	c.Check(x, Equals, uint(61001))
+	c.Check(x, Equals, uint16(61001))
 	c.Check(ok, Equals, true)
 }
 
-func (s *PoolSuite) TestAcquireAll(c *C) {
-	p := &Port{StartPort: 61000, Size: 256}
+func (s *PortPoolSuite) TestAcquireAll(c *C) {
+	p := NewPortPool(61000, 256)
 
 	for i := 0; i < 256; i++ {
 		_, ok := p.Acquire()
@@ -33,44 +33,4 @@ func (s *PoolSuite) TestAcquireAll(c *C) {
 
 	_, ok := p.Acquire()
 	c.Check(ok, Equals, false)
-}
-
-func (s *PoolSuite) TestRelease(c *C) {
-	var x uint
-	var ok bool
-
-	p := &Port{StartPort: 61000, Size: 1}
-
-	x, ok = p.Acquire()
-	c.Check(x, Equals, uint(61000))
-	c.Check(ok, Equals, true)
-
-	_, ok = p.Acquire()
-	c.Check(ok, Equals, false)
-
-	p.Release(x)
-
-	x, ok = p.Acquire()
-	c.Check(x, Equals, uint(61000))
-	c.Check(ok, Equals, true)
-}
-
-func (s *PoolSuite) TestRemove(c *C) {
-	p := &Port{StartPort: 61000, Size: 2}
-
-	p.Remove(uint(61000))
-
-	x, ok := p.Acquire()
-	c.Check(x, Equals, uint(61001))
-	c.Check(ok, Equals, true)
-}
-
-func (s *PoolSuite) TestInit(c *C) {
-	p := &Port{}
-
-	// Acquire to trigger init
-	_, _ = p.Acquire()
-
-	c.Check(p.StartPort, Not(Equals), 0)
-	c.Check(p.Size, Not(Equals), 0)
 }

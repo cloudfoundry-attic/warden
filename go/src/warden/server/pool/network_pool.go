@@ -2,23 +2,8 @@ package pool
 
 import (
 	"bytes"
-	"container/list"
 	"net"
-	"sync"
 )
-
-type Network struct {
-	sync.Mutex
-
-	// Use this /30 network as offset for the network pool
-	StartAddress string
-
-	// Pool this many /30 networks
-	Size int
-
-	// Actual pool
-	pool *list.List
-}
 
 func IPToUint32(i net.IP) uint32 {
 	i = i.To4()
@@ -47,67 +32,51 @@ func Uint32ToIP(u uint32) net.IP {
 	return net.IPv4(a, b, c, d)
 }
 
-func (n *Network) init() {
-	if n.pool == nil {
-		n.pool = list.New()
-
-		ip := net.ParseIP(n.StartAddress)
-		if ip == nil {
-			panic("Invalid start address")
-		}
-
-		// Mask IP
-		ip = ip.Mask(net.IPv4Mask(255, 255, 255, 252))
-
-		// Convert to unsigned integer
-		u := IPToUint32(ip)
-
-		for i := 0; i < n.Size; i++ {
-			n.pool.PushBack(Uint32ToIP(u))
-
-			// Next network
-			u += 4
-		}
-	}
+type network struct {
+	net.IP
 }
 
-func (n *Network) Acquire() (x net.IP, ok bool) {
-	n.Lock()
-	defer n.Unlock()
-
-	n.init()
-
-	e := n.pool.Front()
-	if e == nil {
-		return
-	}
-
-	x = n.pool.Remove(e).(net.IP)
-	return x, true
+func (x network) Next() Poolable {
+	y := IPToUint32(x.IP)
+	y += 4
+	return network{Uint32ToIP(y)}
 }
 
-func (n *Network) Release(ip net.IP) {
-	n.Lock()
-	defer n.Unlock()
-
-	n.init()
-
-	n.pool.PushBack(ip)
+func (x network) Equals(y Poolable) bool {
+	z, ok := y.(network)
+	return ok && bytes.Equal(x.IP, z.IP)
 }
 
-func (n *Network) Remove(x net.IP) bool {
-	n.Lock()
-	defer n.Unlock()
+type NetworkPool struct {
+	*Pool
+}
 
-	n.init()
+func NewNetworkPool(addr string, size int) *NetworkPool {
+	p := &NetworkPool{}
 
-	for e := n.pool.Front(); e != nil; e = e.Next() {
-		y := e.Value.(net.IP)
-		if bytes.Equal(x, y) {
-			n.pool.Remove(e)
-			return true
-		}
+	ip := net.ParseIP(addr)
+	if ip == nil {
+		panic("Invalid start address")
 	}
 
-	return false
+	p.Pool = NewPool(network{ip}, size)
+
+	return p
+}
+
+func (p *NetworkPool) Acquire() (x net.IP, ok bool) {
+	y, ok := p.Pool.Acquire()
+	if ok {
+		x = y.(network).IP
+	}
+
+	return
+}
+
+func (p *NetworkPool) Release(x net.IP) {
+	p.Pool.Release(network{x})
+}
+
+func (p *NetworkPool) Remove(x net.IP) bool {
+	return p.Pool.Remove(network{x})
 }
