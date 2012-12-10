@@ -146,6 +146,8 @@ module Warden
         when "in"
           request = Protocol::NetInRequest.new
           request.handle = handle
+          container_port = args.shift
+          request.container_port = Integer(container_port)
         when "out"
           request = Protocol::NetOutRequest.new
           request.handle = handle
