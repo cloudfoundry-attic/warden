@@ -90,18 +90,7 @@ func (c *Container) ContainerPath() string {
 }
 
 func (c *Container) Run() {
-
-	for {
-		var r *request
-		var ok bool
-
-		select {
-		case r, ok = <-c.r:
-			if !ok {
-				break
-			}
-		}
-
+	for r := range c.r {
 		t1 := time.Now()
 
 		switch c.State {
