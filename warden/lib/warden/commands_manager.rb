@@ -215,7 +215,15 @@ module Warden
     #    Spawn command [Warden::Protocol::SpawnRequest] with fields having same
     #    values as the run command passed as parameter to this method.
     def convert_to_spawn_command(run_command)
-      copy_fields(run_command, Warden::Protocol::SpawnRequest.new)
+      spawn_command = Warden::Protocol::SpawnRequest.new
+
+      clone = Warden::Protocol::RunRequest.decode(run_command.encode)
+      clone.fields.each_value do |field|
+        value = clone.send("#{field.name}")
+        spawn_command.send("#{field.name}=", value) if value
+      end
+
+      spawn_command
     end
 
     # Generates a stream command from a spawn command and its response.
@@ -237,18 +245,6 @@ module Warden
     # Raised when an enum cannot be serialized due to ambiguity in its
     # definition.
     class EnumEncodingError < StandardError
-    end
-
-    # For all fields defined in the protocol buffer message: pb_handle_A,
-    # copies corresponding values defined in the protocol buffer
-    # message: pb_handle_B.
-    def copy_fields(pb_handle_A, pb_handle_B)
-      pb_handle_A.fields.each_value do |field|
-        value = pb_handle_A.send("#{field.name}")
-        pb_handle_B.send("#{field.name}=", value.dup) if value
-      end
-
-      pb_handle_B
     end
 
     def generate_help(cmd_type, opts = {})

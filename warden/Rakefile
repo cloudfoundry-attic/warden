@@ -2,7 +2,6 @@
 
 require "rspec/core/rake_task"
 require "rspec/core/version"
-require "vcap/common"
 require "yaml"
 
 desc "Run all examples"
@@ -23,7 +22,9 @@ namespace :setup do
       sh "make clean all"
     end
 
-    sh "cp src/clone/clone root/linux/skeleton/bin"
+    sh "cp src/wsh/wshd root/linux/skeleton/bin"
+    sh "cp src/wsh/wsh root/linux/skeleton/bin"
+
     ["linux", "insecure"].each do |ct|
       sh "cp src/iomux/iomux-spawn root/#{ct}/skeleton/bin"
       sh "cp src/iomux/iomux-link root/#{ct}/skeleton/bin"

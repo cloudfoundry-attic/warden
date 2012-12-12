@@ -33,10 +33,13 @@ module Warden
           super
 
           # Reset quota limits
-          setquota(uid)
+          setquota(uid) if self.class.disk_quota_enabled
         end
 
         def do_limit_disk(request, response)
+          # return directly if the disk quota is diabled
+          return nil unless self.class.disk_quota_enabled
+
           limits = {}
 
           to_blocks = lambda do |bytes|
@@ -92,6 +95,9 @@ module Warden
           super(request, response)
 
           begin
+            # return nil directly if the disk quota is disabled
+            return nil unless self.class.disk_quota_enabled
+
             usage = self.class.repquota(uid)[uid][:usage]
 
             stats = {
@@ -127,14 +133,25 @@ module Warden
 
           include Spawn
 
+          # switch to enable/disable disk quota
+          attr_accessor :disk_quota_enabled
+
           def container_depot_mount_point_path
             @container_depot_mount_point_path ||=
               Sys::Filesystem.mount_point(container_depot_path)
           end
 
+          # We're interested in the quota blocksize, which is hardcoded by the
+          # Linux kernel and may be different from the filesystem blocksize.
+          # See <sys/mount.h> for the accurate BLOCK_SIZE.
           def container_depot_block_size
-            @container_depot_block_size ||=
-              Sys::Filesystem.stat(container_depot_mount_point_path).block_size
+            1024
+          end
+
+          def setup(config)
+            super(config)
+
+            self.disk_quota_enabled = config.server["quota"]["disk_quota_enabled"]
           end
 
           def repquota(uids)

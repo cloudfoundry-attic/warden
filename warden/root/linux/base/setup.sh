@@ -66,7 +66,7 @@ then
   exit 1
 fi
 
-dirname=$(dirname $1)
+dirname=$(readlink -nf $(dirname $1))
 if [ ! -d $dirname ]
 then
   echo "Looks like $dirname doesn't exist or isn't a directory"

@@ -13,7 +13,7 @@ module Warden
 
         include Spawn
 
-        INREG = /qdisc tbf \d+: root refcnt \d+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b lat 25.0ms/
+        INREG = /qdisc tbf [0-9a-f]+: root refcnt \d+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b lat 25.0ms/
         OUTREG = /\s*police 0x[0-9a-f]+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b mtu \d+[KM]?b action drop overhead \d+b/
 
         def self.included(base)
@@ -89,10 +89,13 @@ module Warden
 
           response.host_port      = host_port
           response.container_port = container_port
-
         rescue WardenError
           self.class.port_pool.release(host_port) unless request.host_port
           raise
+        end
+
+        def after_net_in(request, response)
+          write_snapshot(:keep_alive => true)
         end
 
         def do_net_out(request, response)
@@ -102,7 +105,7 @@ module Warden
           }
         end
 
-        def acquire
+        def acquire(opts = {})
           if !@resources.has_key?("ports")
             @resources["ports"] = []
             @acquired["ports"] = []

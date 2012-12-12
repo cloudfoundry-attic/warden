@@ -1,10 +1,11 @@
-#include <sys/param.h>
-#include <sys/mount.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mount.h>
+#include <sys/param.h>
+
 #include "mount.h"
 
 typedef struct mount_lines_s mount_lines_t;

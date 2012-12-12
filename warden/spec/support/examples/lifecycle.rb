@@ -6,6 +6,19 @@ shared_examples "lifecycle" do
     response.handle.should_not be_nil
   end
 
+  it "should allow to create a container with a custom handle" do
+    response = client.create(:handle => "test_handle")
+    response.handle.should == "test_handle"
+  end
+
+  it "should not allow to recreate a container that already exists" do
+    response = client.create(:handle => "test_handle")
+    response.handle.should == "test_handle"
+    expect do
+      response = client.create(:handle => "test_handle")
+    end.to raise_error(/container with handle: test_handle already exists/)
+  end
+
   it "should allow to destroy a container" do
     handle = client.create.handle
 
@@ -35,7 +48,7 @@ shared_examples "lifecycle" do
 
       response = client.spawn \
         :handle => handle,
-        :script => "trap 'sleep 0.5; exit 37;' SIGTERM; while true; do echo x; sleep 0.1; done"
+        :script => "set -e; trap 'exit 37' SIGTERM; echo x; sleep 5s;"
 
       @job_id = response.job_id
 
@@ -50,12 +63,9 @@ shared_examples "lifecycle" do
     it "can run in the background" do
       client.stop(:handle => handle, :background => true)
 
-      t1 = Time.now
+      # Test that exit status is returned (because of SIGTERM)
       response = client.link(:handle => handle, :job_id => job_id)
-      t2 = Time.now
-
-      # Test that linking still took some time after stop had already returned
-      (t2 - t1).should be_within(0.25).of(0.5)
+      response.exit_status.should == 37
     end
 
     it "can kill everything ungracefully" do
@@ -63,7 +73,7 @@ shared_examples "lifecycle" do
 
       # Test that no exit status is returned (because of SIGKILL)
       response = client.link(:handle => handle, :job_id => job_id)
-      response.exit_status.should == nil
+      response.exit_status.should == 255
     end
   end
 

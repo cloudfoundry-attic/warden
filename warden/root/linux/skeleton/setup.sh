@@ -5,9 +5,9 @@ set -o nounset
 set -o errexit
 shopt -s nullglob
 
-cd $(dirname "${0}")
+cd $(dirname $0)
 
-source ./common.sh
+source ./lib/common.sh
 
 # Defaults for debugging the setup script
 id=${id:-test}
@@ -17,130 +17,77 @@ network_host_iface="w-${id}-0"
 network_container_ip=${network_container_ip:-10.0.0.2}
 network_container_iface="w-${id}-1"
 user_uid=${user_uid:-10000}
-rootfs_path=$rootfs_path
+rootfs_path=$(readlink -f $rootfs_path)
 
 # Write configuration
-cat > config <<-EOS
-id=${id}
-network_netmask=${network_netmask}
-network_host_ip=${network_host_ip}
-network_host_iface=${network_host_iface}
-network_container_ip=${network_container_ip}
-network_container_iface=${network_container_iface}
-user_uid=${user_uid}
+cat > etc/config <<-EOS
+id=$id
+network_netmask=$network_netmask
+network_host_ip=$network_host_ip
+network_host_iface=$network_host_iface
+network_container_ip=$network_container_ip
+network_container_iface=$network_container_iface
+user_uid=$user_uid
+rootfs_path=$rootfs_path
 EOS
 
-setup_fs ${rootfs_path}
-trap "teardown_fs" EXIT
+setup_fs
 
-./prepare.sh
+# Remove files we don't need or want
+rm -f mnt/var/cache/apt/archives/*.deb
+rm -f mnt/var/cache/apt/*cache.bin
+rm -f mnt/var/lib/apt/lists/*_Packages
+rm -f mnt/etc/ssh/ssh_host_*
 
-write "etc/hostname" <<-EOS
-${id}
+# Strip /dev down to the bare minimum
+rm -rf mnt/dev
+mkdir -p mnt/dev
+
+# /dev/tty
+file=mnt/dev/tty
+mknod -m 666 $file c 5 0
+chown root:tty $file
+
+# /dev/random, /dev/urandom
+file=mnt/dev/random
+mknod -m 666 $file c 1 8
+chown root:root $file
+file=mnt/dev/urandom
+mknod -m 666 $file c 1 9
+chown root:root $file
+
+# /dev/null, /dev/zero
+file=mnt/dev/null
+mknod -m 666 $file c 1 3
+chown root:root $file
+file=mnt/dev/zero
+mknod -m 666 $file c 1 5
+chown root:root $file
+
+# /dev/fd, /dev/std{in,out,err}
+pushd mnt/dev > /dev/null
+ln -s /proc/self/fd
+ln -s fd/0 stdin
+ln -s fd/1 stdout
+ln -s fd/2 stderr
+popd > /dev/null
+
+cat > mnt/etc/hostname <<-EOS
+$id
 EOS
 
-write "etc/hosts" <<-EOS
-127.0.0.1 ${id} localhost
-${network_host_ip} host
-${network_container_ip} container
-EOS
-
-write "etc/network/interfaces" <<-EOS
-auto lo
-iface lo inet loopback
-auto ${network_container_iface}
-iface ${network_container_iface} inet static
-  gateway ${network_host_ip}
-  address ${network_container_ip}
-  netmask ${network_netmask}
+cat > mnt/etc/hosts <<-EOS
+127.0.0.1 localhost
+$network_container_ip $id
 EOS
 
 # Inherit nameserver(s)
-cp /etc/resolv.conf ${target}/etc/
+cp /etc/resolv.conf mnt/etc/
 
 # Add vcap user if not already present
-chroot <<-EOS
+$(which chroot) mnt env -i /bin/bash <<-EOS
 if ! id vcap > /dev/null 2>&1
 then
-useradd -mU -u ${user_uid} -s /bin/bash vcap
+  useradd -mU -u $user_uid -s /bin/bash vcap
 fi
-EOS
-
-# Copy override directory
-cp -r override/* ${target}/
-chmod 700 ${target}/sbin/warden-*
-
-# Remove things we don't use
-rm -rf ${target}/etc/init.d
-rm -rf ${target}/etc/rc*
-rm -f ${target}/etc/init/control-alt-delete.conf
-rm -f ${target}/etc/init/rc.conf
-rm -f ${target}/etc/init/rc-sysinit.conf
-rm -f ${target}/etc/init/cron*
-rm -f ${target}/etc/network/if-up.d/openssh*
-
-# Modify sshd_config
-chroot <<-EOS
-# Delete comments and empty lines
-sed -i -e '/^\($\|#\)/d' /etc/ssh/sshd_config
-# Don't allow env vars to propagate over ssh
-sed -i -e '/^AcceptEnv/d' /etc/ssh/sshd_config
-# Don't use dsa host key
-sed -i -e '/^HostKey .*dsa/d' /etc/ssh/sshd_config
-# Pick up authorized keys from /etc/ssh
-echo AuthorizedKeysFile /etc/ssh/authorized_keys/%u >> /etc/ssh/sshd_config
-# Never do DNS lookups
-echo UseDNS no >> /etc/ssh/sshd_config
-EOS
-
-tmp=$(pwd)/../../tmp/
-mkdir -p ${tmp}
-
-# Setup host keys for SSH
-mkdir -p ssh
-if [ -f ${tmp}/ssh_host_rsa_key ]; then
-  cp ${tmp}/ssh_host_rsa_key* ssh/
-else
-  ssh-keygen -t rsa -N '' -C "${id}@$(hostname)" -f ssh/ssh_host_rsa_key
-  cp ssh/ssh_host_rsa_key* ${tmp}
-fi
-
-cp ssh/ssh_host_rsa_key* ${target}/etc/ssh/
-
-# Setup access keys for SSH
-if [ -f ${tmp}/access_key ]; then
-  cp ${tmp}/access_key* ssh/
-else
-  ssh-keygen -t rsa -N '' -C '' -f ssh/access_key
-  cp ssh/access_key* ${tmp}
-fi
-
-mkdir -p ${target}/etc/ssh/authorized_keys
-cat ssh/access_key.pub >> ${target}/etc/ssh/authorized_keys/root
-chmod 644 ${target}/etc/ssh/authorized_keys/root
-cat ssh/access_key.pub >> ${target}/etc/ssh/authorized_keys/vcap
-chmod 644 ${target}/etc/ssh/authorized_keys/vcap
-
-# Add host key to known_hosts
-echo -n "${network_container_ip} " >> ssh/known_hosts
-cat ssh/ssh_host_rsa_key.pub >> ssh/known_hosts
-
-# Add ssh client configuration
-cat <<-EOS > ssh/ssh_config
-StrictHostKeyChecking yes
-UserKnownHostsFile $(pwd)/ssh/known_hosts
-IdentityFile $(pwd)/ssh/access_key
-ControlPath $(pwd)/ssh/ctl-%r@%h
-Host container
-HostName ${network_container_ip}
-Host ${id}
-HostName ${network_container_ip}
-EOS
-
-# The `mesg` tool modifies permissions on stdin. Warden regularly passes a
-# custom stdin, which makes `mesg` complain that stdin is not a tty. Instead of
-# removing all occurances of `mesg`, we simply bind it to /bin/true.
-chroot <<EOS
-rm /usr/bin/mesg
-ln -s /bin/true /usr/bin/mesg
 EOS

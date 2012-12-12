@@ -108,7 +108,7 @@ function teardown_nat() {
 function setup_nat() {
   teardown_nat
 
-  #create chain
+  # Create prerouting chain
   iptables -t nat -N ${nat_prerouting_chain} 2> /dev/null || true
 
   external_interface=$(ip route get 1.1.1.1 | head -n1 | cut -d" " -f5)
@@ -116,7 +116,6 @@ function setup_nat() {
   # Bind chain to PREROUTING
   (iptables -t nat -S PREROUTING | grep -q "\-j ${nat_prerouting_chain}\b") ||
     iptables -t nat -A PREROUTING \
-      --in-interface "${external_interface}" \
       --jump ${nat_prerouting_chain}
 
   # Bind chain to OUTPUT (for traffic originating from same host)
@@ -128,7 +127,6 @@ function setup_nat() {
   # Enable NAT on outgoing traffic
   (iptables -t nat -S POSTROUTING | grep -q "\-j MASQUERADE\b") ||
     iptables -t nat -A POSTROUTING \
-      --out-interface "${external_interface}" \
       --jump MASQUERADE
 }
 

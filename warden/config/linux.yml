@@ -25,29 +25,17 @@ server:
   # will live.
   container_depot_path: /tmp/warden/containers
 
-  # Specifies the resource limits to use in limits.conf(5)
-  container_limits_conf:
-    # - core - limits the core file size (KB)
-    # - data - max data size (KB)
-    # - fsize - maximum filesize (KB)
-    # - memlock - max locked-in-memory address space (KB)
-    # - nofile - max number of open files
-    # - rss - max resident set size (KB)
-    # - stack - max stack size (KB)
-    # - cpu - max CPU time (MIN)
-    # - nproc - max number of processes
-    # - as - address space limit (KB)
-    # - maxlogins - max number of logins for this user
-    # - maxsyslogins - max number of logins on the system
-    # - priority - the priority to run user process with
-    # - locks - max number of file locks the user can hold
-    # - sigpending - max number of pending signals
-    # - msgqueue - max memory used by POSIX message queues (bytes)
-    # - nice - max nice priority allowed to raise to values: [-20, 19]
-    # - rtprio - max realtime priority
+  # See getrlimit(2) for details. Integer values are passed verbatim.
+  container_rlimits:
+    as: 4294967296
     nofile: 8192
     nproc: 512
-    as: 4194304
+
+  quota:
+    disk_quota_enabled: true
+
+health_check_server:
+  port: 2345
 
 logging:
   level: debug2

@@ -7,7 +7,7 @@ shopt -s nullglob
 
 cd $(dirname "${0}")
 
-source ./config
+source ./etc/config
 
 if [ -z "${RATE:-}" ]; then
   echo "Please specify RATE..." 1>&2

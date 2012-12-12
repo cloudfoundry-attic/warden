@@ -12,7 +12,6 @@ module Warden
     # - args [Array of Strings]:
     #      Command-line arguments to be parsed.
     def self.run(args = [])
-      exit_on_error = false
       options = {}
 
       opt_parser = OptionParser.new do |op|
@@ -33,9 +32,8 @@ EOT
         end
 
         op.on("--exit_on_error",
-              "Only applicable in non-interactive mode. If a multi-command string" \
-              + " is supplied, exit after the first unsuccessful command.") do
-          exit_on_error = true
+              "Exit after the first unsuccessful command.") do
+          options[:exit_on_error] = true
         end
 
         op.on_tail("--help", "Show help.") do
@@ -49,7 +47,7 @@ EOT
       end
 
       global_args = []
-      commands = ""
+      command = []
       delimiter_found = false
       args.each do |element|
         element = element.dup
@@ -58,8 +56,7 @@ EOT
           delimiter_found = true
         else
           if delimiter_found
-            commands << " " unless commands.empty?
-            commands << element
+            command << element
           else
             global_args << element
           end
@@ -69,41 +66,41 @@ EOT
       opt_parser.parse(global_args)
       repl = Warden::Repl.new(options)
 
-      unless commands.empty?
-        exit_status = 0
-
-        commands.split("\n").each do |command|
-          command_info = nil
-          command = command.strip
-
-          unless command.empty?
-            begin
-              command_info = repl.process_line(command) unless command.empty?
-            rescue Warden::CommandsManager::CommandError => ce
-              STDERR.write("#{ce}\n")
-              ce.backtrace.each { |err| STDERR.write("#{err}\n") }
-              Process.exit(1) if exit_on_error
-            end
-
-            exit_status = 0
-            if command_info
-              STDOUT.write(command_info[:result])
-              exit_status = command_info[:exit_status] if command_info[:exit_status]
-            end
-
-            break if (exit_status != 0) && exit_on_error
-          end
-        end
-
-        exit(exit_status)
+      if command.empty?
+        run_interactively(repl)
       else
-        trap('INT') do
-          STDERR.write("\n\nExiting...\n")
-          exit
-        end
-
-        repl.start
+        run_non_interactively(repl, command)
       end
+    end
+
+    private
+
+    def self.run_interactively(repl)
+      trap('INT') do
+        STDERR.write("\n\nExiting...\n")
+        exit
+      end
+
+      exit(repl.start)
+    end
+
+    def self.run_non_interactively(repl, command)
+      command_info = nil
+
+      begin
+        command_info = repl.process_command(command)
+      rescue Warden::CommandsManager::CommandError => ce
+        STDERR.write("#{ce}\n")
+        ce.backtrace.each { |err| STDERR.write("#{err}\n") }
+      end
+
+      exit_status = 0
+      if command_info
+        STDOUT.write(command_info[:result])
+        exit_status = command_info[:exit_status] if command_info[:exit_status]
+      end
+
+      exit(exit_status)
     end
   end
 end

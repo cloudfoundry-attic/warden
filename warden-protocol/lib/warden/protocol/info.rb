@@ -74,6 +74,8 @@ module Warden
       optional :cpu_stat, CpuStat, 41
       optional :disk_stat, DiskStat, 42
       optional :bandwidth_stat, BandwidthStat, 43
+
+      repeated :job_ids, :uint64, 44
     end
   end
 end

@@ -47,6 +47,7 @@ module Warden
                 "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
                 "CONTAINER_DEPOT_PATH" => container_depot_path,
                 "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
+                "DISK_QUOTA_ENABLED" => disk_quota_enabled.to_s,
               },
               :timeout => nil
             }
@@ -58,7 +59,7 @@ module Warden
 
       def env
         env = {
-          "id" => handle,
+          "id" => container_id,
           "network_host_ip" => host_ip.to_human,
           "network_container_ip" => container_ip.to_human,
           "network_netmask" => self.class.network_pool.netmask.to_human,
@@ -79,9 +80,6 @@ module Warden
 
         write_bind_mount_commands(request)
         logger.debug2("Wrote bind mount commands")
-
-        write_etc_security_limits_conf
-        logger.debug2("Wrote /etc/security/limits.conf")
 
         sh File.join(container_path, "start.sh"), options
         logger.debug("Container started")
@@ -109,16 +107,23 @@ module Warden
       end
 
       def create_job(request)
+        wsh_path = File.join(bin_path, "wsh")
+        socket_path = File.join(container_path, "run", "wshd.sock")
         user = request.privileged ? "root" : "vcap"
 
-        # -T: Never request a TTY
-        # -F: Use configuration from <container_path>/ssh/ssh_config
-        args = ["-T",
-                "-F", File.join(container_path, "ssh", "ssh_config"),
-                "#{user}@container"]
-        args << { :input => request.script }
+        # Build arguments
+        args  = [wsh_path]
+        args += ["--socket", socket_path]
+        args += ["--user", user]
+        args += ["/bin/bash"]
 
-        spawn_job("ssh", *args)
+        options = {
+          :input => request.script,
+          :env => resource_limits(request),
+        }
+        args << options
+
+        spawn_job(*args)
       end
 
       def do_copy_in(request, response)
@@ -146,11 +151,12 @@ module Warden
       private
 
       def perform_rsync(src_path, dst_path)
-        ssh_config_path = File.join(container_path, "ssh", "ssh_config")
+        wsh_path = File.join(bin_path, "wsh")
+        socket_path = File.join(container_path, "run", "wshd.sock")
 
         # Build arguments
         args  = ["rsync"]
-        args += ["-e", "ssh -T -F #{ssh_config_path}"]
+        args += ["-e", "#{wsh_path} --socket #{socket_path} --rsh"]
         args += ["-r"]      # Recursive copy
         args += ["-p"]      # Preserve permissions
         args += ["--links"] # Preserve symlinks
@@ -165,7 +171,7 @@ module Warden
       def write_bind_mount_commands(request)
         return if request.bind_mounts.nil? || request.bind_mounts.empty?
 
-        File.open(File.join(container_path, "hook-parent-before-clone.sh"), "a") do |file|
+        File.open(File.join(container_path, "lib", "hook-parent-before-clone.sh"), "a") do |file|
           file.puts
           file.puts
 
@@ -174,7 +180,7 @@ module Warden
             dst_path = bind_mount.dst_path
 
             # Fix up destination path to be an absolute path inside the union
-            dst_path = File.join(container_path, "union", dst_path[1..-1])
+            dst_path = File.join(container_path, "mnt", dst_path[1..-1])
 
             mode = case bind_mount.mode
                    when Protocol::CreateRequest::BindMount::Mode::RO
@@ -188,16 +194,6 @@ module Warden
             file.puts "mkdir -p #{dst_path}" % [dst_path]
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
-          end
-        end
-      end
-
-      def write_etc_security_limits_conf
-        limits_conf_path = File.join(container_path, "rootfs", "etc", "security", "limits.conf")
-        FileUtils.mkdir_p(File.dirname(limits_conf_path))
-        File.open(limits_conf_path, "w") do |file|
-          Server.container_limits_conf.each do |key, value|
-            file.puts(["*", "-", key, value].join(" "))
           end
         end
       end
