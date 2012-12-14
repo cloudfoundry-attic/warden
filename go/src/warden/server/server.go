@@ -12,45 +12,19 @@ import (
 
 type Server struct {
 	sync.Mutex
-	Containers map[string]Container
+	R *Registry
 
 	c *config.Config
 }
 
 func NewServer() *Server {
 	s := &Server{}
-	s.Containers = make(map[string]Container)
+	s.R = NewRegistry()
 	return s
 }
 
 func (s *Server) NewContainer() Container {
 	return NewContainer(s, s.c)
-}
-
-func (s *Server) RegisterContainer(c Container) {
-	s.Lock()
-	defer s.Unlock()
-
-	s.Containers[c.Handle()] = c
-}
-
-func (s *Server) UnregisterContainer(c Container) {
-	s.Lock()
-	defer s.Unlock()
-
-	delete(s.Containers, c.Handle())
-}
-
-func (s *Server) FindContainer(h string) Container {
-	s.Lock()
-	defer s.Unlock()
-
-	c, ok := s.Containers[h]
-	if !ok {
-		return nil
-	}
-
-	return c
 }
 
 func (s *Server) Listen() net.Listener {
@@ -109,7 +83,7 @@ func (s *Server) serveEcho(x *Conn, y *protocol.EchoRequest) {
 func (s *Server) serveCreate(x *Conn, y *protocol.CreateRequest) {
 	var c Container
 
-	c = s.FindContainer(y.GetHandle())
+	c = s.R.Find(y.GetHandle())
 	if c != nil {
 		x.WriteErrorResponse("Handle exists")
 		return
@@ -131,7 +105,7 @@ type containerRequest interface {
 func (s *Server) serveContainerRequest(x *Conn, y containerRequest) {
 	var c Container
 
-	c = s.FindContainer(y.GetHandle())
+	c = s.R.Find(y.GetHandle())
 	if c == nil {
 		x.WriteErrorResponse("Handle does not exist")
 		return

@@ -207,7 +207,7 @@ func (c *LinuxContainer) DoCreate(x *Conn, req *protocol.CreateRequest) {
 	}
 
 	c.State = "active"
-	c.s.RegisterContainer(c)
+	c.s.R.Register(c)
 
 	x.WriteResponse(res)
 }
@@ -253,7 +253,7 @@ func (c *LinuxContainer) DoDestroy(x *Conn, req *protocol.DestroyRequest) {
 	}
 
 	c.State = "destroyed"
-	c.s.UnregisterContainer(c)
+	c.s.R.Unregister(c)
 
 	res := &protocol.DestroyResponse{}
 	x.WriteResponse(res)
