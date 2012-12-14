@@ -12,36 +12,36 @@ import (
 
 type Server struct {
 	sync.Mutex
-	Containers map[string]*Container
+	Containers map[string]Container
 
 	c *config.Config
 }
 
 func NewServer() *Server {
 	s := &Server{}
-	s.Containers = make(map[string]*Container)
+	s.Containers = make(map[string]Container)
 	return s
 }
 
-func (s *Server) NewContainer() *Container {
+func (s *Server) NewContainer() Container {
 	return NewContainer(s, s.c)
 }
 
-func (s *Server) RegisterContainer(c *Container) {
+func (s *Server) RegisterContainer(c Container) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.Containers[c.Handle] = c
+	s.Containers[c.Handle()] = c
 }
 
-func (s *Server) UnregisterContainer(c *Container) {
+func (s *Server) UnregisterContainer(c Container) {
 	s.Lock()
 	defer s.Unlock()
 
-	delete(s.Containers, c.Handle)
+	delete(s.Containers, c.Handle())
 }
 
-func (s *Server) FindContainer(h string) *Container {
+func (s *Server) FindContainer(h string) Container {
 	s.Lock()
 	defer s.Unlock()
 
@@ -107,7 +107,7 @@ func (s *Server) serveEcho(x *Conn, y *protocol.EchoRequest) {
 }
 
 func (s *Server) serveCreate(x *Conn, y *protocol.CreateRequest) {
-	var c *Container
+	var c Container
 
 	c = s.FindContainer(y.GetHandle())
 	if c != nil {
@@ -129,7 +129,7 @@ type containerRequest interface {
 }
 
 func (s *Server) serveContainerRequest(x *Conn, y containerRequest) {
-	var c *Container
+	var c Container
 
 	c = s.FindContainer(y.GetHandle())
 	if c == nil {
