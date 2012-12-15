@@ -6,7 +6,7 @@ set -o errexit
 shopt -s nullglob
 
 packages="openssh-server,rsync"
-suite="lucid"
+suite=$(lsb_release -c | awk '{print $2}')
 mirror=$(grep "^deb" /etc/apt/sources.list | head -n1 | cut -d" " -f2)
 
 # Fallback to default Ubuntu mirror when mirror could not be determined
