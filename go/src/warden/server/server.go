@@ -5,6 +5,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
+	"path"
+	"strings"
 	"sync"
 	"warden/protocol"
 	"warden/server/config"
@@ -133,7 +136,30 @@ func (s *Server) Listen() net.Listener {
 	return l
 }
 
+func (s *Server) Setup() {
+	cmd := exec.Command(path.Join(s.c.Server.ContainerScriptPath, "setup.sh"))
+
+	// Initialize environment
+	cmd.Env = os.Environ()
+
+	// Networks
+	cmd.Env = append(cmd.Env, fmt.Sprintf("ALLOW_NETWORKS=%s", strings.Join(s.c.Network.AllowNetworks, " ")))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DENY_NETWORKS=%s", strings.Join(s.c.Network.DenyNetworks, " ")))
+
+	// Paths
+	cmd.Env = append(cmd.Env, fmt.Sprintf("CONTAINER_ROOTFS_PATH=%s", s.c.Server.ContainerRootfsPath))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("CONTAINER_DEPOT_PATH=%s", s.c.Server.ContainerDepotPath))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("CONTAINER_DEPOT_MOUNT_POINT_PATH=%s", FindMountPoint(s.c.Server.ContainerDepotPath)))
+
+	err := runCommand(cmd)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (s *Server) Start() {
+	s.Setup()
+
 	l := s.Listen()
 
 	for {
