@@ -17,53 +17,14 @@ type Server struct {
 	c *config.Config
 }
 
-func NewServer() *Server {
-	s := &Server{}
+func NewServer(c *config.Config) *Server {
+	s := &Server{c: c}
 	s.R = NewRegistry()
 	return s
 }
 
 func (s *Server) NewContainer() Container {
 	return NewContainer(s, s.c)
-}
-
-func (s *Server) Listen() net.Listener {
-	var err error
-
-	p := s.c.Server.UnixDomainPath
-
-	// Unlink before bind
-	os.Remove(p)
-
-	x, err := net.ResolveUnixAddr("unix", p)
-	if err != nil {
-		panic(err)
-	}
-
-	l, err := net.ListenUnix("unix", x)
-	if err != nil {
-		panic(fmt.Sprintf("Can't listen on %s", p))
-	}
-
-	return l
-}
-
-func Start() {
-	s := NewServer()
-
-	s.c = config.InitConfigFromFile("../warden/config/linux.yml")
-
-	l := s.Listen()
-
-	for {
-		nc, err := l.Accept()
-		if err != nil {
-			log.Printf("Error accepting xection: %s\n", err)
-			continue
-		}
-
-		go s.serve(nc)
-	}
 }
 
 func (s *Server) servePing(x *Request, y *protocol.PingRequest) {
@@ -143,4 +104,39 @@ func (s *Server) serve(x net.Conn) {
 	}
 
 	y.Close()
+}
+
+func (s *Server) Listen() net.Listener {
+	var err error
+
+	p := s.c.Server.UnixDomainPath
+
+	// Unlink before bind
+	os.Remove(p)
+
+	x, err := net.ResolveUnixAddr("unix", p)
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenUnix("unix", x)
+	if err != nil {
+		panic(fmt.Sprintf("Can't listen on %s", p))
+	}
+
+	return l
+}
+
+func (s *Server) Start() {
+	l := s.Listen()
+
+	for {
+		nc, err := l.Accept()
+		if err != nil {
+			log.Printf("Error accepting connection: %s", err)
+			continue
+		}
+
+		go s.serve(nc)
+	}
 }
