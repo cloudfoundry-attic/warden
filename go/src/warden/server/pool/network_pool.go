@@ -38,10 +38,14 @@ func (x IP) String() string {
 	return net.IP(x).String()
 }
 
-func (x IP) Next() Poolable {
+func (x IP) Add(i uint32) IP {
 	y := IPToUint32(net.IP(x))
-	y += 4
+	y += i
 	return IP(Uint32ToIP(y))
+}
+
+func (x IP) Next() Poolable {
+	return x.Add(4)
 }
 
 func (x IP) Equals(y Poolable) bool {
