@@ -14,3 +14,26 @@ func (s *IdSuite) TestLength(c *C) {
 		c.Check(len(s), Equals, 11)
 	}
 }
+
+type MountPointSuite struct{}
+
+var _ = Suite(&MountPointSuite{})
+
+func (s *MountPointSuite) TestFindMountPoint(c *C) {
+	var p string
+
+	p = FindMountPoint("/")
+	c.Check(p, Equals, "/")
+
+	p = FindMountPoint("/../..")
+	c.Check(p, Equals, "/")
+
+	p = FindMountPoint("/proc/1")
+	c.Check(p, Equals, "/proc")
+
+	p = FindMountPoint("/proc/1/..")
+	c.Check(p, Equals, "/proc")
+
+	p = FindMountPoint("/proc/1/../..")
+	c.Check(p, Equals, "/")
+}

@@ -1,7 +1,10 @@
 package server
 
 import (
+	"os"
+	"path"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -24,4 +27,31 @@ func NextId() string {
 	}
 
 	return s
+}
+
+func FindMountPoint(p string) string {
+	var f1, f2 os.FileInfo
+	var s1, s2 *syscall.Stat_t
+	var err error
+
+	for p = path.Clean(p); p != "/"; p = path.Clean(p + "/..") {
+		f1, err = os.Stat(p)
+		if err != nil {
+			panic(err)
+		}
+
+		f2, err = os.Stat(p + "/..")
+		if err != nil {
+			panic(err)
+		}
+
+		// Check if this crosses a device boundary
+		s1 = f1.Sys().(*syscall.Stat_t)
+		s2 = f2.Sys().(*syscall.Stat_t)
+		if s1.Dev != s2.Dev {
+			break
+		}
+	}
+
+	return p
 }
