@@ -16,6 +16,15 @@ type Container interface {
 	Execute(*Request)
 }
 
+type State string
+
+const (
+	StateBorn      = State("born")
+	StateActive    = State("active")
+	StateStopped   = State("stopped")
+	StateDestroyed = State("destroyed")
+)
+
 type Job struct {
 }
 
@@ -25,7 +34,7 @@ type LinuxContainer struct {
 	r chan *Request
 	s *Server
 
-	State string
+	State State
 
 	id     string
 	handle string
@@ -47,7 +56,7 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 	c.r = make(chan *Request)
 	c.s = s
 
-	c.State = "born"
+	c.State = StateBorn
 
 	c.id = NextId()
 	c.handle = c.id
@@ -72,16 +81,16 @@ func (c *LinuxContainer) Run() {
 		t1 := time.Now()
 
 		switch c.State {
-		case "born":
+		case StateBorn:
 			c.runBorn(r)
 
-		case "active":
+		case StateActive:
 			c.runActive(r)
 
-		case "stopped":
+		case StateStopped:
 			c.runStopped(r)
 
-		case "destroyed":
+		case StateDestroyed:
 			c.runDestroyed(r)
 
 		default:
@@ -101,7 +110,7 @@ func (c *LinuxContainer) runBorn(r *Request) {
 		close(r.done)
 
 	default:
-		r.WriteInvalidState(c.State)
+		r.WriteInvalidState(string(c.State))
 		close(r.done)
 	}
 }
@@ -117,7 +126,7 @@ func (c *LinuxContainer) runActive(r *Request) {
 		close(r.done)
 
 	default:
-		r.WriteInvalidState(c.State)
+		r.WriteInvalidState(string(c.State))
 		close(r.done)
 	}
 }
@@ -129,7 +138,7 @@ func (c *LinuxContainer) runStopped(r *Request) {
 		close(r.done)
 
 	default:
-		r.WriteInvalidState(c.State)
+		r.WriteInvalidState(string(c.State))
 		close(r.done)
 	}
 }
@@ -137,7 +146,7 @@ func (c *LinuxContainer) runStopped(r *Request) {
 func (c *LinuxContainer) runDestroyed(r *Request) {
 	switch r.r.(type) {
 	default:
-		r.WriteInvalidState(c.State)
+		r.WriteInvalidState(string(c.State))
 		close(r.done)
 	}
 }
@@ -187,7 +196,7 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 		return
 	}
 
-	c.State = "active"
+	c.State = StateActive
 	c.s.R.Register(c)
 
 	x.WriteResponse(res)
@@ -215,7 +224,7 @@ func (c *LinuxContainer) DoStop(x *Request, req *protocol.StopRequest) {
 		<-done
 	}
 
-	c.State = "stopped"
+	c.State = StateStopped
 
 	res := &protocol.StopResponse{}
 	x.WriteResponse(res)
@@ -233,7 +242,7 @@ func (c *LinuxContainer) DoDestroy(x *Request, req *protocol.DestroyRequest) {
 		return
 	}
 
-	c.State = "destroyed"
+	c.State = StateDestroyed
 	c.s.R.Unregister(c)
 
 	res := &protocol.DestroyResponse{}
