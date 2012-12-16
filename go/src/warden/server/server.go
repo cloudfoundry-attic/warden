@@ -124,6 +124,12 @@ func (s *Server) Listen() net.Listener {
 		panic(fmt.Sprintf("Can't listen on %s", p))
 	}
 
+	// Fix permissions
+	err = os.Chmod(p, os.FileMode(s.c.Server.UnixDomainPermissions))
+	if err != nil {
+		panic(err)
+	}
+
 	return l
 }
 
