@@ -1,16 +1,14 @@
 package pool
 
-type user struct {
-	u uint16
+type UserId uint16
+
+func (x UserId) Next() Poolable {
+	return UserId(x + 1)
 }
 
-func (x user) Next() Poolable {
-	return user{x.u + 1}
-}
-
-func (x user) Equals(y Poolable) bool {
-	z, ok := y.(user)
-	return ok && x.u == z.u
+func (x UserId) Equals(y Poolable) bool {
+	z, ok := y.(UserId)
+	return ok && x == z
 }
 
 type UserPool struct {
@@ -19,23 +17,23 @@ type UserPool struct {
 
 func NewUserPool(start int, size int) *UserPool {
 	p := &UserPool{}
-	p.Pool = NewPool(user{uint16(start)}, size)
+	p.Pool = NewPool(UserId(start), size)
 	return p
 }
 
-func (p *UserPool) Acquire() (x uint16, ok bool) {
+func (p *UserPool) Acquire() (x UserId, ok bool) {
 	y, ok := p.Pool.Acquire()
 	if ok {
-		x = y.(user).u
+		x = y.(UserId)
 	}
 
 	return
 }
 
-func (p *UserPool) Release(x uint16) {
-	p.Pool.Release(user{x})
+func (p *UserPool) Release(x UserId) {
+	p.Pool.Release(x)
 }
 
-func (p *UserPool) Remove(x uint16) bool {
-	return p.Pool.Remove(user{x})
+func (p *UserPool) Remove(x UserId) bool {
+	return p.Pool.Remove(x)
 }

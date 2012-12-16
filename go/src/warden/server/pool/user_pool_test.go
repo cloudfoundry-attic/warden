@@ -9,17 +9,17 @@ type UserPoolSuite struct{}
 var _ = Suite(&UserPoolSuite{})
 
 func (s *UserPoolSuite) TestAcquire(c *C) {
-	var x uint16
+	var x UserId
 	var ok bool
 
 	p := NewUserPool(10000, 256)
 
 	x, ok = p.Acquire()
-	c.Check(x, Equals, uint16(10000))
+	c.Check(x, Equals, UserId(10000))
 	c.Check(ok, Equals, true)
 
 	x, ok = p.Acquire()
-	c.Check(x, Equals, uint16(10001))
+	c.Check(x, Equals, UserId(10001))
 	c.Check(ok, Equals, true)
 }
 

@@ -2,7 +2,6 @@ package pool
 
 import (
 	. "launchpad.net/gocheck"
-	"net"
 )
 
 type NetworkSuite struct{}
@@ -10,7 +9,7 @@ type NetworkSuite struct{}
 var _ = Suite(&NetworkSuite{})
 
 func (s *NetworkSuite) TestAcquire(c *C) {
-	var ip net.IP
+	var ip IP
 	var ok bool
 
 	n := NewNetworkPool("10.0.0.0", 256)

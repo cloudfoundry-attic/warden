@@ -9,17 +9,17 @@ type PortPoolSuite struct{}
 var _ = Suite(&PortPoolSuite{})
 
 func (s *PortPoolSuite) TestAcquire(c *C) {
-	var x uint16
+	var x Port
 	var ok bool
 
 	p := NewPortPool(61000, 256)
 
 	x, ok = p.Acquire()
-	c.Check(x, Equals, uint16(61000))
+	c.Check(x, Equals, Port(61000))
 	c.Check(ok, Equals, true)
 
 	x, ok = p.Acquire()
-	c.Check(x, Equals, uint16(61001))
+	c.Check(x, Equals, Port(61001))
 	c.Check(ok, Equals, true)
 }
 

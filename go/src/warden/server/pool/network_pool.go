@@ -32,19 +32,21 @@ func Uint32ToIP(u uint32) net.IP {
 	return net.IPv4(a, b, c, d)
 }
 
-type network struct {
-	net.IP
+type IP net.IP
+
+func (x IP) String() string {
+	return net.IP(x).String()
 }
 
-func (x network) Next() Poolable {
-	y := IPToUint32(x.IP)
+func (x IP) Next() Poolable {
+	y := IPToUint32(net.IP(x))
 	y += 4
-	return network{Uint32ToIP(y)}
+	return IP(Uint32ToIP(y))
 }
 
-func (x network) Equals(y Poolable) bool {
-	z, ok := y.(network)
-	return ok && bytes.Equal(x.IP, z.IP)
+func (x IP) Equals(y Poolable) bool {
+	z, ok := y.(IP)
+	return ok && bytes.Equal(x, z)
 }
 
 type NetworkPool struct {
@@ -59,24 +61,24 @@ func NewNetworkPool(addr string, size int) *NetworkPool {
 		panic("Invalid start address")
 	}
 
-	p.Pool = NewPool(network{ip}, size)
+	p.Pool = NewPool(IP(ip), size)
 
 	return p
 }
 
-func (p *NetworkPool) Acquire() (x net.IP, ok bool) {
+func (p *NetworkPool) Acquire() (x IP, ok bool) {
 	y, ok := p.Pool.Acquire()
 	if ok {
-		x = y.(network).IP
+		x = y.(IP)
 	}
 
 	return
 }
 
-func (p *NetworkPool) Release(x net.IP) {
-	p.Pool.Release(network{x})
+func (p *NetworkPool) Release(x IP) {
+	p.Pool.Release(x)
 }
 
-func (p *NetworkPool) Remove(x net.IP) bool {
-	return p.Pool.Remove(network{x})
+func (p *NetworkPool) Remove(x IP) bool {
+	return p.Pool.Remove(x)
 }

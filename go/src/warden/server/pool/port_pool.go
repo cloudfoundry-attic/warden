@@ -29,17 +29,15 @@ func ipLocalPortRange() [2]uint16 {
 	return x
 }
 
-type port struct {
-	p uint16
+type Port uint16
+
+func (x Port) Next() Poolable {
+	return Port(x + 1)
 }
 
-func (x port) Next() Poolable {
-	return port{x.p + 1}
-}
-
-func (x port) Equals(y Poolable) bool {
-	z, ok := y.(port)
-	return ok && x.p == z.p
+func (x Port) Equals(y Poolable) bool {
+	z, ok := y.(Port)
+	return ok && x == z
 }
 
 type PortPool struct {
@@ -68,24 +66,24 @@ func NewPortPool(start int, size int) *PortPool {
 	}
 
 	p := &PortPool{}
-	p.Pool = NewPool(port{uint16(start)}, size)
+	p.Pool = NewPool(Port(uint16(start)), size)
 
 	return p
 }
 
-func (p *PortPool) Acquire() (x uint16, ok bool) {
+func (p *PortPool) Acquire() (x Port, ok bool) {
 	y, ok := p.Pool.Acquire()
 	if ok {
-		x = y.(port).p
+		x = y.(Port)
 	}
 
 	return
 }
 
-func (p *PortPool) Release(x uint16) {
-	p.Pool.Release(port{x})
+func (p *PortPool) Release(x Port) {
+	p.Pool.Release(x)
 }
 
-func (p *PortPool) Remove(x uint16) bool {
-	return p.Pool.Remove(port{x})
+func (p *PortPool) Remove(x Port) bool {
+	return p.Pool.Remove(x)
 }
