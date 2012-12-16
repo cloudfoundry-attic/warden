@@ -66,12 +66,12 @@ func Start() {
 	}
 }
 
-func (s *Server) servePing(x *Conn, y *protocol.PingRequest) {
+func (s *Server) servePing(x *Request, y *protocol.PingRequest) {
 	z := &protocol.PingResponse{}
 	x.WriteResponse(z)
 }
 
-func (s *Server) serveEcho(x *Conn, y *protocol.EchoRequest) {
+func (s *Server) serveEcho(x *Request, y *protocol.EchoRequest) {
 	m := y.GetMessage()
 
 	z := &protocol.EchoResponse{}
@@ -80,7 +80,7 @@ func (s *Server) serveEcho(x *Conn, y *protocol.EchoRequest) {
 	x.WriteResponse(z)
 }
 
-func (s *Server) serveCreate(x *Conn, y *protocol.CreateRequest) {
+func (s *Server) serveCreate(x *Request, y *protocol.CreateRequest) {
 	var c Container
 
 	c = s.R.Find(y.GetHandle())
@@ -94,7 +94,7 @@ func (s *Server) serveCreate(x *Conn, y *protocol.CreateRequest) {
 	// Start container loop
 	go c.Run()
 
-	c.Execute(x, y)
+	c.Execute(x)
 }
 
 type containerRequest interface {
@@ -102,7 +102,7 @@ type containerRequest interface {
 	GetHandle() string
 }
 
-func (s *Server) serveContainerRequest(x *Conn, y containerRequest) {
+func (s *Server) serveContainerRequest(x *Request, y containerRequest) {
 	var c Container
 
 	c = s.R.Find(y.GetHandle())
@@ -111,7 +111,7 @@ func (s *Server) serveContainerRequest(x *Conn, y containerRequest) {
 		return
 	}
 
-	c.Execute(x, y)
+	c.Execute(x)
 }
 
 func (s *Server) serve(x net.Conn) {
@@ -126,15 +126,15 @@ func (s *Server) serve(x net.Conn) {
 
 		log.Printf("Request: %#v\n", u)
 
-		switch v := u.(type) {
+		switch v := u.r.(type) {
 		case *protocol.PingRequest:
-			s.servePing(y, v)
+			s.servePing(u, v)
 		case *protocol.EchoRequest:
-			s.serveEcho(y, v)
+			s.serveEcho(u, v)
 		case *protocol.CreateRequest:
-			s.serveCreate(y, v)
+			s.serveCreate(u, v)
 		case containerRequest:
-			s.serveContainerRequest(y, v)
+			s.serveContainerRequest(u, v)
 		default:
 			y.WriteErrorResponse("Unknown request")
 		}

@@ -13,19 +13,7 @@ import (
 type Container interface {
 	Handle() string
 	Run()
-	Execute(*Conn, protocol.Request)
-}
-
-type request struct {
-	c    *Conn
-	r    protocol.Request
-	done chan bool
-}
-
-func newRequest(c_ *Conn, r_ protocol.Request) *request {
-	r := &request{c: c_, r: r_}
-	r.done = make(chan bool)
-	return r
+	Execute(*Request)
 }
 
 type Job struct {
@@ -34,7 +22,7 @@ type Job struct {
 type LinuxContainer struct {
 	Config *config.Config
 
-	r chan *request
+	r chan *Request
 	s *Server
 
 	State string
@@ -56,7 +44,7 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 
 	c.Config = cfg
 
-	c.r = make(chan *request)
+	c.r = make(chan *Request)
 	c.s = s
 
 	c.State = "born"
@@ -67,9 +55,7 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 	return c
 }
 
-func (c *LinuxContainer) Execute(c_ *Conn, r_ protocol.Request) {
-	r := newRequest(c_, r_)
-
+func (c *LinuxContainer) Execute(r *Request) {
 	// Send request
 	c.r <- r
 
@@ -108,55 +94,50 @@ func (c *LinuxContainer) Run() {
 	}
 }
 
-func (c *LinuxContainer) invalidState(r *request) {
-	m := fmt.Sprintf("Cannot execute request in state %s", c.State)
-	r.c.WriteErrorResponse(m)
-}
-
-func (c *LinuxContainer) runBorn(r *request) {
+func (c *LinuxContainer) runBorn(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.CreateRequest:
-		c.DoCreate(r.c, req)
+		c.DoCreate(r, req)
 		close(r.done)
 
 	default:
-		c.invalidState(r)
+		r.WriteInvalidState(c.State)
 		close(r.done)
 	}
 }
 
-func (c *LinuxContainer) runActive(r *request) {
+func (c *LinuxContainer) runActive(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.StopRequest:
-		c.DoStop(r.c, req)
+		c.DoStop(r, req)
 		close(r.done)
 
 	case *protocol.DestroyRequest:
-		c.DoDestroy(r.c, req)
+		c.DoDestroy(r, req)
 		close(r.done)
 
 	default:
-		c.invalidState(r)
+		r.WriteInvalidState(c.State)
 		close(r.done)
 	}
 }
 
-func (c *LinuxContainer) runStopped(r *request) {
+func (c *LinuxContainer) runStopped(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.DestroyRequest:
-		c.DoDestroy(r.c, req)
+		c.DoDestroy(r, req)
 		close(r.done)
 
 	default:
-		c.invalidState(r)
+		r.WriteInvalidState(c.State)
 		close(r.done)
 	}
 }
 
-func (c *LinuxContainer) runDestroyed(r *request) {
+func (c *LinuxContainer) runDestroyed(r *Request) {
 	switch r.r.(type) {
 	default:
-		c.invalidState(r)
+		r.WriteInvalidState(c.State)
 		close(r.done)
 	}
 }
@@ -172,7 +153,7 @@ func runCommand(cmd *exec.Cmd) error {
 	return err
 }
 
-func (c *LinuxContainer) DoCreate(x *Conn, req *protocol.CreateRequest) {
+func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	var cmd *exec.Cmd
 	var err error
 
@@ -212,7 +193,7 @@ func (c *LinuxContainer) DoCreate(x *Conn, req *protocol.CreateRequest) {
 	x.WriteResponse(res)
 }
 
-func (c *LinuxContainer) DoStop(x *Conn, req *protocol.StopRequest) {
+func (c *LinuxContainer) DoStop(x *Request, req *protocol.StopRequest) {
 	var cmd *exec.Cmd
 
 	done := make(chan error, 1)
@@ -240,7 +221,7 @@ func (c *LinuxContainer) DoStop(x *Conn, req *protocol.StopRequest) {
 	x.WriteResponse(res)
 }
 
-func (c *LinuxContainer) DoDestroy(x *Conn, req *protocol.DestroyRequest) {
+func (c *LinuxContainer) DoDestroy(x *Request, req *protocol.DestroyRequest) {
 	var cmd *exec.Cmd
 	var err error
 

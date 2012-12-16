@@ -2,7 +2,6 @@ package server
 
 import (
 	. "launchpad.net/gocheck"
-	"warden/protocol"
 )
 
 type FakeContainer string
@@ -15,7 +14,7 @@ func (x FakeContainer) Run() {
 	panic("run")
 }
 
-func (x FakeContainer) Execute(c *Conn, r protocol.Request) {
+func (x FakeContainer) Execute(r *Request) {
 	panic("execute")
 }
 
