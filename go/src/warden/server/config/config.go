@@ -3,8 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"launchpad.net/goyaml"
-
-//	"warden/server/pool"
+	"warden/server/pool"
 )
 
 type quotaConfig struct {
@@ -86,6 +85,11 @@ type Config struct {
 	Server  serverConfig  "server"
 	Network networkConfig "network"
 	User    userConfig    "user"
+
+	// Additional state
+	*pool.NetworkPool
+	*pool.PortPool
+	*pool.UserPool
 }
 
 func DefaultConfig() Config {
@@ -109,6 +113,13 @@ func (c *Config) sanitize() {
 	}
 }
 
+func (c *Config) Process() {
+	// Create pools
+	c.NetworkPool = pool.NewNetworkPool(c.Network.PoolStartAddress, c.Network.PoolSize)
+	c.PortPool = pool.NewPortPool(-1, 0)
+	c.UserPool = pool.NewUserPool(c.User.PoolStartUid, c.User.PoolSize)
+}
+
 func InitConfigFromFile(path string) *Config {
 	var c Config = DefaultConfig()
 	var e error
@@ -122,6 +133,8 @@ func InitConfigFromFile(path string) *Config {
 	if e != nil {
 		panic(e.Error())
 	}
+
+	c.Process()
 
 	return &c
 }
