@@ -70,7 +70,7 @@ type PortPool struct {
 func NewPortPool(start int, size int) *PortPool {
 	if start < 0 {
 		x := ipLocalPortRange()
-		start = int(x[1])
+		start = int(x[1]) + 1
 	}
 
 	// Don't use ports >= 65000
