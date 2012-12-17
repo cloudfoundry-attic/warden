@@ -11,7 +11,7 @@ import (
 )
 
 type Container interface {
-	Handle() string
+	GetHandle() string
 	Run()
 	Execute(*Request)
 }
@@ -29,37 +29,37 @@ type Job struct {
 }
 
 type LinuxContainer struct {
-	Config *config.Config
-
+	c *config.Config
 	r chan *Request
 	s *Server
 
-	State State
-
-	id     string
-	handle string
+	State  State
+	Id     string
+	Handle string
 }
 
-func (c *LinuxContainer) Id() string {
-	return c.id
+func (c *LinuxContainer) GetState() State {
+	return c.State
 }
 
-func (c *LinuxContainer) Handle() string {
-	return c.handle
+func (c *LinuxContainer) GetId() string {
+	return c.Id
+}
+
+func (c *LinuxContainer) GetHandle() string {
+	return c.Handle
 }
 
 func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 	c := &LinuxContainer{}
 
-	c.Config = cfg
-
+	c.c = cfg
 	c.r = make(chan *Request)
 	c.s = s
 
 	c.State = StateBorn
-
-	c.id = NextId()
-	c.handle = c.id
+	c.Id = NextId()
+	c.Handle = c.Id
 
 	return c
 }
@@ -69,7 +69,7 @@ func (c *LinuxContainer) Execute(r *Request) {
 }
 
 func (c *LinuxContainer) ContainerPath() string {
-	return path.Join(c.Config.Server.ContainerDepotPath, c.handle)
+	return path.Join(c.c.Server.ContainerDepotPath, c.Handle)
 }
 
 func (c *LinuxContainer) Run() {
@@ -164,19 +164,19 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 
 	// Override handle if specified
 	if h := req.GetHandle(); h != "" {
-		c.handle = h
+		c.Handle = h
 	}
 
 	res := &protocol.CreateResponse{}
-	res.Handle = &c.handle
+	res.Handle = &c.Handle
 
 	// Create
-	cmd = exec.Command(path.Join(c.Config.Server.ContainerScriptPath, "create.sh"), c.ContainerPath())
-	cmd.Env = append(cmd.Env, fmt.Sprintf("id=%s", c.id))
+	cmd = exec.Command(path.Join(c.c.Server.ContainerScriptPath, "create.sh"), c.ContainerPath())
+	cmd.Env = append(cmd.Env, fmt.Sprintf("id=%s", c.Id))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("network_host_ip=%s", "10.0.0.1"))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("network_container_ip=%s", "10.0.0.2"))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("user_uid=%d", 10000))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("rootfs_path=%s", c.Config.Server.ContainerRootfsPath))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("rootfs_path=%s", c.c.Server.ContainerRootfsPath))
 
 	err = runCommand(cmd)
 	if err != nil {

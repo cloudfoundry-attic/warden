@@ -6,7 +6,7 @@ import (
 
 type FakeContainer string
 
-func (x FakeContainer) Handle() string {
+func (x FakeContainer) GetHandle() string {
 	return string(x)
 }
 

@@ -28,7 +28,7 @@ func (x *Registry) Register(c Container) error {
 	x.Lock()
 	defer x.Unlock()
 
-	h := c.Handle()
+	h := c.GetHandle()
 
 	_, ok := x.C[h]
 	if ok {
@@ -44,7 +44,7 @@ func (x *Registry) Unregister(c Container) error {
 	x.Lock()
 	defer x.Unlock()
 
-	h := c.Handle()
+	h := c.GetHandle()
 
 	_, ok := x.C[h]
 	if !ok {
