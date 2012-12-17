@@ -93,15 +93,21 @@ func (s *Server) serve(x net.Conn) {
 		switch v := u.r.(type) {
 		case *protocol.PingRequest:
 			s.servePing(u, v)
+			close(u.done)
 		case *protocol.EchoRequest:
 			s.serveEcho(u, v)
+			close(u.done)
 		case *protocol.CreateRequest:
 			s.serveCreate(u, v)
 		case containerRequest:
 			s.serveContainerRequest(u, v)
 		default:
 			y.WriteErrorResponse("Unknown request")
+			close(u.done)
 		}
+
+		// Wait for request to be done
+		<-u.done
 
 		y.Flush()
 	}

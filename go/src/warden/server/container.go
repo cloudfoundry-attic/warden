@@ -65,11 +65,7 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 }
 
 func (c *LinuxContainer) Execute(r *Request) {
-	// Send request
 	c.r <- r
-
-	// Wait
-	<-r.done
 }
 
 func (c *LinuxContainer) ContainerPath() string {
