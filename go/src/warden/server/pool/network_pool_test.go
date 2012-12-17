@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"encoding/json"
 	. "launchpad.net/gocheck"
 )
 
@@ -33,4 +34,25 @@ func (s *NetworkSuite) TestAcquireAll(c *C) {
 
 	_, ok := n.Acquire()
 	c.Check(ok, Equals, false)
+}
+
+func (s *NetworkSuite) TestJson(c *C) {
+	var i, j IP
+	var ok bool
+
+	n := NewNetworkPool("10.0.0.0", 1)
+
+	i, ok = n.Acquire()
+	c.Check(ok, Equals, true)
+
+	// Marshal
+	d, err := json.Marshal(i)
+	c.Check(err, IsNil)
+
+	// Unmarshal
+	err = json.Unmarshal(d, &j)
+	c.Check(err, IsNil)
+
+	// Assert equality
+	c.Check(j, DeepEquals, i)
 }

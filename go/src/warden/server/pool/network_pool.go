@@ -2,6 +2,8 @@ package pool
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"net"
 )
 
@@ -42,6 +44,32 @@ func (x IP) Add(i uint32) IP {
 	y := IPToUint32(net.IP(x))
 	y += i
 	return IP(Uint32ToIP(y))
+}
+
+func (x IP) MarshalJSON() ([]byte, error) {
+	return json.Marshal(x.String())
+}
+
+func (x *IP) UnmarshalJSON(data []byte) error {
+	var s string
+
+	if x == nil {
+		return errors.New("pool.IP: UnmarshalJSON on nil pointer")
+	}
+
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
+	}
+
+	y := net.ParseIP(s)
+	if y == nil {
+		return errors.New("pool.IP: Invalid IP")
+	}
+
+	*x = IP(y)
+
+	return nil
 }
 
 func (x IP) Next() Poolable {

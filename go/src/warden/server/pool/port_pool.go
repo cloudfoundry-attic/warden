@@ -1,6 +1,8 @@
 package pool
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -30,6 +32,27 @@ func ipLocalPortRange() [2]uint16 {
 }
 
 type Port uint16
+
+func (x Port) MarshalJSON() ([]byte, error) {
+	return json.Marshal(uint16(x))
+}
+
+func (x *Port) UnmarshalJSON(data []byte) error {
+	var y uint16
+
+	if x == nil {
+		return errors.New("pool.Port: UnmarshalJSON on nil pointer")
+	}
+
+	err := json.Unmarshal(data, &y)
+	if err != nil {
+		return err
+	}
+
+	*x = Port(y)
+
+	return nil
+}
 
 func (x Port) Next() Poolable {
 	return Port(x + 1)

@@ -1,6 +1,32 @@
 package pool
 
+import (
+	"encoding/json"
+	"errors"
+)
+
 type UserId uint16
+
+func (x UserId) MarshalJSON() ([]byte, error) {
+	return json.Marshal(uint16(x))
+}
+
+func (x *UserId) UnmarshalJSON(data []byte) error {
+	var y uint16
+
+	if x == nil {
+		return errors.New("pool.UserId: UnmarshalJSON on nil pointer")
+	}
+
+	err := json.Unmarshal(data, &y)
+	if err != nil {
+		return err
+	}
+
+	*x = UserId(y)
+
+	return nil
+}
 
 func (x UserId) Next() Poolable {
 	return UserId(x + 1)
