@@ -1,9 +1,13 @@
 package server
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"path"
 	"time"
@@ -131,6 +135,55 @@ func (c *LinuxContainer) Release() error {
 	return nil
 }
 
+func (c *LinuxContainer) snapshotPath() string {
+	return path.Join(c.ContainerPath(), "etc", "snapshot.json")
+}
+
+// markDirty removes the snapshot file, preventing restore on restart.
+func (c *LinuxContainer) markDirty() error {
+	err := os.Remove(c.snapshotPath())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// markClean writes a snapshot, allowing restore on restart.
+func (c *LinuxContainer) markClean() error {
+	var err error
+
+	x := path.Join(c.ContainerPath(), "tmp")
+	y, err := ioutil.TempFile(x, "snapshot")
+	if err != nil {
+		return err
+	}
+
+	z := bufio.NewWriter(y)
+
+	e := json.NewEncoder(z)
+	err = e.Encode(c)
+	if err != nil {
+		return err
+	}
+
+	err = z.Flush()
+	if err != nil {
+		return err
+	}
+
+	y.Close()
+
+	// Move the snapshot to its destination.
+	// It is not written in place because that cannot be done atomically.
+	err = os.Rename(y.Name(), c.snapshotPath())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *LinuxContainer) Execute(r *Request) {
 	c.r <- r
 }
@@ -169,7 +222,9 @@ func (c *LinuxContainer) Run() {
 func (c *LinuxContainer) runBorn(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.CreateRequest:
+		c.markDirty()
 		c.DoCreate(r, req)
+		c.markClean()
 		close(r.done)
 
 	default:
@@ -181,10 +236,13 @@ func (c *LinuxContainer) runBorn(r *Request) {
 func (c *LinuxContainer) runActive(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.StopRequest:
+		c.markDirty()
 		c.DoStop(r, req)
+		c.markClean()
 		close(r.done)
 
 	case *protocol.DestroyRequest:
+		c.markDirty()
 		c.DoDestroy(r, req)
 		close(r.done)
 
@@ -197,6 +255,7 @@ func (c *LinuxContainer) runActive(r *Request) {
 func (c *LinuxContainer) runStopped(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.DestroyRequest:
+		c.markDirty()
 		c.DoDestroy(r, req)
 		close(r.done)
 
