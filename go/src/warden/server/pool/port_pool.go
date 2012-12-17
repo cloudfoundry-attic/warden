@@ -73,10 +73,13 @@ func NewPortPool(start int, size int) *PortPool {
 		start = int(x[1]) + 1
 	}
 
-	// Don't use ports >= 65000
-	max := 65000
+	// Don't use ports < 32k
+	const min = 32768
 
-	if start < 1024 || start >= max {
+	// Don't use ports >= 65000
+	const max = 65000
+
+	if start < min || start >= max {
 		panic("invalid start port")
 	}
 
