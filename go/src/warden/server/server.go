@@ -1,7 +1,9 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -163,8 +165,107 @@ func (s *Server) Setup() {
 	}
 }
 
+func (s *Server) destroy(x string) {
+	var err error
+
+	y := path.Join(x, "destroy.sh")
+
+	_, err = os.Stat(y)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+
+		panic(err)
+	}
+
+	log.Printf("Destroying container at: %s", x)
+
+	// Run destroy.sh
+	err = runCommand(exec.Command(y))
+	if err != nil {
+		panic(err)
+	}
+
+	// Remove directory
+	err = os.RemoveAll(x)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) restore(x string) {
+	var err error
+
+	log.Printf("Restoring container at: %s", x)
+
+	y := path.Join(x, "etc", "snapshot.json")
+
+	// Read snapshot
+	f, err := os.Open(y)
+	if err != nil {
+		panic(err)
+	}
+
+	c := s.NewContainer().(*LinuxContainer)
+
+	// Unmarshal snapshot into container
+	d := json.NewDecoder(f)
+	err = d.Decode(c)
+	if err != nil {
+		panic(err)
+	}
+
+	// Acquire resources
+	err = c.Acquire()
+	if err != nil {
+		panic(err)
+	}
+
+	// Register container
+	s.R.Register(c)
+
+	// Start container loop
+	go c.Run()
+}
+
+func (s *Server) Restore() {
+	fs, err := ioutil.ReadDir(s.c.Server.ContainerDepotPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Don't care if it doesn't exist
+			return
+		}
+
+		panic(err)
+	}
+
+	for _, f := range fs {
+		// Only care about directories
+		if !f.IsDir() {
+			continue
+		}
+
+		x := path.Join(s.c.Server.ContainerDepotPath, f.Name())
+
+		// Figure out if the container has a snapshot or not
+		y := path.Join(x, "etc", "snapshot.json")
+		_, err := os.Stat(y)
+		if err != nil && !os.IsNotExist(err) {
+			panic(err)
+		}
+
+		if os.IsNotExist(err) {
+			s.destroy(x)
+		} else {
+			s.restore(x)
+		}
+	}
+}
+
 func (s *Server) Start() {
 	s.Setup()
+	s.Restore()
 
 	l := s.Listen()
 
