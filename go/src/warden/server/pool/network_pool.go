@@ -86,15 +86,15 @@ type NetworkPool struct {
 }
 
 func NewNetworkPool(addr string, size int) *NetworkPool {
-	p := &NetworkPool{}
+	var x IP
 
-	ip := net.ParseIP(addr)
-	if ip == nil {
-		panic("Invalid start address")
+	err := json.Unmarshal([]byte(`"`+addr+`"`), &x)
+	if err != nil {
+		panic(err)
 	}
 
-	p.Pool = NewPool(IP(ip), size)
-
+	p := &NetworkPool{}
+	p.Pool = NewPool(x, size)
 	return p
 }
 
