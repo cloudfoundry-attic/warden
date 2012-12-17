@@ -193,30 +193,37 @@ func (c *LinuxContainer) ContainerPath() string {
 }
 
 func (c *LinuxContainer) Run() {
-	for r := range c.r {
-		t1 := time.Now()
-
-		switch c.State {
-		case StateBorn:
-			c.runBorn(r)
-
-		case StateActive:
-			c.runActive(r)
-
-		case StateStopped:
-			c.runStopped(r)
-
-		case StateDestroyed:
-			c.runDestroyed(r)
-
-		default:
-			panic("Unknown state: " + c.State)
+	for {
+		select {
+		case r := <-c.r:
+			c.runRequest(r)
 		}
-
-		t2 := time.Now()
-
-		log.Printf("took: %.6fs\n", t2.Sub(t1).Seconds())
 	}
+}
+
+func (c *LinuxContainer) runRequest(r *Request) {
+	t1 := time.Now()
+
+	switch c.State {
+	case StateBorn:
+		c.runBorn(r)
+
+	case StateActive:
+		c.runActive(r)
+
+	case StateStopped:
+		c.runStopped(r)
+
+	case StateDestroyed:
+		c.runDestroyed(r)
+
+	default:
+		panic("Unknown state: " + c.State)
+	}
+
+	t2 := time.Now()
+
+	log.Printf("took: %.6fs\n", t2.Sub(t1).Seconds())
 }
 
 func (c *LinuxContainer) runBorn(r *Request) {
