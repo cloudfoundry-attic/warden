@@ -24,10 +24,10 @@ void pump_pair_init(pump_pair_t *pp, pump_t *p, int rfd, int wfd) {
   pp->rfd = rfd;
   pp->wfd = wfd;
 
-  /* The read side must be non-blocking */
-  fcntl_set_nonblock(rfd, 1);
-
-  /* The write side must be blocking */
+  /* Both sides may refer to the same file description if they refer to a PTY,
+   * so configuring them differently may not have the desired effects.
+   * Therefore, simply configure both sides to be blocking. */
+  fcntl_set_nonblock(rfd, 0);
   fcntl_set_nonblock(wfd, 0);
 }
 
