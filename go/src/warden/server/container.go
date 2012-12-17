@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 	"time"
 	"warden/protocol"
 	"warden/server/config"
+	"warden/server/pool"
 )
 
 type Container interface {
@@ -36,6 +38,10 @@ type LinuxContainer struct {
 	State  State
 	Id     string
 	Handle string
+
+	Network *pool.IP
+	Ports   []*pool.Port
+	UserId  *pool.UserId
 }
 
 func (c *LinuxContainer) GetState() State {
@@ -61,7 +67,68 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 	c.Id = NextId()
 	c.Handle = c.Id
 
+	// Initialize port slice
+	c.Ports = make([]*pool.Port, 0)
+
 	return c
+}
+
+// Acquires pooled resources.
+// If a resource is already bound to the container, remove it from its pool.
+// This behavior is required for resuming from a snapshot.
+func (c *LinuxContainer) Acquire() error {
+	if c.Network != nil {
+		c.c.NetworkPool.Remove(*c.Network)
+	} else {
+		p, ok := c.c.NetworkPool.Acquire()
+		if !ok {
+			return errors.New("LinuxContainer: Cannot acquire network")
+		}
+
+		c.Network = &p
+	}
+
+	if c.Ports != nil {
+		for _, p := range c.Ports {
+			c.c.PortPool.Remove(*p)
+		}
+	}
+
+	if c.UserId != nil {
+		c.c.UserPool.Remove(*c.UserId)
+	} else {
+		p, ok := c.c.UserPool.Acquire()
+		if !ok {
+			return errors.New("LinuxContainer: Cannot acquire user ID")
+		}
+
+		c.UserId = &p
+	}
+
+	return nil
+}
+
+// Releases pooled resources.
+func (c *LinuxContainer) Release() error {
+	if c.Network != nil {
+		c.c.NetworkPool.Release(*c.Network)
+		c.Network = nil
+	}
+
+	if len(c.Ports) > 0 {
+		for _, p := range c.Ports {
+			c.c.PortPool.Release(*p)
+		}
+
+		c.Ports = make([]*pool.Port, 0)
+	}
+
+	if c.UserId != nil {
+		c.c.UserPool.Release(*c.UserId)
+		c.UserId = nil
+	}
+
+	return nil
 }
 
 func (c *LinuxContainer) Execute(r *Request) {
@@ -162,6 +229,12 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	var cmd *exec.Cmd
 	var err error
 
+	err = c.Acquire()
+	if err != nil {
+		x.WriteErrorResponse(err.Error())
+		return
+	}
+
 	// Override handle if specified
 	if h := req.GetHandle(); h != "" {
 		c.Handle = h
@@ -173,9 +246,9 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	// Create
 	cmd = exec.Command(path.Join(c.c.Server.ContainerScriptPath, "create.sh"), c.ContainerPath())
 	cmd.Env = append(cmd.Env, fmt.Sprintf("id=%s", c.Id))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("network_host_ip=%s", "10.0.0.1"))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("network_container_ip=%s", "10.0.0.2"))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("user_uid=%d", 10000))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("network_host_ip=%s", c.Network.Add(1).String()))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("network_container_ip=%s", c.Network.Add(2).String()))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("user_uid=%d", int(*c.UserId)))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("rootfs_path=%s", c.c.Server.ContainerRootfsPath))
 
 	err = runCommand(cmd)
