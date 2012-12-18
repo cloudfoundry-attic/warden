@@ -337,48 +337,72 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	x.WriteResponse(res)
 }
 
-func (c *LinuxContainer) DoStop(x *Request, req *protocol.StopRequest) {
-	var cmd *exec.Cmd
+func (c *LinuxContainer) doStop(kill bool, background bool) error {
+	var x *exec.Cmd
+	var err error
 
-	done := make(chan error, 1)
-
-	cmd = exec.Command(path.Join(c.ContainerPath(), "stop.sh"))
+	x = exec.Command(path.Join(c.ContainerPath(), "stop.sh"))
 
 	// Don't wait for graceful stop if kill=true
-	if req.GetKill() {
-		cmd.Args = append(cmd.Args, "-w", "0")
+	if kill {
+		x.Args = append(x.Args, "-w", "0")
 	}
 
-	// Run command in background
+	errc := make(chan error, 1)
 	go func() {
-		done <- runCommand(cmd)
+		errc <- runCommand(x)
 	}()
 
 	// Wait for completion if background=false
-	if !req.GetBackground() {
-		<-done
+	if !background {
+		err = <-errc
+		if err != nil {
+			return err
+		}
 	}
 
 	c.State = StateStopped
+
+	return nil
+}
+
+func (c *LinuxContainer) DoStop(x *Request, req *protocol.StopRequest) {
+	var err error
+
+	err = c.doStop(req.GetKill(), req.GetBackground())
+	if err != nil {
+		x.WriteErrorResponse(err.Error())
+		return
+	}
 
 	res := &protocol.StopResponse{}
 	x.WriteResponse(res)
 }
 
-func (c *LinuxContainer) DoDestroy(x *Request, req *protocol.DestroyRequest) {
-	var cmd *exec.Cmd
+func (c *LinuxContainer) doDestroy() error {
+	var x *exec.Cmd
 	var err error
 
-	cmd = exec.Command(path.Join(c.ContainerPath(), "destroy.sh"))
-
-	err = runCommand(cmd)
+	x = exec.Command(path.Join(c.ContainerPath(), "destroy.sh"))
+	err = runCommand(x)
 	if err != nil {
-		x.WriteErrorResponse("error")
-		return
+		return err
 	}
 
 	c.State = StateDestroyed
 	c.s.R.Unregister(c)
+
+	return nil
+}
+
+func (c *LinuxContainer) DoDestroy(x *Request, req *protocol.DestroyRequest) {
+	var err error
+
+	err = c.doDestroy()
+	if err != nil {
+		x.WriteErrorResponse(err.Error())
+		return
+	}
 
 	res := &protocol.DestroyResponse{}
 	x.WriteResponse(res)
