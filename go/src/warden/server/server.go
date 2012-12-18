@@ -52,6 +52,7 @@ func (s *Server) serveCreate(x *Request, y *protocol.CreateRequest) {
 	c = s.R.Find(y.GetHandle())
 	if c != nil {
 		x.WriteErrorResponse(fmt.Sprintf("container with handle: %s already exists.", y.GetHandle()))
+		close(x.done)
 		return
 	}
 
@@ -74,6 +75,7 @@ func (s *Server) serveContainerRequest(x *Request, y containerRequest) {
 	c = s.R.Find(y.GetHandle())
 	if c == nil {
 		x.WriteErrorResponse(fmt.Sprintf("unknown handle"))
+		close(x.done)
 		return
 	}
 
