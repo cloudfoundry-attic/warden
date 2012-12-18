@@ -52,7 +52,6 @@ func (s *Server) serveCreate(x *Request, y *protocol.CreateRequest) {
 	c = s.R.Find(y.GetHandle())
 	if c != nil {
 		x.WriteErrorResponse(fmt.Sprintf("container with handle: %s already exists.", y.GetHandle()))
-		close(x.done)
 		return
 	}
 
@@ -75,7 +74,6 @@ func (s *Server) serveContainerRequest(x *Request, y containerRequest) {
 	c = s.R.Find(y.GetHandle())
 	if c == nil {
 		x.WriteErrorResponse(fmt.Sprintf("unknown handle"))
-		close(x.done)
 		return
 	}
 
@@ -97,23 +95,18 @@ func (s *Server) serve(x net.Conn) {
 		switch v := u.r.(type) {
 		case *protocol.PingRequest:
 			s.servePing(u, v)
-			close(u.done)
 		case *protocol.EchoRequest:
 			s.serveEcho(u, v)
-			close(u.done)
 		case *protocol.CreateRequest:
 			s.serveCreate(u, v)
 		case containerRequest:
 			s.serveContainerRequest(u, v)
 		default:
-			y.WriteErrorResponse("Unknown request")
-			close(u.done)
+			u.WriteErrorResponse("Unknown request")
 		}
 
-		// Wait for request to be done
-		<-u.done
-
-		y.Flush()
+		// Wait for request to be done before continuing with the next one
+		u.Wait()
 	}
 
 	y.Close()

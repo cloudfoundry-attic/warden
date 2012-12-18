@@ -195,7 +195,6 @@ func (c *LinuxContainer) Execute(r *Request) {
 		x <- r
 	} else {
 		r.WriteErrorResponse("Container doesn't accept new requests")
-		close(r.done)
 	}
 }
 
@@ -269,17 +268,19 @@ func (c *LinuxContainer) runRequest(r *Request) {
 	log.Printf("took: %.6fs\n", t2.Sub(t1).Seconds())
 }
 
+func (c *LinuxContainer) writeInvalidState(r *Request) {
+	r.WriteErrorResponse(fmt.Sprintf("Cannot execute request in state: %s", c.State))
+}
+
 func (c *LinuxContainer) runBorn(r *Request) {
 	switch req := r.r.(type) {
 	case *protocol.CreateRequest:
 		c.markDirty()
 		c.DoCreate(r, req)
 		c.markClean()
-		close(r.done)
 
 	default:
-		r.WriteInvalidState(string(c.State))
-		close(r.done)
+		c.writeInvalidState(r)
 	}
 }
 
@@ -289,16 +290,13 @@ func (c *LinuxContainer) runActive(r *Request) {
 		c.markDirty()
 		c.DoStop(r, req)
 		c.markClean()
-		close(r.done)
 
 	case *protocol.DestroyRequest:
 		c.markDirty()
 		c.DoDestroy(r, req)
-		close(r.done)
 
 	default:
-		r.WriteInvalidState(string(c.State))
-		close(r.done)
+		c.writeInvalidState(r)
 	}
 }
 
@@ -307,19 +305,16 @@ func (c *LinuxContainer) runStopped(r *Request) {
 	case *protocol.DestroyRequest:
 		c.markDirty()
 		c.DoDestroy(r, req)
-		close(r.done)
 
 	default:
-		r.WriteInvalidState(string(c.State))
-		close(r.done)
+		c.writeInvalidState(r)
 	}
 }
 
 func (c *LinuxContainer) runDestroyed(r *Request) {
 	switch r.r.(type) {
 	default:
-		r.WriteInvalidState(string(c.State))
-		close(r.done)
+		c.writeInvalidState(r)
 	}
 }
 
