@@ -435,6 +435,12 @@ func (c *LinuxContainer) doDestroy() error {
 	c.State = StateDestroyed
 	c.s.R.Unregister(c)
 
+	// Remove directory
+	err = os.RemoveAll(c.ContainerPath())
+	if err != nil {
+		panic(err)
+	}
+
 	return nil
 }
 
