@@ -2,26 +2,33 @@ package pool
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 )
 
 type Poolable interface {
+	fmt.Stringer
+
 	Next() Poolable
 	Equals(Poolable) bool
 }
 
 type Pool struct {
 	sync.Mutex
-	list *list.List
+
+	m map[string]bool
+	l *list.List
 }
 
 func NewPool(x Poolable, size int) *Pool {
 	p := &Pool{}
-	p.list = list.New()
+	p.m = make(map[string]bool)
+	p.l = list.New()
 
 	// Fill the pool
 	for ; size > 0; size-- {
-		p.list.PushBack(x)
+		p.m[x.String()] = true
+		p.l.PushBack(x)
 		x = x.Next()
 	}
 
@@ -32,12 +39,12 @@ func (p *Pool) Acquire() (x Poolable, ok bool) {
 	p.Lock()
 	defer p.Unlock()
 
-	e := p.list.Front()
+	e := p.l.Front()
 	if e == nil {
 		return
 	}
 
-	x = p.list.Remove(e).(Poolable)
+	x = p.l.Remove(e).(Poolable)
 	return x, true
 }
 
@@ -45,17 +52,17 @@ func (p *Pool) Release(x Poolable) {
 	p.Lock()
 	defer p.Unlock()
 
-	p.list.PushBack(x)
+	p.l.PushBack(x)
 }
 
 func (p *Pool) Remove(x Poolable) bool {
 	p.Lock()
 	defer p.Unlock()
 
-	for e := p.list.Front(); e != nil; e = e.Next() {
+	for e := p.l.Front(); e != nil; e = e.Next() {
 		y := e.Value.(Poolable)
 		if x.Equals(y) {
-			p.list.Remove(e)
+			p.l.Remove(e)
 			return true
 		}
 	}

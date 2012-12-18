@@ -2,9 +2,14 @@ package pool
 
 import (
 	. "launchpad.net/gocheck"
+	"strconv"
 )
 
 type poolableInt int
+
+func (x poolableInt) String() string {
+	return strconv.Itoa(int(x))
+}
 
 func (x poolableInt) Next() Poolable {
 	return poolableInt(x + 1)

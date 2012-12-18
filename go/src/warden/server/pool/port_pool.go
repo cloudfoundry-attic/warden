@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 func ipLocalPortRange() [2]uint16 {
@@ -32,6 +33,10 @@ func ipLocalPortRange() [2]uint16 {
 }
 
 type Port uint16
+
+func (x Port) String() string {
+	return strconv.Itoa(int(x))
+}
 
 func (x Port) MarshalJSON() ([]byte, error) {
 	return json.Marshal(uint16(x))

@@ -3,9 +3,14 @@ package pool
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 )
 
 type UserId uint16
+
+func (x UserId) String() string {
+	return strconv.Itoa(int(x))
+}
 
 func (x UserId) MarshalJSON() ([]byte, error) {
 	return json.Marshal(uint16(x))
