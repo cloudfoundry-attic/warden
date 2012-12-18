@@ -36,7 +36,7 @@ type Job struct {
 
 type LinuxContainer struct {
 	c *config.Config
-	r chan *Request
+	r chan chan *Request
 	s *Server
 
 	State  State
@@ -46,6 +46,8 @@ type LinuxContainer struct {
 	Network *pool.IP
 	Ports   []*pool.Port
 	UserId  *pool.UserId
+
+	IdleTimeout time.Duration
 }
 
 func (c *LinuxContainer) GetState() State {
@@ -64,7 +66,7 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 	c := &LinuxContainer{}
 
 	c.c = cfg
-	c.r = make(chan *Request)
+	c.r = make(chan chan *Request)
 	c.s = s
 
 	c.State = StateBorn
@@ -73,6 +75,9 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 
 	// Initialize port slice
 	c.Ports = make([]*pool.Port, 0)
+
+	// Initialize idle timeout
+	c.IdleTimeout = time.Duration(c.c.Server.ContainerGraceTime) * time.Second
 
 	return c
 }
@@ -185,7 +190,13 @@ func (c *LinuxContainer) markClean() error {
 }
 
 func (c *LinuxContainer) Execute(r *Request) {
-	c.r <- r
+	x := <-c.r
+	if x != nil {
+		x <- r
+	} else {
+		r.WriteErrorResponse("Container doesn't accept new requests")
+		close(r.done)
+	}
 }
 
 func (c *LinuxContainer) ContainerPath() string {
@@ -193,11 +204,43 @@ func (c *LinuxContainer) ContainerPath() string {
 }
 
 func (c *LinuxContainer) Run() {
-	for {
+	var i *IdleTimer
+	var d = c.IdleTimeout
+
+	// Use ridiculous idle timeout when it is invalid
+	if d <= 0 {
+		d = 7 * 24 * time.Hour
+	}
+
+	i = NewIdleTimer(c.IdleTimeout)
+	defer i.Stop()
+
+	// Request channel
+	x := make(chan *Request, 1)
+
+	for stop := false; !stop; {
 		select {
-		case r := <-c.r:
+		case <-i.C:
+			stop = true
+		case c.r <- x:
+			i.Ref()
+
+			r := <-x
+			go func() {
+				<-r.done
+				i.Unref()
+			}()
+
 			c.runRequest(r)
 		}
+	}
+
+	close(c.r)
+
+	err := c.doDestroy()
+	if err != nil {
+		// Warnf
+		log.Printf("Error destroying container: %s\n", err)
 	}
 }
 
@@ -304,6 +347,11 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	// Override handle if specified
 	if h := req.GetHandle(); h != "" {
 		c.Handle = h
+	}
+
+	// Override idle timeout if specified
+	if y := req.GraceTime; y != nil {
+		c.IdleTimeout = time.Duration(*y) * time.Second
 	}
 
 	res := &protocol.CreateResponse{}
