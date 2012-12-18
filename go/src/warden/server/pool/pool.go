@@ -16,18 +16,21 @@ type Poolable interface {
 type Pool struct {
 	sync.Mutex
 
-	m map[string]bool
+	m map[string]bool // Original
+	a map[string]bool // Available
 	l *list.List
 }
 
 func NewPool(x Poolable, size int) *Pool {
 	p := &Pool{}
 	p.m = make(map[string]bool)
+	p.a = make(map[string]bool)
 	p.l = list.New()
 
 	// Fill the pool
 	for ; size > 0; size-- {
 		p.m[x.String()] = true
+		p.a[x.String()] = true
 		p.l.PushBack(x)
 		x = x.Next()
 	}
@@ -45,6 +48,7 @@ func (p *Pool) Acquire() (x Poolable, ok bool) {
 	}
 
 	x = p.l.Remove(e).(Poolable)
+	delete(p.a, x.String())
 	return x, true
 }
 
@@ -53,6 +57,7 @@ func (p *Pool) Release(x Poolable) {
 	defer p.Unlock()
 
 	p.l.PushBack(x)
+	p.a[x.String()] = true
 }
 
 func (p *Pool) Remove(x Poolable) bool {
@@ -63,6 +68,7 @@ func (p *Pool) Remove(x Poolable) bool {
 		y := e.Value.(Poolable)
 		if x.Equals(y) {
 			p.l.Remove(e)
+			delete(p.a, x.String())
 			return true
 		}
 	}
