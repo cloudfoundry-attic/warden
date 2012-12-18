@@ -52,12 +52,17 @@ func (p *Pool) Acquire() (x Poolable, ok bool) {
 	return x, true
 }
 
-func (p *Pool) Release(x Poolable) {
+func (p *Pool) Release(x Poolable) bool {
 	p.Lock()
 	defer p.Unlock()
 
-	p.l.PushBack(x)
-	p.a[x.String()] = true
+	if p.m[x.String()] && !p.a[x.String()] {
+		p.l.PushBack(x)
+		p.a[x.String()] = true
+		return true
+	}
+
+	return false
 }
 
 func (p *Pool) Remove(x Poolable) bool {

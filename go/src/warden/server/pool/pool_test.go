@@ -70,6 +70,30 @@ func (s *PoolSuite) TestRelease(c *C) {
 	c.Check(ok, Equals, true)
 }
 
+func (s *PoolSuite) TestReleaseTwice(c *C) {
+	var ok bool
+
+	p := NewPool(poolableInt(0), 1)
+
+	_, ok = p.Acquire()
+	c.Check(ok, Equals, true)
+
+	ok = p.Release(poolableInt(0))
+	c.Check(ok, Equals, true)
+
+	ok = p.Release(poolableInt(0))
+	c.Check(ok, Equals, false)
+}
+
+func (s *PoolSuite) TestReleaseUnknown(c *C) {
+	var ok bool
+
+	p := NewPool(poolableInt(0), 1)
+
+	ok = p.Release(poolableInt(1))
+	c.Check(ok, Equals, false)
+}
+
 func (s *PoolSuite) TestRemove(c *C) {
 	p := NewPool(poolableInt(0), 2)
 
@@ -78,4 +102,25 @@ func (s *PoolSuite) TestRemove(c *C) {
 	x, ok := p.Acquire()
 	c.Check(x.(poolableInt), Equals, poolableInt(1))
 	c.Check(ok, Equals, true)
+}
+
+func (s *PoolSuite) TestRemoveTwice(c *C) {
+	var ok bool
+
+	p := NewPool(poolableInt(0), 1)
+
+	ok = p.Remove(poolableInt(0))
+	c.Check(ok, Equals, true)
+
+	ok = p.Remove(poolableInt(0))
+	c.Check(ok, Equals, false)
+}
+
+func (s *PoolSuite) TestRemoveUnknown(c *C) {
+	var ok bool
+
+	p := NewPool(poolableInt(0), 1)
+
+	ok = p.Release(poolableInt(1))
+	c.Check(ok, Equals, false)
 }
