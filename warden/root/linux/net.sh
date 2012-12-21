@@ -127,6 +127,7 @@ function setup_nat() {
   # Enable NAT on outgoing traffic
   (iptables -t nat -S POSTROUTING | grep -q "\-j MASQUERADE\b") ||
     iptables -t nat -A POSTROUTING \
+      --out-interface "${external_interface}" \
       --jump MASQUERADE
 }
 
