@@ -31,7 +31,7 @@ void fcntl_set_cloexec(int fd, int on) {
     fl &= ~FD_CLOEXEC;
   }
 
-  rv = fcntl(fd, F_SETFD, rv | FD_CLOEXEC);
+  rv = fcntl(fd, F_SETFD, rv);
   if (rv == -1) {
     perror("fcntl");
     abort();
