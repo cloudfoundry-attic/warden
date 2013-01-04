@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	steno "github.com/cloudfoundry/gosteno"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -48,6 +48,8 @@ type LinuxContainer struct {
 	UserId  *pool.UserId
 
 	IdleTimeout time.Duration
+
+	steno.Logger
 }
 
 func (c *LinuxContainer) GetState() State {
@@ -78,6 +80,10 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 
 	// Initialize idle timeout
 	c.IdleTimeout = time.Duration(c.c.Server.ContainerGraceTime) * time.Second
+
+	// Setup container-specific logger
+	l := steno.NewLogger("container")
+	c.Logger = steno.NewTaggedLogger(l, map[string]string{"id": c.Id})
 
 	return c
 }
@@ -238,8 +244,7 @@ func (c *LinuxContainer) Run() {
 
 	err := c.doDestroy()
 	if err != nil {
-		// Warnf
-		log.Printf("Error destroying container: %s\n", err)
+		c.Warnf("Error destroying container: %s", err)
 	}
 }
 
@@ -265,7 +270,7 @@ func (c *LinuxContainer) runRequest(r *Request) {
 
 	t2 := time.Now()
 
-	log.Printf("took: %.6fs\n", t2.Sub(t1).Seconds())
+	c.Debugf("took: %.6fs", t2.Sub(t1).Seconds())
 }
 
 func (c *LinuxContainer) writeInvalidState(r *Request) {
@@ -332,6 +337,9 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	if h := req.GetHandle(); h != "" {
 		c.Handle = h
 	}
+
+	// Add handle to logger
+	c.Logger = steno.NewTaggedLogger(c.Logger, map[string]string{"handle": c.Handle})
 
 	// Override idle timeout if specified
 	if y := req.GraceTime; y != nil {
