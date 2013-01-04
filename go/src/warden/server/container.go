@@ -170,6 +170,9 @@ func (c *LinuxContainer) markClean() error {
 		return err
 	}
 
+	// The tempfile must be closed whatever happens
+	defer y.Close()
+
 	z := bufio.NewWriter(y)
 
 	e := json.NewEncoder(z)
