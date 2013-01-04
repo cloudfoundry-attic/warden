@@ -154,6 +154,7 @@ func (c *LinuxContainer) snapshotPath() string {
 func (c *LinuxContainer) markDirty() error {
 	err := os.Remove(c.snapshotPath())
 	if err != nil {
+		c.Warnf("Unable to remove snapshot: %s", err)
 		return err
 	}
 
@@ -167,6 +168,7 @@ func (c *LinuxContainer) markClean() error {
 	x := path.Join(c.ContainerPath(), "tmp")
 	y, err := ioutil.TempFile(x, "snapshot")
 	if err != nil {
+		c.Warnf("Unable to create snapshot file: %s", err)
 		return err
 	}
 
@@ -178,11 +180,13 @@ func (c *LinuxContainer) markClean() error {
 	e := json.NewEncoder(z)
 	err = e.Encode(c)
 	if err != nil {
+		c.Warnf("Unable to encode snapshot: %s", err)
 		return err
 	}
 
 	err = z.Flush()
 	if err != nil {
+		c.Warnf("Unable to flush snapshot: %s", err)
 		return err
 	}
 
@@ -192,6 +196,7 @@ func (c *LinuxContainer) markClean() error {
 	// It is not written in place because that cannot be done atomically.
 	err = os.Rename(y.Name(), c.snapshotPath())
 	if err != nil {
+		c.Warnf("Unable to rename snapshot in place: %s", err)
 		return err
 	}
 
