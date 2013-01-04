@@ -318,17 +318,6 @@ func (c *LinuxContainer) runDestroyed(r *Request) {
 	}
 }
 
-func runCommand(cmd *exec.Cmd) error {
-	log.Printf("Run: %#v\n", cmd.Args)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Error running %s: %s\n", cmd.Args[0], err)
-		log.Printf("Output: %s\n", out)
-	}
-
-	return err
-}
-
 func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	var cmd *exec.Cmd
 	var err error
