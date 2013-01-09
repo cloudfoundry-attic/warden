@@ -46,6 +46,12 @@ func (s *Server) serveEcho(x *Request, y *protocol.EchoRequest) {
 	x.WriteResponse(z)
 }
 
+func (s *Server) serveList(x *Request, y *protocol.ListRequest) {
+	z := &protocol.ListResponse{}
+	z.Handles = s.R.Handles()
+	x.WriteResponse(z)
+}
+
 func (s *Server) serveCreate(x *Request, y *protocol.CreateRequest) {
 	var c Container
 
@@ -97,6 +103,8 @@ func (s *Server) serve(x net.Conn) {
 			s.servePing(u, v)
 		case *protocol.EchoRequest:
 			s.serveEcho(u, v)
+		case *protocol.ListRequest:
+			s.serveList(u, v)
 		case *protocol.CreateRequest:
 			s.serveCreate(u, v)
 		case containerRequest:
