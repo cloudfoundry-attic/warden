@@ -74,13 +74,21 @@ function setup_filter() {
 
   # Whitelist
   for n in "${ALLOW_NETWORKS}"; do
-    if [${n} -eq '']; then break; fi
-    iptables -A ${filter_default_chain} --destination "${n}" --jump RETURN
+    if [ "$n" == "" ]
+    then
+      break
+    fi
+
+    iptables -A ${filter_default_chain} --destination "$n" --jump RETURN
   done
 
   for n in "${DENY_NETWORKS}"; do
-    if [${n} -eq '']; then break; fi
-    iptables -A ${filter_default_chain} --destination "${n}" --jump DROP
+    if [ "$n" == "" ]
+    then
+      break
+    fi
+
+    iptables -A ${filter_default_chain} --destination "$n" --jump DROP
   done
 
   # Bind chain
