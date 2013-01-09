@@ -2,6 +2,7 @@ package server
 
 import (
 	. "launchpad.net/gocheck"
+	"sort"
 )
 
 type FakeContainer string
@@ -56,4 +57,18 @@ func (s *RegistrySuite) TestUnregister(c *C) {
 	err = s.Unregister(a)
 	c.Check(err, IsNil)
 	c.Check(s.Find("a"), IsNil)
+}
+
+func (s *RegistrySuite) TestHandles(c *C) {
+	var err error
+
+	err = s.Register(FakeContainer("a"))
+	c.Check(err, IsNil)
+
+	err = s.Register(FakeContainer("b"))
+	c.Check(err, IsNil)
+
+	h := s.Handles()
+	sort.Strings(h)
+	c.Check(h, DeepEquals, []string{"a", "b"})
 }

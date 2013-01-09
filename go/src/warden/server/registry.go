@@ -67,3 +67,15 @@ func (x *Registry) Find(h string) Container {
 
 	return y
 }
+
+func (x *Registry) Handles() []string {
+	x.Lock()
+	defer x.Unlock()
+
+	y := make([]string, 0, len(x.C))
+	for h, _ := range x.C {
+		y = append(y, h)
+	}
+
+	return y
+}
