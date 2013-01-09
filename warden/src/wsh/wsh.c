@@ -227,7 +227,7 @@ void tty_winsz(void) {
   tty_swinsz();
 }
 
-int loop_interactive(int fd) {
+void loop_interactive(int fd) {
   msg_response_t res;
   char buf[MSG_MAX_SIZE];
   size_t buflen = sizeof(buf);
@@ -258,11 +258,9 @@ int loop_interactive(int fd) {
   pump_pair_init(&pp[1], &p, dup(fds[0]), STDOUT_FILENO);
 
   pump_loop(&p, fds[1], pp, 2);
-
-  return 0;
 }
 
-int loop_noninteractive(int fd) {
+void loop_noninteractive(int fd) {
   msg_response_t res;
   char buf[MSG_MAX_SIZE];
   size_t buflen = sizeof(buf);
@@ -287,8 +285,6 @@ int loop_noninteractive(int fd) {
   pump_pair_init(&pp[2], &p, fds[2], STDERR_FILENO);
 
   pump_loop(&p, fds[3], pp, 3);
-
-  return 0;
 }
 
 int main(int argc, char **argv) {
@@ -353,8 +349,11 @@ int main(int argc, char **argv) {
   }
 
   if (req.tty) {
-    return loop_interactive(fd);
+    loop_interactive(fd);
   } else {
-    return loop_noninteractive(fd);
+    loop_noninteractive(fd);
   }
+
+  perror("unreachable");
+  exit(255);
 }

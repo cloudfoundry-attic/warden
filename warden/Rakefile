@@ -2,7 +2,6 @@
 
 require "rspec/core/rake_task"
 require "rspec/core/version"
-require "vcap/common"
 require "yaml"
 
 desc "Run all examples"

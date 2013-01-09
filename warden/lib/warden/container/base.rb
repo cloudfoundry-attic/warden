@@ -114,6 +114,10 @@ module Warden
           File.join(container_path, "snapshot.json")
         end
 
+        def dirty_snapshot_marker_path(container_path)
+          File.join(container_path, "snapshot_dirty")
+        end
+
         def empty_snapshot
           { "events"     => [],
             "grace_time" => Server.container_grace_time,
@@ -125,6 +129,7 @@ module Warden
         end
 
         def from_snapshot(container_path)
+          return nil if File.exists?(dirty_snapshot_marker_path(container_path))
           snapshot = JSON.parse(File.read(snapshot_path(container_path)))
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
@@ -281,6 +286,10 @@ module Warden
         self.class.snapshot_path(container_path)
       end
 
+      def dirty_snapshot_marker_path
+        self.class.dirty_snapshot_marker_path(container_path)
+      end
+
       def dispatch(request, &blk)
         logger.debug2("Request: #{request.inspect}")
 
@@ -318,11 +327,29 @@ module Warden
         end
       end
 
-      def write_snapshot
+      def write_snapshot(opts = {})
         logger.info("Writing snapshot for container #{handle}")
 
+        FileUtils.touch(dirty_snapshot_marker_path)
+
         jobs_snapshot = {}
-        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+
+        # The default setting is that snapsnotting a job will first terminate
+        # it. But this can be overridden by setting :keep_alive to true, in
+        # which case we only want to snapshot terminated jobs and leave running
+        # jobs alone, but still generate an empty snapshot for the running job
+        # so that we don't lose track of it upon restart of warden.
+        if opts[:keep_alive]
+          jobs.each do |id, job|
+            if job.terminated?
+              jobs_snapshot[id] = job.create_snapshot
+            else
+              jobs_snapshot[id] = job.create_empty_snapshot
+            end
+          end
+        else
+          jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+        end
 
         snapshot = {
           "events"     => events.to_a,
@@ -336,6 +363,8 @@ module Warden
         File.open(snapshot_path, "w+") do |f|
           f.write(JSON.dump(snapshot))
         end
+
+        FileUtils.remove_file(dirty_snapshot_marker_path, true)
 
         nil
       end
@@ -356,6 +385,17 @@ module Warden
 
         if @resources.has_key?("network")
           @acquired["network"] = network
+        elsif opts[:network]
+          # Translate to network address by network pool netmask
+          container = Warden::Network::Address.new(opts[:network])
+          network = container.network(self.class.network_pool.netmask)
+
+          unless self.class.network_pool.fetch(network)
+            raise WardenError.new("Could not acquire network: #{network.to_human}")
+          end
+
+          @acquired["network"] = network
+          @resources["network"] = network
         else
           network = self.class.network_pool.acquire
           unless network
@@ -396,7 +436,7 @@ module Warden
         check_state_in(State::Born)
 
         begin
-          acquire(:handle => request.handle)
+          acquire(:handle => request.handle, :network => request.network)
 
           if request.grace_time
             self.grace_time = request.grace_time
@@ -413,6 +453,8 @@ module Warden
       def after_create(request, response)
         # Clients should be able to look this container up
         self.class.registry[handle] = self
+
+        write_snapshot
 
         # Pass handle back to client
         response.handle = handle
@@ -449,6 +491,13 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
+      def after_stop(request, response)
+        # Wait for all jobs to terminate before writing a snapshot
+        jobs.each_value(&:yield)
+
+        write_snapshot
+      end
+
       def before_destroy
         check_state_in(State::Active, State::Stopped)
 
@@ -483,6 +532,10 @@ module Warden
         jobs[job.job_id] = job
 
         response.job_id = job.job_id
+      end
+
+      def after_spawn(request, response)
+        write_snapshot(:keep_alive => true)
       end
 
       def do_link(request, response)
@@ -597,6 +650,9 @@ module Warden
         response.host_ip = self.host_ip.to_human
         response.container_ip = self.container_ip.to_human
         response.container_path = self.container_path
+        response.job_ids = jobs.select do |job_id, job|
+          !job.terminated?
+        end.keys
 
         nil
       end
@@ -647,9 +703,26 @@ module Warden
         job_root = job_path(job_id)
         FileUtils.mkdir_p(job_root)
 
+        f = Fiber.current
+
         spawn_path = File.join(bin_path, "iomux-spawn")
         spawner = DeferredChild.new(spawn_path, job_root, *args)
         spawner.logger = logger
+
+        # When iomux-spawn starts up, there is a chance that it can fail before
+        # it reaches the state where iomux-link can connect to it. We need to
+        # handle this failure, as otherwise the client connection will be stuck
+        # forever (the current fiber is never resumed). Therefore, within the
+        # callbacks for the iomux-spawn job, we resume the yielded fiber
+        # along with an indication of the failure in iomux-spawn.
+        #
+        # The flag: catch_spawner_failure ensures that the callbacks for
+        # iomux-spawn perform their duty *only* when failures are detected
+        # during iomux-spawn startup. Otherwise, these callbacks may be
+        # triggered during the wrong time.
+        catch_spawner_failure = true
+        spawner.errback { f.resume(:no) if f.alive? && catch_spawner_failure }
+        spawner.callback { f.resume(:no) if f.alive? && catch_spawner_failure }
         spawner.run
 
         # iomux-spawn indicates it is ready to receive connections by writing
@@ -657,7 +730,7 @@ module Warden
         # link. In the event that the spawner fails this code will still be
         # invoked, causing the linker to exit with status 255 (the desired
         # behavior).
-        f = Fiber.current
+
         out = ""
         state = :wait_ready
         spawner.add_streams_listener do |_, data|
@@ -678,16 +751,20 @@ module Warden
         end
 
         # Wait for the spawner to be ready to receive connections
-        Fiber.yield
+        spawner_alive = Fiber.yield
+        raise WardenError.new("iomux-spawn failed")  if spawner_alive == :no
 
         # Wait for the spawned child to be continued
         job = Job.new(self, job_id)
         job.logger = logger
         job.run
 
-        Fiber.yield
+        spawner_alive = Fiber.yield
+        raise WardenError.new("iomux-spawn failed")  if spawner_alive == :no
 
         job
+      ensure
+        catch_spawner_failure = false
       end
 
       def recover_jobs(jobs_snapshot)
@@ -758,6 +835,10 @@ module Warden
           end
         end
 
+        def terminated?
+          !!@status
+        end
+
         def yield
           return @status if @status
           @yielded << Fiber.current
@@ -766,6 +847,7 @@ module Warden
 
         def resume(status)
           @status = status
+          @container.write_snapshot(:keep_alive => true)
           @yielded.each { |f| f.resume(@status) }
         end
 
@@ -799,9 +881,13 @@ module Warden
           exit_status
         end
 
-        # This is only called during drain when it is guaranteed that there
-        # are no connections linked to the job.
-        def create_snapshot
+        def create_empty_snapshot
+          return { "stdout" => "", "stderr" => "" }
+        end
+
+        # This is called during drain or after a job exits, so it is guaranteed
+        # that there are no connections linked to the job.
+        def create_snapshot(opts = {})
           if @status
             return { "status" => @status }
           end
@@ -824,12 +910,18 @@ module Warden
 
         def setup_child_handlers
           @child.callback do
-            if @child.exit_status == 255
-              # Link error
-              resume [nil, nil, nil]
-            else
-              resume [@child.exit_status, @child.stdout, @child.stderr]
-            end
+            # An exit status of 255 from the child is ambiguous, and can
+            # mean any one of the following:
+            #
+            # [1] The child exited with status 255.
+            # [2] iomux linking failed with an internal error and exited with
+            #     status of 255.
+            #
+            # Currently, we don't care about internal failures in iomux linking
+            # and propogate the exit status as such. What we really need is
+            # a clear way to differentiate exit statuses of iomux link from
+            # the underlying child.
+            resume [@child.exit_status, @child.stdout, @child.stderr]
           end
 
           @child.errback do |err|

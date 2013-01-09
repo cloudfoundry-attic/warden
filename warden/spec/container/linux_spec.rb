@@ -25,6 +25,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:container_depot_path) { File.join(work_path, "containers") }
   let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { true }
+  let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -44,7 +45,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     features << "^has_journal" # don't include a journal
     features << "uninit_bg"    # skip initialization of block groups
 
-    `mkfs.ext4 -q -F -O #{features.join(",")} #{container_depot_file}`
+    `mkfs.ext4 -b 4096 -q -F -O #{features.join(",")} #{container_depot_file}`
     $?.should be_success
 
     `mount -o loop #{container_depot_file} #{container_depot_path}`
@@ -98,7 +99,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     FileUtils.rm_f(unix_domain_path)
 
     # Grab new network for every test to avoid resource contention
-    start_address = next_class_c.to_human
+    @start_address = next_class_c.to_human
 
     @pid = fork do
       Process.setsid
@@ -112,7 +113,7 @@ describe "linux", :platform => "linux", :needs_root => true do
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5 },
         "network" => {
-          "pool_start_address" => start_address,
+          "pool_start_address" => @start_address,
           "pool_size" => 64,
           "allow_networks" => ["4.2.2.3/32"],
           "deny_networks" => ["4.2.2.0/24"] },
@@ -142,6 +143,8 @@ describe "linux", :platform => "linux", :needs_root => true do
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
   it_should_behave_like "drain"
+  it_should_behave_like "snapshotting_common"
+  it_should_behave_like "snapshotting_net_in"
 
   describe "limit_memory" do
     attr_reader :handle
@@ -225,12 +228,21 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.block_limit.should == 0
     end
 
-    it "should enforce the quota" do
-      limit_disk(:byte_limit => 2 * 1024 * 1024)
+    context "with a 2M disk limit" do
+      before do
+        limit_disk(:byte_limit => 2 * 1024 * 1024)
+      end
 
-      response = run("dd if=/dev/zero of=/tmp/test bs=1MB count=4")
-      response.exit_status.should == 1
-      response.stderr.should =~ /quota exceeded/i
+      it "should succeed to write a 1M file" do
+        response = run("dd if=/dev/zero of=/tmp/test bs=1M count=1")
+        response.exit_status.should == 0
+      end
+
+      it "should fail to write a 4M file" do
+        response = run("dd if=/dev/zero of=/tmp/test bs=1M count=4")
+        response.exit_status.should == 1
+        response.stderr.should =~ /quota exceeded/i
+      end
     end
   end
 
@@ -423,6 +435,21 @@ describe "linux", :platform => "linux", :needs_root => true do
         x.should >= 0
       end
     end
+
+    it "should include list of ids of jobs that are alive" do
+      response = client.spawn(:handle => handle,
+                              :script => "sleep 2; id -u")
+      job_id_1 = response.job_id
+
+      response = client.spawn(:handle => handle,
+                              :script => "id -u")
+      job_id_2 = response.job_id
+
+      sleep 0.1
+
+      response = client.info(:handle => handle)
+      response.job_ids.should == [job_id_1]
+    end
   end
 
   describe "bind mounts" do
@@ -498,6 +525,61 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.exit_status.should == 0
       response.stdout.should be_empty
       response.stderr.should be_empty
+    end
+  end
+
+  describe "create with network" do
+    it "should be able to specify network" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = @start_address
+
+      response = client.call(create_request)
+      response.should be_ok
+
+      info_request = Warden::Protocol::InfoRequest.new
+      info_request.handle = response.handle
+
+      response = client.call(info_request)
+      network = Warden::Network::Address.new(response.container_ip).network(netmask)
+
+      network.to_human.should == @start_address
+    end
+
+    it "should raise error to use network not in the pool" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = '1.1.1.1'
+
+      expect {
+        response = client.call(create_request)
+      }.to raise_error Warden::Client::ServerError
+    end
+  end
+
+  describe "create with rootfs" do
+    let(:another_rootfs_path) { File.join(work_path, "rootfs2") }
+    let(:bad_rootfs_path) { File.join(work_path, "bad_rootfs") }
+
+    before do
+      unless File.exist? another_rootfs_path
+        FileUtils.ln_s(container_rootfs_path, another_rootfs_path)
+      end
+    end
+
+    it "should be able to use another rootfs" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.rootfs = another_rootfs_path
+
+      response = client.call(create_request)
+      response.should be_ok
+    end
+
+    it "should raise error on bad rootfs path" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.rootfs = bad_rootfs_path
+
+      expect {
+        response = client.call(create_request)
+      }.to raise_error Warden::Client::ServerError
     end
   end
 

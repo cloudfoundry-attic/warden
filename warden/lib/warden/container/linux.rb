@@ -47,6 +47,7 @@ module Warden
                 "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
                 "CONTAINER_DEPOT_PATH" => container_depot_path,
                 "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
+                "DISK_QUOTA_ENABLED" => disk_quota_enabled.to_s,
               },
               :timeout => nil
             }
@@ -70,9 +71,17 @@ module Warden
 
       def do_create(request, response)
         options = {
-          :env => env,
+          :env => env.dup,
           :timeout => nil
         }
+
+        if request.rootfs
+          unless Dir.exist? request.rootfs
+            raise WardenError.new("rootfs #{request.rootfs} not found")
+          end
+
+          options[:env]["rootfs_path"] = request.rootfs
+        end
 
         sh File.join(root_path, "create.sh"), container_path, options
         logger.debug("Container created")

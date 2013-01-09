@@ -27,9 +27,15 @@ server:
 
   # See getrlimit(2) for details. Integer values are passed verbatim.
   container_rlimits:
-    as: 4194304
+    as: 4294967296
     nofile: 8192
     nproc: 512
+
+  quota:
+    disk_quota_enabled: true
+
+health_check_server:
+  port: 2345
 
 logging:
   level: debug2

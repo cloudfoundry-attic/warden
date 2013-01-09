@@ -24,7 +24,11 @@ void pump_pair_init(pump_pair_t *pp, pump_t *p, int rfd, int wfd) {
   pp->rfd = rfd;
   pp->wfd = wfd;
 
-  fcntl_mix_nonblock(rfd);
+  /* Both sides may refer to the same file description if they refer to a PTY,
+   * so configuring them differently may not have the desired effects.
+   * Therefore, simply configure both sides to be blocking. */
+  fcntl_set_nonblock(rfd, 0);
+  fcntl_set_nonblock(wfd, 0);
 }
 
 void pump_pair_close(pump_pair_t *pp) {

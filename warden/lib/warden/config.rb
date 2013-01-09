@@ -10,6 +10,15 @@ module Warden
         "unix_domain_permissions" => 0755,
         "container_klass"         => "Warden::Container::Insecure",
         "container_grace_time"    => (5 * 60), # 5 minutes,
+        "quota" => {
+          "disk_quota_enabled" => true,
+        },
+      }
+    end
+
+    def self.health_check_server_defaults
+      {
+        "port" => 2345,
       }
     end
 
@@ -42,6 +51,9 @@ module Warden
             optional("rtprio")     => Integer,
             optional("sigpending") => Integer,
             optional("stack")      => Integer,
+          },
+          "quota" => {
+            optional("disk_quota_enabled") => bool,
           },
         }
       end
@@ -102,6 +114,7 @@ module Warden
     attr_reader :config
 
     attr_reader :server
+    attr_reader :health_check_server
     attr_reader :logging
     attr_reader :network
     attr_reader :user
@@ -116,6 +129,8 @@ module Warden
 
     def populate
       @server = self.class.server_defaults.merge(config["server"] || {})
+      @health_check_server = self.class.health_check_server_defaults.
+        merge(config["health_check_server"] || {})
       @logging = self.class.logging_defaults.merge(config["logging"] || {})
       @network = self.class.network_defaults.merge(config["network"] || {})
       @user = self.class.user_defaults.merge(config["user"] || {})

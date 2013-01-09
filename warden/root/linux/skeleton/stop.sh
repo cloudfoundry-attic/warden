@@ -47,13 +47,13 @@ ms_end=$(($ms_start + ($WAIT * 1000)))
 # Send SIGTERM
 if [[ $(ms) -lt $ms_end ]]
 then
-  bin/wsh pkill -TERM -v -u 0 || true
+  bin/wsh pkill -TERM -v -P 0 || true
 fi
 
 # Wait for processes to quit
 while [[ $(ms) -lt $ms_end ]]
 do
-  if ! bin/wsh pgrep -c -v -u 0 > /dev/null
+  if ! bin/wsh pgrep -c -v -P 0 > /dev/null
   then
     exit 0
   fi
@@ -62,4 +62,4 @@ do
 done
 
 # Send SIGKILL
-bin/wsh pkill -KILL -v -u 0 || true
+bin/wsh pkill -KILL -v -P 0 || true

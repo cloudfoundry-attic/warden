@@ -187,6 +187,8 @@ module Warden
         next unless File.exist?(container_klass.snapshot_path(path))
 
         c = container_klass.from_snapshot(path)
+        next unless c
+
         logger.info("Recovered container from #{path}")
         logger.debug("Container resources: #{c.resources}")
 
@@ -253,6 +255,9 @@ module Warden
 
           FileUtils.rm_f(unix_domain_path)
           server = ::EM.start_unix_domain_server(unix_domain_path, ClientConnection)
+          ::EM.start_server("127.0.0.1",
+                            config.health_check_server["port"],
+                            HealthCheck)
 
           @drainer = Drainer.new(server)
           @drainer.on_complete do
@@ -279,6 +284,13 @@ module Warden
 
         f.resume
       }
+    end
+
+    class HealthCheck < EM::Connection
+      def receive_data(data)
+        send_data("HTTP/1.1 200 OK\r\n")
+        close_connection_after_writing
+      end
     end
 
     class ClientConnection < ::EM::Connection

@@ -89,10 +89,13 @@ module Warden
 
           response.host_port      = host_port
           response.container_port = container_port
-
         rescue WardenError
           self.class.port_pool.release(host_port) unless request.host_port
           raise
+        end
+
+        def after_net_in(request, response)
+          write_snapshot(:keep_alive => true)
         end
 
         def do_net_out(request, response)

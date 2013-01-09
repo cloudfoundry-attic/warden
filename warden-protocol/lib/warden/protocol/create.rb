@@ -19,6 +19,8 @@ module Warden
       repeated :bind_mounts, BindMount, 1
       optional :grace_time, :uint32, 2
       optional :handle, :string, 3
+      optional :network, :string, 4
+      optional :rootfs, :string, 5
 
       def self.description
         "Create a container, optionally pass options."
