@@ -203,15 +203,9 @@ func (c *LinuxContainer) ContainerPath() string {
 }
 
 func (c *LinuxContainer) Run() {
-	var i *IdleTimer
-	var d = c.IdleTimeout
-
-	// Use ridiculous idle timeout when it is invalid
-	if d <= 0 {
-		d = 7 * 24 * time.Hour
-	}
-
-	i = NewIdleTimer(c.IdleTimeout)
+	i := NewIdleTimer(0)
+	i.Start()
+	i.D <- c.IdleTimeout
 	defer i.Stop()
 
 	// Request channel
@@ -231,6 +225,9 @@ func (c *LinuxContainer) Run() {
 			}()
 
 			c.runRequest(r)
+
+			// Overwrite idle timeout
+			i.D <- c.IdleTimeout
 		}
 	}
 
