@@ -17,17 +17,15 @@ func NewIdleTimer(d time.Duration) *IdleTimer {
 	x := &IdleTimer{
 		C: make(chan bool),
 		m: make(chan int),
-		D: make(chan time.Duration),
+		D: make(chan time.Duration, 1),
 	}
-
-	go x.loop()
 
 	x.D <- d
 
 	return x
 }
 
-func (x *IdleTimer) loop() {
+func (x *IdleTimer) run() {
 	var C chan bool
 	var m chan int = x.m
 	var d time.Duration
@@ -57,6 +55,10 @@ func (x *IdleTimer) loop() {
 	x.Stop()
 
 	close(x.C)
+}
+
+func (x *IdleTimer) Start() {
+	go x.run()
 }
 
 func (x *IdleTimer) drain() {

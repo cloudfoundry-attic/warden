@@ -13,6 +13,7 @@ var _ = Suite(&IdleTimerSuite{})
 
 func (s *IdleTimerSuite) SetUpTest(c *C) {
 	s.IdleTimer = NewIdleTimer(5 * time.Millisecond)
+	s.IdleTimer.Start()
 }
 
 func (s *IdleTimerSuite) TearDownTest(c *C) {
