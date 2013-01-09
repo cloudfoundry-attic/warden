@@ -153,6 +153,7 @@ func (s *Server) Setup() {
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CONTAINER_ROOTFS_PATH=%s", s.c.Server.ContainerRootfsPath))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CONTAINER_DEPOT_PATH=%s", s.c.Server.ContainerDepotPath))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CONTAINER_DEPOT_MOUNT_POINT_PATH=%s", FindMountPoint(s.c.Server.ContainerDepotPath)))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DISK_QUOTA_ENABLED=%t", s.c.Server.Quota.DiskQuotaEnabled))
 
 	err := runCommand(cmd)
 	if err != nil {
