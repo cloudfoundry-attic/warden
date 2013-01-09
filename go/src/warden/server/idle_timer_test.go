@@ -30,6 +30,19 @@ func (s *IdleTimerSuite) TestFire(c *C) {
 	c.Check(b.Sub(a) > 5*time.Millisecond, Equals, true)
 }
 
+func (s *IdleTimerSuite) TestFireWithNewTimeout(c *C) {
+	var a, b time.Time
+
+	s.D <- 10 * time.Millisecond
+
+	a = time.Now()
+	<-s.C
+	b = time.Now()
+
+	// Check that it took at least 10ms for the timer to fire
+	c.Check(b.Sub(a) > 10*time.Millisecond, Equals, true)
+}
+
 func (s *IdleTimerSuite) TestNoFire(c *C) {
 	var ok = false
 

@@ -10,17 +10,19 @@ type IdleTimer struct {
 
 	C chan bool
 	m chan int
-	d time.Duration
+	D chan time.Duration
 }
 
 func NewIdleTimer(d time.Duration) *IdleTimer {
 	x := &IdleTimer{
 		C: make(chan bool),
 		m: make(chan int),
-		d: d,
+		D: make(chan time.Duration),
 	}
 
 	go x.loop()
+
+	x.D <- d
 
 	return x
 }
@@ -28,16 +30,18 @@ func NewIdleTimer(d time.Duration) *IdleTimer {
 func (x *IdleTimer) loop() {
 	var C chan bool
 	var m chan int = x.m
+	var d time.Duration
 	var i, y int
 
 	for ok := true; ok; {
 		var z <-chan time.Time
 
-		if y == 0 {
-			z = time.After(x.d)
+		if y == 0 && d > 0 {
+			z = time.After(d)
 		}
 
 		select {
+		case d = <-x.D: // New timeout
 		case i, ok = <-m: // Ref/UnRef
 			y += i
 			C = nil
