@@ -20,17 +20,14 @@ func (s *IdleTimerSuite) TearDownTest(c *C) {
 }
 
 func (s *IdleTimerSuite) TestFire(c *C) {
-	var ok = false
+	var a, b time.Time
 
-	// Wait until the idle timer should be ready to fire
-	time.Sleep(10 * time.Millisecond)
+	a = time.Now()
+	<-s.C
+	b = time.Now()
 
-	select {
-	case _, ok = <-s.C:
-	default:
-	}
-
-	c.Check(ok, Equals, true)
+	// Check that it took at least 5ms for the timer to fire
+	c.Check(b.Sub(a) > 5*time.Millisecond, Equals, true)
 }
 
 func (s *IdleTimerSuite) TestNoFire(c *C) {
@@ -68,13 +65,12 @@ func (s *IdleTimerSuite) TestRefUnref(c *C) {
 
 	s.Unref()
 
-	// Wait until the idle timer should be ready to fire
-	time.Sleep(10 * time.Millisecond)
+	var a, b time.Time
 
-	select {
-	case _, ok = <-s.C:
-	default:
-	}
+	a = time.Now()
+	<-s.C
+	b = time.Now()
 
-	c.Check(ok, Equals, true)
+	// Check that it took at least 5ms for the timer to fire
+	c.Check(b.Sub(a) > 5*time.Millisecond, Equals, true)
 }
