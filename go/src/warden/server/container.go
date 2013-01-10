@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	steno "github.com/cloudfoundry/gosteno"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -48,6 +48,8 @@ type LinuxContainer struct {
 	UserId  *pool.UserId
 
 	IdleTimeout time.Duration
+
+	steno.Logger
 }
 
 func (c *LinuxContainer) GetState() State {
@@ -78,6 +80,10 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 
 	// Initialize idle timeout
 	c.IdleTimeout = time.Duration(c.c.Server.ContainerGraceTime) * time.Second
+
+	// Setup container-specific logger
+	l := steno.NewLogger("container")
+	c.Logger = steno.NewTaggedLogger(l, map[string]string{"id": c.Id})
 
 	return c
 }
@@ -148,6 +154,7 @@ func (c *LinuxContainer) snapshotPath() string {
 func (c *LinuxContainer) markDirty() error {
 	err := os.Remove(c.snapshotPath())
 	if err != nil {
+		c.Warnf("Unable to remove snapshot: %s", err)
 		return err
 	}
 
@@ -161,19 +168,25 @@ func (c *LinuxContainer) markClean() error {
 	x := path.Join(c.ContainerPath(), "tmp")
 	y, err := ioutil.TempFile(x, "snapshot")
 	if err != nil {
+		c.Warnf("Unable to create snapshot file: %s", err)
 		return err
 	}
+
+	// The tempfile must be closed whatever happens
+	defer y.Close()
 
 	z := bufio.NewWriter(y)
 
 	e := json.NewEncoder(z)
 	err = e.Encode(c)
 	if err != nil {
+		c.Warnf("Unable to encode snapshot: %s", err)
 		return err
 	}
 
 	err = z.Flush()
 	if err != nil {
+		c.Warnf("Unable to flush snapshot: %s", err)
 		return err
 	}
 
@@ -183,6 +196,7 @@ func (c *LinuxContainer) markClean() error {
 	// It is not written in place because that cannot be done atomically.
 	err = os.Rename(y.Name(), c.snapshotPath())
 	if err != nil {
+		c.Warnf("Unable to rename snapshot in place: %s", err)
 		return err
 	}
 
@@ -235,8 +249,7 @@ func (c *LinuxContainer) Run() {
 
 	err := c.doDestroy()
 	if err != nil {
-		// Warnf
-		log.Printf("Error destroying container: %s\n", err)
+		c.Warnf("Error destroying container: %s", err)
 	}
 }
 
@@ -262,7 +275,7 @@ func (c *LinuxContainer) runRequest(r *Request) {
 
 	t2 := time.Now()
 
-	log.Printf("took: %.6fs\n", t2.Sub(t1).Seconds())
+	c.Debugf("took: %.6fs", t2.Sub(t1).Seconds())
 }
 
 func (c *LinuxContainer) writeInvalidState(r *Request) {
@@ -315,17 +328,6 @@ func (c *LinuxContainer) runDestroyed(r *Request) {
 	}
 }
 
-func runCommand(cmd *exec.Cmd) error {
-	log.Printf("Run: %#v\n", cmd.Args)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Error running %s: %s\n", cmd.Args[0], err)
-		log.Printf("Output: %s\n", out)
-	}
-
-	return err
-}
-
 func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	var cmd *exec.Cmd
 	var err error
@@ -340,6 +342,9 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	if h := req.GetHandle(); h != "" {
 		c.Handle = h
 	}
+
+	// Add handle to logger
+	c.Logger = steno.NewTaggedLogger(c.Logger, map[string]string{"handle": c.Handle})
 
 	// Override idle timeout if specified
 	if y := req.GraceTime; y != nil {
