@@ -31,9 +31,6 @@ const (
 	StateDestroyed = State("destroyed")
 )
 
-type Job struct {
-}
-
 type LinuxContainer struct {
 	c *config.Config
 	r chan chan *Request
