@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	steno "github.com/cloudfoundry/gosteno"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"time"
 	"warden/protocol"
 	"warden/server/config"
@@ -47,6 +49,9 @@ type LinuxContainer struct {
 	IdleTimeout time.Duration
 
 	steno.Logger
+
+	JobId int
+	Jobs  map[int]*Job
 }
 
 func (c *LinuxContainer) GetState() State {
@@ -302,6 +307,14 @@ func (c *LinuxContainer) runActive(r *Request) {
 		c.markDirty()
 		c.DoDestroy(r, req)
 
+	case *protocol.SpawnRequest:
+		c.markDirty()
+		c.DoSpawn(r, req)
+		c.markClean()
+
+	case *protocol.LinkRequest:
+		c.DoLink(r, req)
+
 	default:
 		c.writeInvalidState(r)
 	}
@@ -454,4 +467,351 @@ func (c *LinuxContainer) DoDestroy(x *Request, req *protocol.DestroyRequest) {
 
 	res := &protocol.DestroyResponse{}
 	x.WriteResponse(res)
+}
+
+func (c *LinuxContainer) spawn(a []string, e []string, r io.Reader) (int, error) {
+	c.JobId++
+	i := c.JobId
+
+	w := path.Join(c.ContainerPath(), "jobs", fmt.Sprintf("%d", i))
+	err := os.MkdirAll(w, 0700)
+	if err != nil {
+		c.Warnf("os.MkdirAll: %s", err)
+		return -1, err
+	}
+
+	j := &Job{
+		SpawnerBin: path.Join(c.ContainerPath(), "bin", "iomux-spawn"),
+		LinkerBin:  path.Join(c.ContainerPath(), "bin", "iomux-link"),
+		WorkDir:    w,
+
+		Args:  a,
+		Env:   e,
+		Stdin: r,
+	}
+
+	c.Debugf("Spawn: %#v", *j)
+
+	j.Spawn()
+
+	if c.Jobs == nil {
+		c.Jobs = make(map[int]*Job)
+	}
+
+	c.Jobs[i] = j
+
+	return i, nil
+}
+
+type jobCreatingRequest interface {
+	resourceLimitingRequest
+	GetPrivileged() bool
+	GetScript() string
+}
+
+func (c *LinuxContainer) createJob(x jobCreatingRequest) (int, error) {
+	var a []string
+	var e []string
+	var r io.Reader
+
+	a = append(a, path.Join(c.ContainerPath(), "bin", "wsh"))
+
+	a = append(a, "--socket", path.Join(c.ContainerPath(), "run", "wshd.sock"))
+
+	user := "vcap"
+	if x.GetPrivileged() {
+		user = "root"
+	}
+
+	a = append(a, "--user", user)
+
+	a = append(a, "/bin/bash")
+
+	e = formatResourceLimits(*c.c, x)
+
+	r = strings.NewReader(x.GetScript())
+
+	return c.spawn(a, e, r)
+}
+
+func (c *LinuxContainer) DoSpawn(x *Request, req *protocol.SpawnRequest) {
+	i, err := c.createJob(req)
+	if err != nil {
+		y := &protocol.ErrorResponse{}
+		y.Message = new(string)
+		*y.Message = err.Error()
+		x.WriteResponse(y)
+	} else {
+		y := &protocol.SpawnResponse{}
+		y.JobId = new(uint32)
+		*y.JobId = uint32(i)
+		x.WriteResponse(y)
+	}
+}
+
+func (c *LinuxContainer) doLink(x *Request, j *Job) {
+	cstdout := make(chan []byte)
+	cstderr := make(chan []byte)
+	cstatus := make(chan int)
+
+	rout, wout := io.Pipe()
+	rerr, werr := io.Pipe()
+
+	// Stdout
+	go func() {
+		b, err := ioutil.ReadAll(rout)
+		if err != nil {
+			panic(err)
+		}
+
+		cstdout <- b
+	}()
+
+	// Stderr
+	go func() {
+		b, err := ioutil.ReadAll(rerr)
+		if err != nil {
+			panic(err)
+		}
+
+		cstderr <- b
+	}()
+
+	// Exit status
+	go func() {
+		cstatus <- j.Link()
+	}()
+
+	j.Stdout.Add(wout)
+	j.Stderr.Add(werr)
+
+	stdout := string(<-cstdout)
+	stderr := string(<-cstderr)
+	status := uint32(<-cstatus)
+
+	y := &protocol.LinkResponse{}
+	y.ExitStatus = &status
+	y.Stdout = &stdout
+	y.Stderr = &stderr
+	x.WriteResponse(y)
+}
+
+func (c *LinuxContainer) DoLink(x *Request, req *protocol.LinkRequest) {
+	i := int(req.GetJobId())
+	j, ok := c.Jobs[i]
+	if !ok {
+		y := &protocol.ErrorResponse{}
+		y.Message = new(string)
+		*y.Message = "No such job"
+		x.WriteResponse(y)
+		return
+	}
+
+	x.Hijack()
+
+	go c.doLink(x, j)
+}
+
+type resourceLimitingRequest interface {
+	GetRlimits() *protocol.ResourceLimits
+}
+
+type resourceLimits struct {
+	As         *int64
+	Core       *int64
+	Cpu        *int64
+	Data       *int64
+	Fsize      *int64
+	Locks      *int64
+	Memlock    *int64
+	Msgqueue   *int64
+	Nice       *int64
+	Nofile     *int64
+	Nproc      *int64
+	Rss        *int64
+	Rtprio     *int64
+	Sigpending *int64
+	Stack      *int64
+}
+
+func formatResourceLimits(c config.Config, r resourceLimitingRequest) []string {
+	z := resourceLimits{}
+
+	// Initialize defaults
+	x := c.Server.ContainerRlimits
+	if x.As != 0 {
+		z.As = new(int64)
+		*z.As = x.As
+	}
+	if x.Core != 0 {
+		z.Core = new(int64)
+		*z.Core = x.Core
+	}
+	if x.Cpu != 0 {
+		z.Cpu = new(int64)
+		*z.Cpu = x.Cpu
+	}
+	if x.Data != 0 {
+		z.Data = new(int64)
+		*z.Data = x.Data
+	}
+	if x.Fsize != 0 {
+		z.Fsize = new(int64)
+		*z.Fsize = x.Fsize
+	}
+	if x.Locks != 0 {
+		z.Locks = new(int64)
+		*z.Locks = x.Locks
+	}
+	if x.Memlock != 0 {
+		z.Memlock = new(int64)
+		*z.Memlock = x.Memlock
+	}
+	if x.Msgqueue != 0 {
+		z.Msgqueue = new(int64)
+		*z.Msgqueue = x.Msgqueue
+	}
+	if x.Nice != 0 {
+		z.Nice = new(int64)
+		*z.Nice = x.Nice
+	}
+	if x.Nofile != 0 {
+		z.Nofile = new(int64)
+		*z.Nofile = x.Nofile
+	}
+	if x.Nproc != 0 {
+		z.Nproc = new(int64)
+		*z.Nproc = x.Nproc
+	}
+	if x.Rss != 0 {
+		z.Rss = new(int64)
+		*z.Rss = x.Rss
+	}
+	if x.Rtprio != 0 {
+		z.Rtprio = new(int64)
+		*z.Rtprio = x.Rtprio
+	}
+	if x.Sigpending != 0 {
+		z.Sigpending = new(int64)
+		*z.Sigpending = x.Sigpending
+	}
+	if x.Stack != 0 {
+		z.Stack = new(int64)
+		*z.Stack = x.Stack
+	}
+
+	// Override from request
+	y := r.GetRlimits()
+	if y != nil {
+		if y.As != nil {
+			z.As = new(int64)
+			*z.As = int64(*y.As)
+		}
+		if y.Core != nil {
+			z.Core = new(int64)
+			*z.Core = int64(*y.Core)
+		}
+		if y.Cpu != nil {
+			z.Cpu = new(int64)
+			*z.Cpu = int64(*y.Cpu)
+		}
+		if y.Data != nil {
+			z.Data = new(int64)
+			*z.Data = int64(*y.Data)
+		}
+		if y.Fsize != nil {
+			z.Fsize = new(int64)
+			*z.Fsize = int64(*y.Fsize)
+		}
+		if y.Locks != nil {
+			z.Locks = new(int64)
+			*z.Locks = int64(*y.Locks)
+		}
+		if y.Memlock != nil {
+			z.Memlock = new(int64)
+			*z.Memlock = int64(*y.Memlock)
+		}
+		if y.Msgqueue != nil {
+			z.Msgqueue = new(int64)
+			*z.Msgqueue = int64(*y.Msgqueue)
+		}
+		if y.Nice != nil {
+			z.Nice = new(int64)
+			*z.Nice = int64(*y.Nice)
+		}
+		if y.Nofile != nil {
+			z.Nofile = new(int64)
+			*z.Nofile = int64(*y.Nofile)
+		}
+		if y.Nproc != nil {
+			z.Nproc = new(int64)
+			*z.Nproc = int64(*y.Nproc)
+		}
+		if y.Rss != nil {
+			z.Rss = new(int64)
+			*z.Rss = int64(*y.Rss)
+		}
+		if y.Rtprio != nil {
+			z.Rtprio = new(int64)
+			*z.Rtprio = int64(*y.Rtprio)
+		}
+		if y.Sigpending != nil {
+			z.Sigpending = new(int64)
+			*z.Sigpending = int64(*y.Sigpending)
+		}
+		if y.Stack != nil {
+			z.Stack = new(int64)
+			*z.Stack = int64(*y.Stack)
+		}
+	}
+
+	// Build list of environment variables
+	a := make([]string, 0)
+	if z.As != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_AS=%d", *z.As))
+	}
+	if z.Core != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_CORE=%d", *z.Core))
+	}
+	if z.Cpu != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_CPU=%d", *z.Cpu))
+	}
+	if z.Data != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_DATA=%d", *z.Data))
+	}
+	if z.Fsize != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_FSIZE=%d", *z.Fsize))
+	}
+	if z.Locks != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_LOCKS=%d", *z.Locks))
+	}
+	if z.Memlock != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_MEMLOCK=%d", *z.Memlock))
+	}
+	if z.Msgqueue != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_MSGQUEUE=%d", *z.Msgqueue))
+	}
+	if z.Nice != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_NICE=%d", *z.Nice))
+	}
+	if z.Nofile != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_NOFILE=%d", *z.Nofile))
+	}
+	if z.Nproc != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_NPROC=%d", *z.Nproc))
+	}
+	if z.Rss != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_RSS=%d", *z.Rss))
+	}
+	if z.Rtprio != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_RTPRIO=%d", *z.Rtprio))
+	}
+	if z.Sigpending != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_SIGPENDING=%d", *z.Sigpending))
+	}
+	if z.Stack != nil {
+		a = append(a, fmt.Sprintf("RLIMIT_STACK=%d", *z.Stack))
+	}
+
+	return a
 }
