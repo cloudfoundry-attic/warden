@@ -37,6 +37,7 @@ type LinuxContainer struct {
 	c *config.Config
 	r chan chan *Request
 	s *Server
+	l steno.Logger
 
 	State  State
 	Id     string
@@ -47,8 +48,6 @@ type LinuxContainer struct {
 	UserId  *pool.UserId
 
 	IdleTimeout time.Duration
-
-	steno.Logger
 
 	// The map needs to use a string key because that cleanly serializes to JSON
 	JobId int
@@ -86,7 +85,7 @@ func NewContainer(s *Server, cfg *config.Config) *LinuxContainer {
 
 	// Setup container-specific logger
 	l := steno.NewLogger("container")
-	c.Logger = steno.NewTaggedLogger(l, map[string]string{"id": c.Id})
+	c.l = steno.NewTaggedLogger(l, map[string]string{"id": c.Id})
 
 	return c
 }
@@ -157,7 +156,7 @@ func (c *LinuxContainer) snapshotPath() string {
 func (c *LinuxContainer) markDirty() error {
 	err := os.Remove(c.snapshotPath())
 	if err != nil {
-		c.Warnf("Unable to remove snapshot: %s", err)
+		c.l.Warnf("Unable to remove snapshot: %s", err)
 		return err
 	}
 
@@ -250,7 +249,7 @@ func (c *LinuxContainer) Run() {
 
 	err := c.doDestroy()
 	if err != nil {
-		c.Warnf("Error destroying container: %s", err)
+		c.l.Warnf("Error destroying container: %s", err)
 	}
 }
 
@@ -276,7 +275,7 @@ func (c *LinuxContainer) runRequest(r *Request) {
 
 	t2 := time.Now()
 
-	c.Debugf("took: %.6fs", t2.Sub(t1).Seconds())
+	c.l.Debugf("took: %.6fs", t2.Sub(t1).Seconds())
 }
 
 func (c *LinuxContainer) writeInvalidState(r *Request) {
@@ -353,7 +352,7 @@ func (c *LinuxContainer) DoCreate(x *Request, req *protocol.CreateRequest) {
 	}
 
 	// Add handle to logger
-	c.Logger = steno.NewTaggedLogger(c.Logger, map[string]string{"handle": c.Handle})
+	c.l = steno.NewTaggedLogger(c.l, map[string]string{"handle": c.Handle})
 
 	// Override idle timeout if specified
 	if y := req.GraceTime; y != nil {
@@ -475,7 +474,7 @@ func (c *LinuxContainer) spawn(a []string, e []string, r io.Reader) (int, error)
 	w := path.Join(c.ContainerPath(), "jobs", fmt.Sprintf("%d", i))
 	err := os.MkdirAll(w, 0700)
 	if err != nil {
-		c.Warnf("os.MkdirAll: %s", err)
+		c.l.Warnf("os.MkdirAll: %s", err)
 		return -1, err
 	}
 
@@ -489,7 +488,7 @@ func (c *LinuxContainer) spawn(a []string, e []string, r io.Reader) (int, error)
 		Stdin: r,
 	}
 
-	c.Debugf("Spawn: %#v", *j)
+	c.l.Debugf("Spawn: %#v", *j)
 
 	j.Spawn()
 
