@@ -16,7 +16,7 @@ type Job struct {
 
 	Args  []string
 	Env   []string
-	Stdin io.Reader
+	Stdin io.Reader `json:"-"`
 
 	// Tailers for stdout/stderr
 	Stdout multiTailer `json:"-"`
