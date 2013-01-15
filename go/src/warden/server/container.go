@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -177,18 +176,16 @@ func (c *LinuxContainer) markClean() error {
 	// The tempfile must be closed whatever happens
 	defer y.Close()
 
-	z := bufio.NewWriter(y)
-
-	e := json.NewEncoder(z)
-	err = e.Encode(c)
+	b, err := json.Marshal(c)
 	if err != nil {
 		c.Warnf("Unable to encode snapshot: %s", err)
 		return err
 	}
 
-	err = z.Flush()
+	c.Debugf("Snapshot: %s", string(b))
+
+	_, err = y.Write(b)
 	if err != nil {
-		c.Warnf("Unable to flush snapshot: %s", err)
 		return err
 	}
 
