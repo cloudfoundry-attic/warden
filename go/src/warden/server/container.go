@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"warden/protocol"
 	"warden/server/config"
@@ -313,6 +314,9 @@ func (c *LinuxContainer) runActive(r *Request) {
 	case *protocol.LinkRequest:
 		c.DoLink(r, req)
 
+	case *protocol.StreamRequest:
+		c.DoStream(r, req)
+
 	default:
 		c.writeInvalidState(r)
 	}
@@ -547,6 +551,22 @@ func (c *LinuxContainer) DoSpawn(x *Request, req *protocol.SpawnRequest) {
 	}
 }
 
+type jobRequest interface {
+	GetJobId() uint32
+}
+
+var errNoSuchJob = errors.New("No such job")
+
+func (c *LinuxContainer) getJob(r jobRequest) (*Job, error) {
+	i := int(r.GetJobId())
+	j, ok := c.Jobs[strconv.Itoa(i)]
+	if !ok {
+		return nil, errNoSuchJob
+	}
+
+	return j, nil
+}
+
 func (c *LinuxContainer) doLink(x *Request, j *Job) {
 	cstdout := make(chan []byte)
 	cstderr := make(chan []byte)
@@ -597,19 +617,105 @@ func (c *LinuxContainer) doLink(x *Request, j *Job) {
 }
 
 func (c *LinuxContainer) DoLink(x *Request, req *protocol.LinkRequest) {
-	i := int(req.GetJobId())
-	j, ok := c.Jobs[strconv.Itoa(i)]
-	if !ok {
-		y := &protocol.ErrorResponse{}
-		y.Message = new(string)
-		*y.Message = "No such job"
-		x.WriteResponse(y)
+	j, err := c.getJob(req)
+	if err != nil {
+		x.WriteErrorResponse(err.Error())
 		return
 	}
 
 	x.Hijack()
 
 	go c.doLink(x, j)
+}
+
+func (c *LinuxContainer) doStream(x *Request, j *Job) {
+	type chunk struct {
+		n string
+		d string
+	}
+
+	d := make(chan chunk)
+	w := sync.WaitGroup{}
+
+	y := func(r io.Reader, x string) {
+		var b [4096]byte
+		var b_ = b[0:]
+
+		for {
+			n, err := r.Read(b_)
+			if n > 0 {
+				d <- chunk{x, string(b_[:n])}
+			}
+			if err != nil {
+				if err != io.EOF {
+					c.l.Warnf("Error reading from %s: %s", x, err)
+				}
+				break
+			}
+		}
+
+		w.Done()
+	}
+
+	w.Add(2)
+
+	go func() {
+		// Wait for both stdout and stderr
+		w.Wait()
+		// Close stream of chunks
+		close(d)
+	}()
+
+	rout, wout := io.Pipe()
+	rerr, werr := io.Pipe()
+
+	go y(rout, "stdout")
+	go y(rerr, "stderr")
+
+	j.Stdout.Add(wout)
+	j.Stderr.Add(werr)
+
+	s := make(chan int)
+
+	// Exit status
+	go func() {
+		s <- j.Link()
+	}()
+
+	// Stream chunks
+	for ok := true; ok; {
+		var c chunk
+
+		select {
+		case c, ok = <-d:
+			if ok {
+				r := &protocol.StreamResponse{}
+				r.Name = &c.n
+				r.Data = &c.d
+				x.WriteResponse(r)
+			}
+		}
+	}
+
+	t := uint32(<-s)
+
+	r := &protocol.StreamResponse{}
+	r.ExitStatus = &t
+	x.WriteResponse(r)
+
+	x.Done()
+}
+
+func (c *LinuxContainer) DoStream(x *Request, req *protocol.StreamRequest) {
+	j, err := c.getJob(req)
+	if err != nil {
+		x.WriteErrorResponse(err.Error())
+		return
+	}
+
+	x.Hijack()
+
+	go c.doStream(x, j)
 }
 
 type resourceLimitingRequest interface {
