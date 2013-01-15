@@ -81,10 +81,21 @@ var defaultUserConfig = userConfig{
 	PoolSize:     256,
 }
 
+type loggingConfig struct {
+	File   string "file"
+	Syslog string "syslog"
+	Level  string "level"
+}
+
+var defaultLoggingConfig = loggingConfig{
+	Level: "debug",
+}
+
 type Config struct {
 	Server  serverConfig  "server"
 	Network networkConfig "network"
 	User    userConfig    "user"
+	Logging loggingConfig "logging"
 
 	// Additional state
 	*pool.NetworkPool
@@ -97,6 +108,7 @@ func DefaultConfig() Config {
 		Server:  defaultServerConfig,
 		Network: defaultNetworkConfig,
 		User:    defaultUserConfig,
+		Logging: defaultLoggingConfig,
 	}
 
 	c.sanitize()
