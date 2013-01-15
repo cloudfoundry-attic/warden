@@ -18,6 +18,9 @@
   ssize_t nbytes_tot = 0;                                               \
   ssize_t nbytes_cur = 0;                                               \
   uint8_t done = 0;                                                     \
+  if (NULL != hup) {                                                    \
+    *(hup) = 0;                                                         \
+  }                                                                     \
                                                                         \
   while (!done) {                                                       \
     nbytes_cur = (func)((fd), (buf) + nbytes_tot, count - nbytes_tot);  \
