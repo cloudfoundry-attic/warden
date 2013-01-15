@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 	"warden/protocol"
@@ -49,8 +50,9 @@ type LinuxContainer struct {
 
 	steno.Logger
 
+	// The map needs to use a string key because that cleanly serializes to JSON
 	JobId int
-	Jobs  map[int]*Job
+	Jobs  map[string]*Job
 }
 
 func (c *LinuxContainer) GetState() State {
@@ -492,10 +494,10 @@ func (c *LinuxContainer) spawn(a []string, e []string, r io.Reader) (int, error)
 	j.Spawn()
 
 	if c.Jobs == nil {
-		c.Jobs = make(map[int]*Job)
+		c.Jobs = make(map[string]*Job)
 	}
 
-	c.Jobs[i] = j
+	c.Jobs[strconv.Itoa(i)] = j
 
 	return i, nil
 }
@@ -595,7 +597,7 @@ func (c *LinuxContainer) doLink(x *Request, j *Job) {
 
 func (c *LinuxContainer) DoLink(x *Request, req *protocol.LinkRequest) {
 	i := int(req.GetJobId())
-	j, ok := c.Jobs[i]
+	j, ok := c.Jobs[strconv.Itoa(i)]
 	if !ok {
 		y := &protocol.ErrorResponse{}
 		y.Message = new(string)
