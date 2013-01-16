@@ -134,7 +134,7 @@ module Warden
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
           c = new(snapshot)
-          c.acquire
+          c.restore
 
           c
         end
@@ -367,6 +367,23 @@ module Warden
         FileUtils.remove_file(dirty_snapshot_marker_path, true)
 
         nil
+      end
+
+      # Restore state from snapshot
+      def restore
+        acquire
+
+        if @resources.has_key?("ports")
+          self.class.port_pool.delete(*@resources["ports"])
+        end
+
+        if @resources.has_key?("uid")
+          self.class.uid_pool.delete(@resources["uid"])
+        end
+
+        if @resources.has_key?("network")
+          self.class.network_pool.delete(@resources["network"])
+        end
       end
 
       # Acquire resources required for every container instance.

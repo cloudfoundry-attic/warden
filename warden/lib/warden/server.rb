@@ -192,12 +192,6 @@ module Warden
         logger.info("Recovered container from #{path}")
         logger.debug("Container resources: #{c.resources}")
 
-        if c.resources.has_key?("ports")
-          container_klass.port_pool.delete(*c.resources["ports"])
-        end
-        container_klass.uid_pool.delete(c.resources["uid"])
-        container_klass.network_pool.delete(c.resources["network"])
-
         c.jobs.each do |job_id, job|
           max_job_id = job_id > max_job_id ? job_id : max_job_id
         end
