@@ -150,7 +150,7 @@ module Warden
 
       def initialize(snapshot = {}, jobs = {})
         snapshot = self.class.empty_snapshot.merge(snapshot)
-        @resources   = Hash.new { |h,k| raise WardenError.new("Unknown resource: #{k}") }
+        @resources   = {}
         @resources.update(snapshot["resources"])
         @acquired    = {}
         @connections = ::Set.new
