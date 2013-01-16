@@ -29,6 +29,7 @@ var messageToRequest = map[Message_Type]func() Request{
 }
 
 var messageToResponse = map[Message_Type]func() Response{
+	Message_Error:          func() Response { return &ErrorResponse{} },
 	Message_Create:         func() Response { return &CreateResponse{} },
 	Message_Stop:           func() Response { return &StopResponse{} },
 	Message_Destroy:        func() Response { return &DestroyResponse{} },
