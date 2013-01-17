@@ -67,6 +67,13 @@ module Warden
           response.burst = request.burst
         end
 
+        def _net_in(host_port, container_port)
+          sh File.join(container_path, "net.sh"), "in", :env => {
+            "HOST_PORT"      => host_port,
+            "CONTAINER_PORT" => container_port,
+          }
+        end
+
         def do_net_in(request, response)
           if request.host_port.nil?
             host_port = self.class.port_pool.acquire
@@ -82,10 +89,10 @@ module Warden
             container_port = request.container_port || host_port
           end
 
-          sh File.join(container_path, "net.sh"), "in", :env => {
-            "HOST_PORT"      => host_port,
-            "CONTAINER_PORT" => container_port,
-          }
+          _net_in(host_port, container_port)
+
+          @resources["net_in"] ||= []
+          @resources["net_in"] << [host_port, container_port]
 
           response.host_port      = host_port
           response.container_port = container_port
@@ -98,11 +105,22 @@ module Warden
           write_snapshot(:keep_alive => true)
         end
 
-        def do_net_out(request, response)
+        def _net_out(network, port)
           sh File.join(container_path, "net.sh"), "out", :env => {
-            "NETWORK" => request.network,
-            "PORT"    => request.port,
+            "NETWORK" => network,
+            "PORT"    => port,
           }
+        end
+
+        def do_net_out(request, response)
+          _net_out(request.network, request.port)
+
+          @resources["net_out"] ||= []
+          @resources["net_out"] << [request.network, request.port]
+        end
+
+        def after_net_out(request, response)
+          write_snapshot(:keep_alive => true)
         end
 
         def acquire(opts = {})
