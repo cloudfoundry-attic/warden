@@ -30,6 +30,26 @@ module Warden
           val * factor
         end
 
+        def restore
+          super
+
+          # Re-run container-specific networking setup to make sure the
+          # container-specific chains are in place
+          sh(File.join(container_path, "net.sh"), "setup")
+
+          if @resources.has_key?("net_in")
+            @resources["net_in"].each do |host_port, container_port|
+              _net_in(host_port, container_port)
+            end
+          end
+
+          if @resources.has_key?("net_out")
+            @resources["net_out"].each do |network, port|
+              _net_out(network, port)
+            end
+          end
+        end
+
         def do_info(request, response)
           super(request, response)
 

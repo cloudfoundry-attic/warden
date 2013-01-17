@@ -71,7 +71,7 @@ module Warden
         attr_accessor :uid_pool
 
         # Called before the server starts.
-        def setup(config, drained = false)
+        def setup(config)
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
 
@@ -330,26 +330,8 @@ module Warden
       def write_snapshot(opts = {})
         logger.info("Writing snapshot for container #{handle}")
 
-        FileUtils.touch(dirty_snapshot_marker_path)
-
         jobs_snapshot = {}
-
-        # The default setting is that snapsnotting a job will first terminate
-        # it. But this can be overridden by setting :keep_alive to true, in
-        # which case we only want to snapshot terminated jobs and leave running
-        # jobs alone, but still generate an empty snapshot for the running job
-        # so that we don't lose track of it upon restart of warden.
-        if opts[:keep_alive]
-          jobs.each do |id, job|
-            if job.terminated?
-              jobs_snapshot[id] = job.create_snapshot
-            else
-              jobs_snapshot[id] = job.create_empty_snapshot
-            end
-          end
-        else
-          jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
-        end
+        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
 
         snapshot = {
           "events"     => events.to_a,
@@ -360,11 +342,11 @@ module Warden
           "state"      => state,
         }
 
-        File.open(snapshot_path, "w+") do |f|
-          f.write(JSON.dump(snapshot))
-        end
+        file = Tempfile.new("snapshot", File.join(container_path, "tmp"))
+        file.write(JSON.dump(snapshot))
+        file.close
 
-        FileUtils.remove_file(dirty_snapshot_marker_path, true)
+        File.rename(file.path, snapshot_path)
 
         nil
       end
@@ -898,29 +880,20 @@ module Warden
           exit_status
         end
 
-        def create_empty_snapshot
-          return { "stdout" => "", "stderr" => "" }
-        end
-
-        # This is called during drain or after a job exits, so it is guaranteed
-        # that there are no connections linked to the job.
         def create_snapshot(opts = {})
+          s = {}
+
           if @status
-            return { "status" => @status }
+            s["status"] = @status
           end
 
-          # Tell the linker to exit in the next tick to avoid a race between
-          # yielding and signal delivery.
-          ::EM.next_tick do
-            begin
-              @child.kill("TERM")
-            rescue Errno::ESRCH
-            end
-          end
+          # Ignore stdout/stderr for snapshots
+          #
+          # There is no way we can be sure we can ever capture everything
+          # without writing both streams to a file. Therefore, we don't even
+          # make an effort in being able to restore stdout/stderr.
 
-          self.yield
-
-          { "stdout" => @child.stdout, "stderr" => @child.stderr }
+          s
         end
 
         protected
