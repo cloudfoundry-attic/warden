@@ -15,15 +15,31 @@ module Warden
       # after being released. This can be used to make sure the kernel has time
       # to clean up things such as lingering connections.
 
-      def initialize(start_address, count, options = {})
-        @start_address = Warden::Network::Address.new(start_address)
-        @netmask = Warden::Network::Netmask.new(255, 255, 255, 252)
-        @end_address = @start_address + (@netmask.size * (count - 1))
+      def initialize(network, options = {})
+        address = network[%r!^(.*)/!, 1]
+        netmask = network[%r!/(\d+)$!, 1]
+
+        if address.nil? || netmask.nil?
+          raise "Invalid address/netmask (require: 1.2.3.4/5)"
+        end
+
+        to_netmask = lambda do |size|
+          ~((2**(32-size))-1) & 0xffffffff
+        end
+
+        address = Warden::Network::Address.new(address)
+        netmask = Warden::Network::Netmask.new(to_netmask.call(netmask.to_i))
+        pooled_netmask = Warden::Network::Netmask.new(to_netmask.call(30))
+        count = netmask.size / pooled_netmask.size
+
+        @start_address = address.network(pooled_netmask)
+        @end_address = @start_address + (pooled_netmask.size * (count - 1))
+        @netmask = netmask
 
         options[:release_delay] ||= 5.0
 
         super(count, options) do |i|
-          @start_address + @netmask.size * i
+          @start_address + pooled_netmask.size * i
         end
       end
 

@@ -99,7 +99,7 @@ module Warden
 
       class << self
         def flag_regex
-          /--([^\s]+)/
+          /^--([^\s]+)/
         end
 
         def valid_flag?(flag_str)

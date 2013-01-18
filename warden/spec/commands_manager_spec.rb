@@ -266,6 +266,16 @@ describe Warden::CommandsManager do
         @request.should be_an_instance_of NestedTest
         @request.complex_field.field.should == "value"
       end
+
+      it "should not treat -- in the middle as a field" do
+        args = ["simple_test",
+                "--field", "ab --help"]
+
+        @request = @subject.deserialize(args)
+
+        @request.should be_an_instance_of SimpleTest
+        @request.field.should == "ab --help"
+      end
     end
 
     context "reject invalid commands and fields" do

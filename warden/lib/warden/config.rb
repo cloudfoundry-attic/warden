@@ -77,18 +77,22 @@ module Warden
 
     def self.network_defaults
       {
-        "pool_start_address" => "10.254.0.0",
-        "pool_size"          => 64,
-        "deny_networks"      => [],
-        "allow_networks"     => [],
+        "pool_network"   => "10.254.0.0/24",
+        "deny_networks"  => [],
+        "allow_networks" => [],
       }
     end
 
     def self.network_schema
       ::Membrane::SchemaParser.parse do
         {
-          "pool_start_address" => String,
-          "pool_size"          => Integer,
+          # Preferred way to specify networks to pool
+          optional("pool_network") => String,
+
+          # Present for Backwards compatibility
+          optional("pool_start_address") => String,
+          optional("pool_size")          => Integer,
+
           "deny_networks"      => [String],
           "allow_networks"     => [String],
         }
@@ -150,6 +154,17 @@ module Warden
 
       @network["deny_networks"]  = @network["deny_networks"].compact
       @network["allow_networks"] = @network["allow_networks"].compact
+
+      # Transform pool_start_address/pool_size into pool_network if needed
+      if @network.has_key?("pool_start_address") && @network.has_key?("pool_size")
+        pool_start_address = @network.delete("pool_start_address")
+        pool_size = @network.delete("pool_size").to_i
+
+        # Determine number of fixed bits in netmask
+        fixed_bits = Math.log2(pool_size).ceil + 2
+
+        @network["pool_network"] = "%s/%d" % [pool_start_address, 32-fixed_bits]
+      end
     end
 
     def rlimits
