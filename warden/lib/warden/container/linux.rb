@@ -42,6 +42,7 @@ module Warden
           if !drained
             options = {
               :env => {
+                "POOL_NETWORK" => config.network["pool_network"],
                 "ALLOW_NETWORKS" => allow_networks.join(" "),
                 "DENY_NETWORKS" => deny_networks.join(" "),
                 "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
