@@ -34,6 +34,7 @@ module Warden
 
         @start_address = address.network(pooled_netmask)
         @end_address = @start_address + (pooled_netmask.size * (count - 1))
+        @netmask = netmask
 
         options[:release_delay] ||= 5.0
 
