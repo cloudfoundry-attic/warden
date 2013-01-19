@@ -387,7 +387,7 @@ module Warden
         elsif opts[:network]
           # Translate to network address by network pool netmask
           container = Warden::Network::Address.new(opts[:network])
-          network = container.network(self.class.network_pool.netmask)
+          network = container.network(self.class.network_pool.pooled_netmask)
 
           unless self.class.network_pool.fetch(network)
             raise WardenError.new("Could not acquire network: #{network.to_human}")

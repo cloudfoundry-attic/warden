@@ -61,7 +61,7 @@ module Warden
           "id" => container_id,
           "network_host_ip" => host_ip.to_human,
           "network_container_ip" => container_ip.to_human,
-          "network_netmask" => self.class.network_pool.netmask.to_human,
+          "network_netmask" => self.class.network_pool.pooled_netmask.to_human,
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
         }
