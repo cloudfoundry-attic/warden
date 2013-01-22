@@ -249,6 +249,9 @@ module Warden
 
           # Let the world know Warden is ready for action.
           logger.info("Listening on #{unix_domain_path}, and ready for action.")
+
+          # Log configuration
+          logger.info("Configuration", config.to_hash)
         end
 
         f.resume

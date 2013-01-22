@@ -198,5 +198,15 @@ module Warden
     def rlimits
       @server["container_rlimits"] || {}
     end
+
+    def to_hash
+      {
+        "server"  => server,
+        "logging" => logging,
+        "network" => network,
+        "port"    => port,
+        "user"    => user,
+      }
+    end
   end
 end
