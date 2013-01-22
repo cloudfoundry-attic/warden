@@ -80,8 +80,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   after do
-    `kill -9 -#{@pid}`
-    Process.waitpid(@pid)
+    stop_warden
 
     # Destroy all artifacts
     Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
@@ -138,7 +137,23 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-  let(:client) { create_client }
+  def stop_warden
+    `kill -USR2 -#{@pid}`
+    Process.waitpid(@pid)
+  end
+
+  def restart_warden
+    stop_warden
+    start_warden
+  end
+
+  def client
+    @client ||= create_client
+  end
+
+  def reset_client
+    @client = nil
+  end
 
   it_should_behave_like "lifecycle"
   it_should_behave_like "running commands"
@@ -164,6 +179,14 @@ describe "linux", :platform => "linux", :needs_root => true do
       response
     end
 
+    def trigger_oom
+      # Allocate 20MB, this should OOM and cause the container to be torn down
+      run "perl -e 'for ($i = 0; $i < 20; $i++ ) { $foo .= \"A\" x (1024 * 1024); }'"
+
+      # Wait a bit for the warden to be notified of the OOM
+      sleep 0.01
+    end
+
     before do
       @handle = client.create.handle
     end
@@ -182,19 +205,30 @@ describe "linux", :platform => "linux", :needs_root => true do
       raw_lim.to_i.should == hund_mb
     end
 
-    it "stops containers when an oom event occurs" do
-      usage = File.read(File.join("/sys/fs/cgroup/memory", "instance-#{@handle}", "memory.usage_in_bytes"))
-      limit_memory(:limit_in_bytes => usage.to_i + 10 * 1024 * 1024)
+    it "should stop container when an oom event occurs" do
+      limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
 
-      # Allocate 20MB, this should OOM and cause the container to be torn down
-      run "perl -e 'for ($i = 0; $i < 20; $i++ ) { $foo .= \"A\" x (1024 * 1024); }'"
-
-      # Wait a bit for the warden to be notified of the OOM
-      sleep 0.01
+      trigger_oom
 
       response = client.info(:handle => handle)
       response.state.should == "stopped"
       response.events.should include("oom")
+    end
+
+    context "after restart" do
+      before do
+        limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+        restart_warden
+        reset_client
+      end
+
+      it "should stop container when an oom event occurs" do
+        trigger_oom
+
+        response = client.info(:handle => handle)
+        response.state.should == "stopped"
+        response.events.should include("oom")
+      end
     end
   end
 
