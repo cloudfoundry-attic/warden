@@ -121,10 +121,6 @@ module Warden
           raise
         end
 
-        def after_net_in(request, response)
-          write_snapshot(:keep_alive => true)
-        end
-
         def _net_out(network, port)
           sh File.join(container_path, "net.sh"), "out", :env => {
             "NETWORK" => network,
@@ -137,10 +133,6 @@ module Warden
 
           @resources["net_out"] ||= []
           @resources["net_out"] << [request.network, request.port]
-        end
-
-        def after_net_out(request, response)
-          write_snapshot(:keep_alive => true)
         end
 
         def acquire(opts = {})

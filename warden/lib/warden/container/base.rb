@@ -6,6 +6,7 @@ require "warden/event_emitter"
 require "warden/util"
 
 require "eventmachine"
+require "fileutils"
 require "json"
 require "set"
 require "steno"
@@ -327,6 +328,10 @@ module Warden
         end
       end
 
+      def delete_snapshot
+        FileUtils.rm_f(snapshot_path)
+      end
+
       def write_snapshot(opts = {})
         logger.info("Writing snapshot for container #{handle}")
 
@@ -480,25 +485,34 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
-      def before_stop
+      def around_stop
         check_state_in(State::Active)
 
         self.state = State::Stopped
+
+        begin
+          delete_snapshot
+
+          yield
+
+          # Wait for all jobs to terminate (postcondition of stop)
+          jobs.each_value(&:yield)
+        ensure
+          # Arguably the snapshot shouldn't be persisted when stop fails, but
+          # failure of any essential command needs to be thought about more
+          # before making an impromptu decision here.
+          write_snapshot
+        end
       end
 
       def do_stop(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def after_stop(request, response)
-        # Wait for all jobs to terminate before writing a snapshot
-        jobs.each_value(&:yield)
-
-        write_snapshot
-      end
-
       def before_destroy
         check_state_in(State::Active, State::Stopped)
+
+        delete_snapshot
 
         # Clients should no longer be able to look this container up
         self.class.registry.delete(handle)
@@ -522,8 +536,15 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
-      def before_spawn
+      def around_spawn
         check_state_in(State::Active)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_spawn(request, response)
@@ -531,10 +552,6 @@ module Warden
         jobs[job.job_id] = job
 
         response.job_id = job.job_id
-      end
-
-      def after_spawn(request, response)
-        write_snapshot(:keep_alive => true)
       end
 
       def do_link(request, response)
@@ -583,16 +600,30 @@ module Warden
         response.stderr = link_response.stderr
       end
 
-      def before_net_in
+      def around_net_in
         check_state_in(State::Active)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_net_in(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def before_net_out
+      def around_net_out
         check_state_in(State::Active)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_net_out(request, response)
@@ -615,24 +646,45 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
-      def before_limit_memory
+      def around_limit_memory
         check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_limit_memory(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def before_limit_disk
+      def around_limit_disk
         check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_limit_disk(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def before_limit_bandwidth
+      def around_limit_bandwidth
         check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_limit_bandwidth(request, response)
