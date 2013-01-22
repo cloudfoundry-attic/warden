@@ -115,10 +115,6 @@ module Warden
           File.join(container_path, "snapshot.json")
         end
 
-        def dirty_snapshot_marker_path(container_path)
-          File.join(container_path, "snapshot_dirty")
-        end
-
         def empty_snapshot
           { "events"     => [],
             "grace_time" => Server.container_grace_time,
@@ -130,7 +126,6 @@ module Warden
         end
 
         def from_snapshot(container_path)
-          return nil if File.exists?(dirty_snapshot_marker_path(container_path))
           snapshot = JSON.parse(File.read(snapshot_path(container_path)))
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
@@ -285,10 +280,6 @@ module Warden
 
       def snapshot_path
         self.class.snapshot_path(container_path)
-      end
-
-      def dirty_snapshot_marker_path
-        self.class.dirty_snapshot_marker_path(container_path)
       end
 
       def dispatch(request, &blk)
