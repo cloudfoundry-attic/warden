@@ -662,5 +662,26 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.stderr.chomp.should == ""
     end
   end
-end
 
+  describe "recovery" do
+    it "should destroy containers without snapshot" do
+      h1 = client.create.handle
+      h2 = client.create.handle
+
+      stop_warden(:KILL)
+
+      # Remove snapshot for h1
+      snapshot_path = File.join(container_depot_path, h1, "snapshot.json")
+      File.exist?(snapshot_path).should be_true
+      File.delete(snapshot_path)
+
+      start_warden
+
+      reset_client
+
+      containers = client.list.handles
+      containers.should_not include(h1)
+      containers.should include(h2)
+    end
+  end
+end

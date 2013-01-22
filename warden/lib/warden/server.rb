@@ -187,12 +187,17 @@ module Warden
       max_job_id = 0
 
       Dir.glob(File.join(container_klass.container_depot_path, "*")) do |path|
-        next unless File.exist?(container_klass.snapshot_path(path))
+        if !File.exist?(container_klass.snapshot_path(path))
+          logger.info("Destroying container without snapshot at: #{path}")
+          system(File.join(container_klass.root_path, "destroy.sh"), path)
+          next
+        end
+
+        logger.info("Recovering container from: #{path}")
 
         c = container_klass.from_snapshot(path)
-        next unless c
 
-        logger.info("Recovered container from #{path}")
+        logger.debug("Recovered container from: #{path}")
         logger.debug("Container resources: #{c.resources}")
 
         c.jobs.each do |job_id, job|
