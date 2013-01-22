@@ -117,6 +117,9 @@ describe "linux", :platform => "linux", :needs_root => true do
           "pool_size" => 64,
           "allow_networks" => ["4.2.2.3/32"],
           "deny_networks" => ["4.2.2.0/24"] },
+        "port" => {
+          "pool_start_port" => 64000,
+          "pool_size" => 1000 },
         "logging" => {
           "level" => "debug",
           "file" => File.join(work_path, "warden.log") }

@@ -156,8 +156,12 @@ module Warden
     def self.setup_network
       network_pool = Pool::Network.new(config.network["pool_network"])
       container_klass.network_pool = network_pool
+    end
 
-      port_pool = Pool::Port.new
+    def self.setup_port
+      port_start_port = config.port["pool_start_port"]
+      port_size = config.port["pool_size"]
+      port_pool = Pool::Port.new(port_start_port, port_size)
       container_klass.port_pool = port_pool
     end
 
@@ -174,6 +178,7 @@ module Warden
       setup_server
       setup_logging
       setup_network
+      setup_port
       setup_user
     end
 

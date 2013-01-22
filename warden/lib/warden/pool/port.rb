@@ -16,16 +16,7 @@ module Warden
         end
       end
 
-      def self.ip_local_port_range
-        File.read("/proc/sys/net/ipv4/ip_local_port_range").split.map(&:to_i)
-      end
-
-      def initialize(options = {})
-        ephemeral_start, ephemeral_stop = self.class.ip_local_port_range
-        start = ephemeral_stop + 1
-        stop = 65000 + 1
-        count = stop - start
-
+      def initialize(start, count, options = {})
         # Hardcode the minimum number of ports to 1000
         if count < 1000
           raise WardenError.new \
@@ -40,7 +31,7 @@ module Warden
         # ephemeral port range and will therefore not conflict with ports
         # used by locally originated connection. It is safe to map these
         # ports to containers.
-        super(count) do |i|
+        super(count, options) do |i|
           start + i
         end
       end
