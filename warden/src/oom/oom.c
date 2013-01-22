@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/eventfd.h>
 #include <sys/param.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -73,6 +75,13 @@ int main(int argc, char **argv) {
 
   if (argc != 2) {
     fprintf(stderr, "Usage: %s <path to cgroup>\n", argv[0]);
+    return 1;
+  }
+
+  /* Die when parent dies */
+  rv = prctl(PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0);
+  if (rv == -1) {
+    perror("prctl");
     return 1;
   }
 
