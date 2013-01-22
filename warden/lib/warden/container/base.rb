@@ -445,9 +445,6 @@ module Warden
           if request.grace_time
             self.grace_time = request.grace_time
           end
-
-          self.state = State::Active
-
         rescue
           release
           raise
@@ -455,6 +452,8 @@ module Warden
       end
 
       def after_create(request, response)
+        self.state = State::Active
+
         # Clients should be able to look this container up
         self.class.registry[handle] = self
 
@@ -510,7 +509,7 @@ module Warden
       end
 
       def before_destroy
-        check_state_in(State::Active, State::Stopped)
+        check_state_in(State::Born, State::Active, State::Stopped)
 
         delete_snapshot
 
