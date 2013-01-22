@@ -137,13 +137,13 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-  def stop_warden
-    `kill -USR2 -#{@pid}`
+  def stop_warden(signal = "USR2")
+    `kill -#{signal} -#{@pid}`
     Process.waitpid(@pid)
   end
 
-  def restart_warden
-    stop_warden
+  def restart_warden(signal = "USR2")
+    stop_warden(signal)
     start_warden
   end
 
@@ -205,14 +205,22 @@ describe "linux", :platform => "linux", :needs_root => true do
       raw_lim.to_i.should == hund_mb
     end
 
-    it "should stop container when an oom event occurs" do
-      limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+    def self.it_should_stop_container_when_an_oom_event_occurs
+      it "should stop container when an oom event occurs" do
+        trigger_oom
 
-      trigger_oom
+        response = client.info(:handle => handle)
+        response.state.should == "stopped"
+        response.events.should include("oom")
+      end
+    end
 
-      response = client.info(:handle => handle)
-      response.state.should == "stopped"
-      response.events.should include("oom")
+    context "before restart" do
+      before do
+        limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+      end
+
+      it_should_stop_container_when_an_oom_event_occurs
     end
 
     context "after restart" do
@@ -222,13 +230,17 @@ describe "linux", :platform => "linux", :needs_root => true do
         reset_client
       end
 
-      it "should stop container when an oom event occurs" do
-        trigger_oom
+      it_should_stop_container_when_an_oom_event_occurs
+    end
 
-        response = client.info(:handle => handle)
-        response.state.should == "stopped"
-        response.events.should include("oom")
+    context "after kill" do
+      before do
+        limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+        restart_warden(:KILL)
+        reset_client
       end
+
+      it_should_stop_container_when_an_oom_event_occurs
     end
   end
 
