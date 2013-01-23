@@ -29,7 +29,7 @@ module Warden
           elsif v.kind_of?(Octets)
             @v = v.v
           elsif v.kind_of?(String)
-            if m = v.match(/[0-9a-f]{8}/)
+            if v.match(/[0-9a-f]{8}/)
               @v = v.to_i(16)
             else
               @v = to_integer(v.split("."))
