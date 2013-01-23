@@ -664,24 +664,37 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   describe "recovery" do
-    it "should destroy containers without snapshot" do
-      h1 = client.create.handle
-      h2 = client.create.handle
+    before do
+      @h1 = client.create.handle
+      @h2 = client.create.handle
 
       stop_warden(:KILL)
+    end
 
-      # Remove snapshot for h1
-      snapshot_path = File.join(container_depot_path, h1, "snapshot.json")
-      File.exist?(snapshot_path).should be_true
-      File.delete(snapshot_path)
-
+    after do
       start_warden
 
       reset_client
 
       containers = client.list.handles
-      containers.should_not include(h1)
-      containers.should include(h2)
+      containers.should_not include(@h1)
+      containers.should include(@h2)
+
+      # Test that the path for h1 is gone
+      h1_path = File.join(container_depot_path, @h1)
+      File.directory?(h1_path).should be_false
+    end
+
+    it "should destroy containers without snapshot" do
+      snapshot_path = File.join(container_depot_path, @h1, "snapshot.json")
+      File.exist?(snapshot_path).should be_true
+      File.delete(snapshot_path)
+    end
+
+    it "should destroy containers that have stopped" do
+      wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
+      File.exist?(wshd_pid_path).should be_true
+      Process.kill("KILL", File.read(wshd_pid_path).to_i)
     end
   end
 end

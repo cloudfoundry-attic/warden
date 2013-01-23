@@ -54,6 +54,24 @@ module Warden
 
           sh File.join(root_path, "setup.sh"), options
         end
+
+        def alive?(path)
+          socket_path = File.join(path, "run", "wshd.sock")
+
+          begin
+            socket = UNIXSocket.new(socket_path)
+          rescue Errno::ECONNREFUSED
+            # wshd is not running
+            return false
+          rescue Errno::ENOENT
+            # unix socket is missing
+            return false
+          else
+            socket.close
+          end
+
+          true
+        end
       end
 
       def env

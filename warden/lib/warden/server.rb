@@ -193,7 +193,11 @@ module Warden
           next
         end
 
-        logger.info("Recovering container from: #{path}")
+        if !container_klass.alive?(path)
+          logger.info("Destroying dead container at: #{path}")
+          system(File.join(container_klass.root_path, "destroy.sh"), path)
+          next
+        end
 
         c = container_klass.from_snapshot(path)
 

@@ -125,6 +125,10 @@ module Warden
           }
         end
 
+        def alive?(_)
+          true
+        end
+
         def from_snapshot(container_path)
           snapshot = JSON.parse(File.read(snapshot_path(container_path)))
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
