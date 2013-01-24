@@ -46,7 +46,7 @@ for i in $(seq $WAIT); do
   fi
 
   # Send SIGTERM
-  kill -TERM $p || true
+  kill -TERM -$p || true
 
   # When none of the pids is a process `ps` exits with non-zero status
   if ! ps -o pid= -p $p > /dev/null
@@ -62,5 +62,5 @@ p=$(pids)
 # Send SIGKILL
 if [ -n "$p" ]
 then
-  kill -KILL $p || true
+  kill -KILL -$p || true
 fi

@@ -13,4 +13,4 @@ touch pids/$$
 cd root
 
 # Replace process with bash interpreting stdin
-exec env -i bash
+exec setsid env -i bash
