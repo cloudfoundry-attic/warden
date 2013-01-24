@@ -48,7 +48,7 @@ shared_examples "lifecycle" do
 
       response = client.spawn \
         :handle => handle,
-        :script => "set -e; trap 'exit 37' SIGTERM; echo x; sleep 5s;"
+        :script => "set -e; trap 'exit 37' SIGTERM; echo x; sleep 5s; echo y; exit 38;"
 
       @job_id = response.job_id
 
@@ -56,7 +56,11 @@ shared_examples "lifecycle" do
       stream_client = create_client
       stream_client.write(Warden::Protocol::StreamRequest.new(:handle => handle,
                                                               :job_id => @job_id))
-      stream_client.read
+      response = stream_client.read
+      response.name.should == "stdout"
+      response.data.should == "x\n"
+      response.exit_status.should == nil
+
       stream_client.disconnect
     end
 
