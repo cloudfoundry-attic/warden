@@ -12,7 +12,7 @@ module Warden
 
     class Insecure < Base
 
-      def self.setup(config, drained = false)
+      def self.setup(config)
         super
 
         # noop

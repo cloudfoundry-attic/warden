@@ -4,35 +4,27 @@ require "spec_helper"
 require "warden/pool/port"
 
 describe Warden::Pool::Port do
-
   context "create" do
-
     it "should fail when the result contains less than 1000 ports" do
-      Warden::Pool::Port.should_receive(:ip_local_port_range).and_return([32768, 64002])
-
       expect do
-        pool = Warden::Pool::Port.new
+        pool = Warden::Pool::Port.new(1000, 500)
       end.to raise_error Warden::WardenError
     end
 
     it "should succeed when the result contains more than 1000 ports" do
-      Warden::Pool::Port.should_receive(:ip_local_port_range).and_return([32768, 61000])
-      pool = Warden::Pool::Port.new
+      pool = Warden::Pool::Port.new(61001, 4000)
 
       # Check size
-      start, stop = 61001, 65001
-      pool.size.should == stop - start
+      pool.size.should == 4000
 
       # Check first entry
-      pool.acquire.should == start
+      pool.acquire.should == 61001
     end
   end
 
   context "acquire" do
-
     it "should raise when no port is available" do
-      Warden::Pool::Port.should_receive(:ip_local_port_range).and_return([32768, 61000])
-      pool = Warden::Pool::Port.new
+      pool = Warden::Pool::Port.new(61001, 1000)
 
       expect do
         (pool.size + 1).times { pool.acquire }
@@ -41,14 +33,22 @@ describe Warden::Pool::Port do
   end
 
   context "release" do
-
     it "should ignore ports that don't belong to the pool" do
-      Warden::Pool::Port.should_receive(:ip_local_port_range).and_return([32768, 61000])
-      pool = Warden::Pool::Port.new
-      old_size = pool.size
-      pool.release(32000)
+      pool = Warden::Pool::Port.new(61001, 1000)
 
-      pool.size.should == old_size
+      expect do
+        pool.release(32000)
+      end.to_not change(pool, :size)
+    end
+
+    it "should release ports that belong to the pool" do
+      pool = Warden::Pool::Port.new(61001, 1000)
+
+      port = pool.acquire
+
+      expect do
+        pool.release(port)
+      end.to change(pool, :size)
     end
   end
 end

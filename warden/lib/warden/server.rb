@@ -156,8 +156,12 @@ module Warden
     def self.setup_network
       network_pool = Pool::Network.new(config.network["pool_network"])
       container_klass.network_pool = network_pool
+    end
 
-      port_pool = Pool::Port.new
+    def self.setup_port
+      port_start_port = config.port["pool_start_port"]
+      port_size = config.port["pool_size"]
+      port_pool = Pool::Port.new(port_start_port, port_size)
       container_klass.port_pool = port_pool
     end
 
@@ -174,6 +178,7 @@ module Warden
       setup_server
       setup_logging
       setup_network
+      setup_port
       setup_user
     end
 
@@ -182,19 +187,22 @@ module Warden
       max_job_id = 0
 
       Dir.glob(File.join(container_klass.container_depot_path, "*")) do |path|
-        next unless File.exist?(container_klass.snapshot_path(path))
+        if !File.exist?(container_klass.snapshot_path(path))
+          logger.info("Destroying container without snapshot at: #{path}")
+          system(File.join(container_klass.root_path, "destroy.sh"), path)
+          next
+        end
+
+        if !container_klass.alive?(path)
+          logger.info("Destroying dead container at: #{path}")
+          system(File.join(container_klass.root_path, "destroy.sh"), path)
+          next
+        end
 
         c = container_klass.from_snapshot(path)
-        next unless c
 
-        logger.info("Recovered container from #{path}")
+        logger.debug("Recovered container from: #{path}")
         logger.debug("Container resources: #{c.resources}")
-
-        if c.resources.has_key?("ports")
-          container_klass.port_pool.delete(*c.resources["ports"])
-        end
-        container_klass.uid_pool.delete(c.resources["uid"])
-        container_klass.network_pool.delete(c.resources["network"])
 
         c.jobs.each do |job_id, job|
           max_job_id = job_id > max_job_id ? job_id : max_job_id
@@ -208,27 +216,6 @@ module Warden
       nil
     end
 
-    def self.drained_sentinel_path
-      File.join(config.server["container_depot_path"], "drained")
-    end
-
-    def self.write_drained_sentinel
-      File.open(drained_sentinel_path, "w+") do |f|
-        f.write(Time.now.to_i)
-      end
-    end
-
-    def self.read_drained_sentinel
-      sentinel = false
-
-      if File.exist?(drained_sentinel_path)
-        sentinel = true
-        FileUtils.rm(drained_sentinel_path)
-      end
-
-      sentinel
-    end
-
     def self.run!
       ::EM.epoll
 
@@ -239,17 +226,13 @@ module Warden
 
       ::EM.run {
         f = Fiber.new do
-          drained = read_drained_sentinel
-
-          container_klass.setup(self.config, drained)
+          container_klass.setup(self.config)
 
           ::EM.error_handler do |error|
             logger.log_exception(error)
           end
 
-          if drained
-            recover_containers
-          end
+          recover_containers
 
           FileUtils.rm_f(unix_domain_path)
           server = ::EM.start_unix_domain_server(unix_domain_path, ClientConnection)
@@ -264,9 +247,6 @@ module Warden
               # Serialize container state
               container_klass.registry.each { |_, c| c.write_snapshot }
 
-              # Write out sentinel so we know to recover on next startup
-              write_drained_sentinel
-
               EM.stop
             end.resume
           end
@@ -278,6 +258,9 @@ module Warden
 
           # Let the world know Warden is ready for action.
           logger.info("Listening on #{unix_domain_path}, and ready for action.")
+
+          # Log configuration
+          logger.info("Configuration", config.to_hash)
         end
 
         f.resume

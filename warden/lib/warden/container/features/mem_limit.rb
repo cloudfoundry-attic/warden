@@ -56,6 +56,14 @@ module Warden
           end
         end
 
+        def restore
+          super
+
+          if @resources.has_key?("limit_memory")
+            limit_memory(@resources["limit_memory"])
+          end
+        end
+
         def oomed
           logger.warn("OOM happened for #{handle}")
 
@@ -65,31 +73,44 @@ module Warden
           end
         end
 
+        def start_oom_notifier_if_needed
+          unless @oom_notifier
+            @oom_notifier = OomNotifier.new(self)
+
+            on(:after_stop) do
+              if @oom_notifier
+                @oom_notifier.kill
+                @oom_notifier = nil
+              end
+            end
+          end
+        end
+
+        private :start_oom_notifier_if_needed
+
+        def limit_memory(limit_in_bytes)
+          # Need to set up the oom notifier before we set the memory
+          # limit to avoid a race between when the limit is set and
+          # when the oom notifier is registered.
+          start_oom_notifier_if_needed
+
+          ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
+            File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
+              f.write(limit_in_bytes.to_s)
+            end
+          end
+        end
+
+        private :limit_memory
+
         def do_limit_memory(request, response)
           if request.limit_in_bytes
             begin
-
-              # Need to set up the oom notifier before we set the memory limit
-              # to avoid a race between when the limit is set and when the oom
-              # notifier is registered.
-              unless @oom_notifier
-                @oom_notifier = OomNotifier.new(self)
-                on(:after_stop) do
-                  if @oom_notifier
-                    @oom_notifier.kill
-                    @oom_notifier = nil
-                  end
-                end
-              end
-
-              ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
-                File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
-                  f.write(request.limit_in_bytes.to_s)
-                end
-              end
-
+              limit_memory(request.limit_in_bytes)
             rescue => e
               raise WardenError.new("Failed setting memory limit: #{e}")
+            else
+              @resources["limit_memory"] = request.limit_in_bytes
             end
           end
 

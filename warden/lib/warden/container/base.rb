@@ -6,6 +6,7 @@ require "warden/event_emitter"
 require "warden/util"
 
 require "eventmachine"
+require "fileutils"
 require "json"
 require "set"
 require "steno"
@@ -71,7 +72,7 @@ module Warden
         attr_accessor :uid_pool
 
         # Called before the server starts.
-        def setup(config, drained = false)
+        def setup(config)
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
 
@@ -114,10 +115,6 @@ module Warden
           File.join(container_path, "snapshot.json")
         end
 
-        def dirty_snapshot_marker_path(container_path)
-          File.join(container_path, "snapshot_dirty")
-        end
-
         def empty_snapshot
           { "events"     => [],
             "grace_time" => Server.container_grace_time,
@@ -128,13 +125,16 @@ module Warden
           }
         end
 
+        def alive?(_)
+          true
+        end
+
         def from_snapshot(container_path)
-          return nil if File.exists?(dirty_snapshot_marker_path(container_path))
           snapshot = JSON.parse(File.read(snapshot_path(container_path)))
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
           c = new(snapshot)
-          c.acquire
+          c.restore
 
           c
         end
@@ -150,7 +150,7 @@ module Warden
 
       def initialize(snapshot = {}, jobs = {})
         snapshot = self.class.empty_snapshot.merge(snapshot)
-        @resources   = Hash.new { |h,k| raise WardenError.new("Unknown resource: #{k}") }
+        @resources   = {}
         @resources.update(snapshot["resources"])
         @acquired    = {}
         @connections = ::Set.new
@@ -286,10 +286,6 @@ module Warden
         self.class.snapshot_path(container_path)
       end
 
-      def dirty_snapshot_marker_path
-        self.class.dirty_snapshot_marker_path(container_path)
-      end
-
       def dispatch(request, &blk)
         logger.debug2("Request: #{request.inspect}")
 
@@ -327,29 +323,15 @@ module Warden
         end
       end
 
+      def delete_snapshot
+        FileUtils.rm_f(snapshot_path)
+      end
+
       def write_snapshot(opts = {})
         logger.info("Writing snapshot for container #{handle}")
 
-        FileUtils.touch(dirty_snapshot_marker_path)
-
         jobs_snapshot = {}
-
-        # The default setting is that snapsnotting a job will first terminate
-        # it. But this can be overridden by setting :keep_alive to true, in
-        # which case we only want to snapshot terminated jobs and leave running
-        # jobs alone, but still generate an empty snapshot for the running job
-        # so that we don't lose track of it upon restart of warden.
-        if opts[:keep_alive]
-          jobs.each do |id, job|
-            if job.terminated?
-              jobs_snapshot[id] = job.create_snapshot
-            else
-              jobs_snapshot[id] = job.create_empty_snapshot
-            end
-          end
-        else
-          jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
-        end
+        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
 
         snapshot = {
           "events"     => events.to_a,
@@ -360,13 +342,30 @@ module Warden
           "state"      => state,
         }
 
-        File.open(snapshot_path, "w+") do |f|
-          f.write(JSON.dump(snapshot))
-        end
+        file = Tempfile.new("snapshot", File.join(container_path, "tmp"))
+        file.write(JSON.dump(snapshot))
+        file.close
 
-        FileUtils.remove_file(dirty_snapshot_marker_path, true)
+        File.rename(file.path, snapshot_path)
 
         nil
+      end
+
+      # Restore state from snapshot
+      def restore
+        acquire
+
+        if @resources.has_key?("ports")
+          self.class.port_pool.delete(*@resources["ports"])
+        end
+
+        if @resources.has_key?("uid")
+          self.class.uid_pool.delete(@resources["uid"])
+        end
+
+        if @resources.has_key?("network")
+          self.class.network_pool.delete(@resources["network"])
+        end
       end
 
       # Acquire resources required for every container instance.
@@ -388,7 +387,7 @@ module Warden
         elsif opts[:network]
           # Translate to network address by network pool netmask
           container = Warden::Network::Address.new(opts[:network])
-          network = container.network(self.class.network_pool.netmask)
+          network = container.network(self.class.network_pool.pooled_netmask)
 
           unless self.class.network_pool.fetch(network)
             raise WardenError.new("Could not acquire network: #{network.to_human}")
@@ -441,9 +440,6 @@ module Warden
           if request.grace_time
             self.grace_time = request.grace_time
           end
-
-          self.state = State::Active
-
         rescue
           release
           raise
@@ -451,6 +447,8 @@ module Warden
       end
 
       def after_create(request, response)
+        self.state = State::Active
+
         # Clients should be able to look this container up
         self.class.registry[handle] = self
 
@@ -481,25 +479,34 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
-      def before_stop
+      def around_stop
         check_state_in(State::Active)
 
         self.state = State::Stopped
+
+        begin
+          delete_snapshot
+
+          yield
+
+          # Wait for all jobs to terminate (postcondition of stop)
+          jobs.each_value(&:yield)
+        ensure
+          # Arguably the snapshot shouldn't be persisted when stop fails, but
+          # failure of any essential command needs to be thought about more
+          # before making an impromptu decision here.
+          write_snapshot
+        end
       end
 
       def do_stop(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def after_stop(request, response)
-        # Wait for all jobs to terminate before writing a snapshot
-        jobs.each_value(&:yield)
-
-        write_snapshot
-      end
-
       def before_destroy
-        check_state_in(State::Active, State::Stopped)
+        check_state_in(State::Born, State::Active, State::Stopped)
+
+        delete_snapshot
 
         # Clients should no longer be able to look this container up
         self.class.registry.delete(handle)
@@ -523,8 +530,15 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
-      def before_spawn
+      def around_spawn
         check_state_in(State::Active)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_spawn(request, response)
@@ -532,10 +546,6 @@ module Warden
         jobs[job.job_id] = job
 
         response.job_id = job.job_id
-      end
-
-      def after_spawn(request, response)
-        write_snapshot(:keep_alive => true)
       end
 
       def do_link(request, response)
@@ -584,16 +594,30 @@ module Warden
         response.stderr = link_response.stderr
       end
 
-      def before_net_in
+      def around_net_in
         check_state_in(State::Active)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_net_in(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def before_net_out
+      def around_net_out
         check_state_in(State::Active)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_net_out(request, response)
@@ -616,24 +640,45 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
-      def before_limit_memory
+      def around_limit_memory
         check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_limit_memory(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def before_limit_disk
+      def around_limit_disk
         check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_limit_disk(request, response)
         raise WardenError.new("not implemented")
       end
 
-      def before_limit_bandwidth
+      def around_limit_bandwidth
         check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
       end
 
       def do_limit_bandwidth(request, response)
@@ -881,29 +926,20 @@ module Warden
           exit_status
         end
 
-        def create_empty_snapshot
-          return { "stdout" => "", "stderr" => "" }
-        end
-
-        # This is called during drain or after a job exits, so it is guaranteed
-        # that there are no connections linked to the job.
         def create_snapshot(opts = {})
+          s = {}
+
           if @status
-            return { "status" => @status }
+            s["status"] = @status
           end
 
-          # Tell the linker to exit in the next tick to avoid a race between
-          # yielding and signal delivery.
-          ::EM.next_tick do
-            begin
-              @child.kill("TERM")
-            rescue Errno::ESRCH
-            end
-          end
+          # Ignore stdout/stderr for snapshots
+          #
+          # There is no way we can be sure we can ever capture everything
+          # without writing both streams to a file. Therefore, we don't even
+          # make an effort in being able to restore stdout/stderr.
 
-          self.yield
-
-          { "stdout" => @child.stdout, "stderr" => @child.stderr }
+          s
         end
 
         protected

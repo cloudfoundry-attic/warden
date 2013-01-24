@@ -53,6 +53,7 @@ describe Warden::Container::Base do
     container.stub(:do_create)
     container.stub(:do_stop)
     container.stub(:do_destroy)
+    container.stub(:delete_snapshot)
     container.stub(:write_snapshot)
     container.acquire
     container
@@ -62,35 +63,42 @@ describe Warden::Container::Base do
     let(:container) { Container.new }
 
     before do
-      container.stub(:do_create)
-      container.should_receive(:write_snapshot)
+      container.stub(:delete_snapshot)
+      container.stub(:write_snapshot)
     end
 
-    it "should call #do_create" do
-      container.should_receive(:do_create)
-      container.dispatch(Warden::Protocol::CreateRequest.new)
-    end
+    context "on success" do
+      before do
+        container.stub(:do_create)
+        container.should_receive(:write_snapshot)
+      end
 
-    it "should return the container handle" do
-      response = container.dispatch(Warden::Protocol::CreateRequest.new)
-      response.handle.should_not be_nil
-    end
+      it "should call #do_create" do
+        container.should_receive(:do_create)
+        container.dispatch(Warden::Protocol::CreateRequest.new)
+      end
 
-    it "should acquire a network" do
-      container.dispatch(Warden::Protocol::CreateRequest.new)
-      container.network.should == network
-      network_pool.should be_empty
-    end
+      it "should return the container handle" do
+        response = container.dispatch(Warden::Protocol::CreateRequest.new)
+        response.handle.should_not be_nil
+      end
 
-    it "should acquire a uid" do
-      container.dispatch(Warden::Protocol::CreateRequest.new)
-      container.uid.should == uid
-      uid_pool.should be_empty
-    end
+      it "should acquire a network" do
+        container.dispatch(Warden::Protocol::CreateRequest.new)
+        container.network.should == network
+        network_pool.should be_empty
+      end
 
-    it "should register with the global registry" do
-      container.dispatch(Warden::Protocol::CreateRequest.new)
-      Container.registry.size.should == 1
+      it "should acquire a uid" do
+        container.dispatch(Warden::Protocol::CreateRequest.new)
+        container.uid.should == uid
+        uid_pool.should be_empty
+      end
+
+      it "should register with the global registry" do
+        container.dispatch(Warden::Protocol::CreateRequest.new)
+        Container.registry.size.should == 1
+      end
     end
 
     context "on failure" do
@@ -105,13 +113,13 @@ describe Warden::Container::Base do
 
         expect do
           container.dispatch(Warden::Protocol::CreateRequest.new)
-        end.to raise_error
+        end.to raise_error(Warden::WardenError, "create")
       end
 
       it "should not register with the global registry" do
         expect do
           container.dispatch(Warden::Protocol::CreateRequest.new)
-        end.to raise_error
+        end.to raise_error(Warden::WardenError, "create")
 
         Container.registry.should be_empty
       end
@@ -119,7 +127,7 @@ describe Warden::Container::Base do
       it "should release the acquired network" do
         expect do
           container.dispatch(Warden::Protocol::CreateRequest.new)
-        end.to raise_error
+        end.to raise_error(Warden::WardenError, "create")
 
         network_pool.size.should == 1
       end
@@ -127,7 +135,7 @@ describe Warden::Container::Base do
       it "should release the acquired uid" do
         expect do
           container.dispatch(Warden::Protocol::CreateRequest.new)
-        end.to raise_error
+        end.to raise_error(Warden::WardenError, "create")
 
         uid_pool.size.should == 1
       end
@@ -140,13 +148,13 @@ describe Warden::Container::Base do
         it "should raise original error" do
           expect do
             container.dispatch(Warden::Protocol::CreateRequest.new)
-          end.to raise_error(/create/i)
+          end.to raise_error(Warden::WardenError, "create")
         end
 
         it "should release the acquired network" do
           expect do
             container.dispatch(Warden::Protocol::CreateRequest.new)
-          end.to raise_error
+          end.to raise_error(Warden::WardenError, "create")
 
           network_pool.size.should == 1
         end
@@ -154,7 +162,7 @@ describe Warden::Container::Base do
         it "should release the acquired uid" do
           expect do
             container.dispatch(Warden::Protocol::CreateRequest.new)
-          end.to raise_error
+          end.to raise_error(Warden::WardenError, "create")
 
           uid_pool.size.should == 1
         end
@@ -208,7 +216,7 @@ describe Warden::Container::Base do
 
         expect do
           @container.dispatch(Warden::Protocol::DestroyRequest.new)
-        end.to_not raise_error(/failure/i)
+        end.to_not raise_error
       end
     end
   end
@@ -350,7 +358,7 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
 
       it "fails when container was already stopped" do
@@ -359,7 +367,7 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
 
       it "fails when container was already destroyed" do
@@ -368,7 +376,7 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
     end
 
@@ -384,7 +392,7 @@ describe Warden::Container::Base do
       it "fails when container was not yet created" do
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
 
       it "fails when container was already stopped" do
@@ -393,7 +401,7 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
 
       it "fails when container was already destroyed" do
@@ -402,7 +410,7 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
     end
 
@@ -427,7 +435,7 @@ describe Warden::Container::Base do
       it "fails when container was not yet created" do
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
 
       it "fails when container was already destroyed" do
@@ -437,7 +445,42 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(/container state/i)
+        end.to raise_error(Warden::WardenError, /container state/i)
+      end
+    end
+
+    shared_examples "succeeds when born, active, or stopped" do |blk|
+      it "succeeds when container was created" do
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+
+        expect do
+          instance_eval(&blk)
+        end.to_not raise_error
+      end
+
+      it "succeeds when container was created and stopped" do
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::StopRequest.new)
+
+        expect do
+          instance_eval(&blk)
+        end.to_not raise_error
+      end
+
+      it "succeeds when container was not yet created" do
+        expect do
+          instance_eval(&blk)
+        end.to_not raise_error
+      end
+
+      it "fails when container was already destroyed" do
+        @container.dispatch(Warden::Protocol::CreateRequest.new)
+        @container.dispatch(Warden::Protocol::StopRequest.new)
+        @container.dispatch(Warden::Protocol::DestroyRequest.new)
+
+        expect do
+          instance_eval(&blk)
+        end.to raise_error(Warden::WardenError, /container state/i)
       end
     end
 
@@ -454,7 +497,7 @@ describe Warden::Container::Base do
     end
 
     describe "destroy" do
-      include_examples "succeeds when active or stopped", Proc.new {
+      include_examples "succeeds when born, active, or stopped", Proc.new {
         container.dispatch(Warden::Protocol::DestroyRequest.new)
       }
     end

@@ -99,6 +99,31 @@ module Warden
       end
     end
 
+    def self.ip_local_port_range
+      File.read("/proc/sys/net/ipv4/ip_local_port_range").split.map(&:to_i)
+    end
+
+    def self.port_defaults
+      _, ephemeral_stop = self.ip_local_port_range
+      start = ephemeral_stop + 1
+      stop = 65000 + 1
+      count = stop - start
+
+      {
+        "pool_start_port" => start,
+        "pool_size"       => count,
+      }
+    end
+
+    def self.port_schema
+      ::Membrane::SchemaParser.parse do
+        {
+          "pool_start_port" => Integer,
+          "pool_size"       => Integer,
+        }
+      end
+    end
+
     def self.user_defaults
       {
         "pool_start_uid" => 10000,
@@ -121,6 +146,7 @@ module Warden
     attr_reader :health_check_server
     attr_reader :logging
     attr_reader :network
+    attr_reader :port
     attr_reader :user
 
     def initialize(config)
@@ -137,6 +163,7 @@ module Warden
         merge(config["health_check_server"] || {})
       @logging = self.class.logging_defaults.merge(config["logging"] || {})
       @network = self.class.network_defaults.merge(config["network"] || {})
+      @port = self.class.port_defaults.merge(config["port"] || {})
       @user = self.class.user_defaults.merge(config["user"] || {})
     end
 
@@ -144,6 +171,7 @@ module Warden
       self.class.server_schema.validate(@server)
       self.class.logging_schema.validate(@logging)
       self.class.network_schema.validate(@network)
+      self.class.port_schema.validate(@port)
       self.class.user_schema.validate(@user)
     end
 
@@ -169,6 +197,16 @@ module Warden
 
     def rlimits
       @server["container_rlimits"] || {}
+    end
+
+    def to_hash
+      {
+        "server"  => server,
+        "logging" => logging,
+        "network" => network,
+        "port"    => port,
+        "user"    => user,
+      }
     end
   end
 end

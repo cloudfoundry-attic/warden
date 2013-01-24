@@ -80,8 +80,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   after do
-    `kill -9 -#{@pid}`
-    Process.waitpid(@pid)
+    stop_warden
 
     # Destroy all artifacts
     Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
@@ -117,6 +116,9 @@ describe "linux", :platform => "linux", :needs_root => true do
           "pool_size" => 64,
           "allow_networks" => ["4.2.2.3/32"],
           "deny_networks" => ["4.2.2.0/24"] },
+        "port" => {
+          "pool_start_port" => 64000,
+          "pool_size" => 1000 },
         "logging" => {
           "level" => "debug",
           "file" => File.join(work_path, "warden.log") }
@@ -135,7 +137,23 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-  let(:client) { create_client }
+  def stop_warden(signal = "USR2")
+    `kill -#{signal} -#{@pid}`
+    Process.waitpid(@pid)
+  end
+
+  def restart_warden(signal = "USR2")
+    stop_warden(signal)
+    start_warden
+  end
+
+  def client
+    @client ||= create_client
+  end
+
+  def reset_client
+    @client = nil
+  end
 
   it_should_behave_like "lifecycle"
   it_should_behave_like "running commands"
@@ -161,6 +179,14 @@ describe "linux", :platform => "linux", :needs_root => true do
       response
     end
 
+    def trigger_oom
+      # Allocate 20MB, this should OOM and cause the container to be torn down
+      run "perl -e 'for ($i = 0; $i < 20; $i++ ) { $foo .= \"A\" x (1024 * 1024); }'"
+
+      # Wait a bit for the warden to be notified of the OOM
+      sleep 0.01
+    end
+
     before do
       @handle = client.create.handle
     end
@@ -179,19 +205,42 @@ describe "linux", :platform => "linux", :needs_root => true do
       raw_lim.to_i.should == hund_mb
     end
 
-    it "stops containers when an oom event occurs" do
-      usage = File.read(File.join("/sys/fs/cgroup/memory", "instance-#{@handle}", "memory.usage_in_bytes"))
-      limit_memory(:limit_in_bytes => usage.to_i + 10 * 1024 * 1024)
+    def self.it_should_stop_container_when_an_oom_event_occurs
+      it "should stop container when an oom event occurs" do
+        trigger_oom
 
-      # Allocate 20MB, this should OOM and cause the container to be torn down
-      run "perl -e 'for ($i = 0; $i < 20; $i++ ) { $foo .= \"A\" x (1024 * 1024); }'"
+        response = client.info(:handle => handle)
+        response.state.should == "stopped"
+        response.events.should include("oom")
+      end
+    end
 
-      # Wait a bit for the warden to be notified of the OOM
-      sleep 0.01
+    context "before restart" do
+      before do
+        limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+      end
 
-      response = client.info(:handle => handle)
-      response.state.should == "stopped"
-      response.events.should include("oom")
+      it_should_stop_container_when_an_oom_event_occurs
+    end
+
+    context "after restart" do
+      before do
+        limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+        restart_warden
+        reset_client
+      end
+
+      it_should_stop_container_when_an_oom_event_occurs
+    end
+
+    context "after kill" do
+      before do
+        limit_memory(:limit_in_bytes => 10 * 1024 * 1024)
+        restart_warden(:KILL)
+        reset_client
+      end
+
+      it_should_stop_container_when_an_oom_event_occurs
     end
   end
 
@@ -613,5 +662,39 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.stderr.chomp.should == ""
     end
   end
-end
 
+  describe "recovery" do
+    before do
+      @h1 = client.create.handle
+      @h2 = client.create.handle
+
+      stop_warden(:KILL)
+    end
+
+    after do
+      start_warden
+
+      reset_client
+
+      containers = client.list.handles
+      containers.should_not include(@h1)
+      containers.should include(@h2)
+
+      # Test that the path for h1 is gone
+      h1_path = File.join(container_depot_path, @h1)
+      File.directory?(h1_path).should be_false
+    end
+
+    it "should destroy containers without snapshot" do
+      snapshot_path = File.join(container_depot_path, @h1, "snapshot.json")
+      File.exist?(snapshot_path).should be_true
+      File.delete(snapshot_path)
+    end
+
+    it "should destroy containers that have stopped" do
+      wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
+      File.exist?(wshd_pid_path).should be_true
+      Process.kill("KILL", File.read(wshd_pid_path).to_i)
+    end
+  end
+end

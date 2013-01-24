@@ -24,7 +24,7 @@ module Warden
 
         attr_reader :bind_mount_script_template
 
-        def setup(config, drained = false)
+        def setup(config)
           unless Process.uid == 0
             raise WardenError.new("linux containers require root privileges")
           end
@@ -39,22 +39,38 @@ module Warden
             raise WardenError.new("container_depot_path does not exist #{container_depot_path}")
           end
 
-          if !drained
-            options = {
-              :env => {
-                "POOL_NETWORK" => config.network["pool_network"],
-                "ALLOW_NETWORKS" => allow_networks.join(" "),
-                "DENY_NETWORKS" => deny_networks.join(" "),
-                "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
-                "CONTAINER_DEPOT_PATH" => container_depot_path,
-                "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
-                "DISK_QUOTA_ENABLED" => disk_quota_enabled.to_s,
-              },
-              :timeout => nil
-            }
+          options = {
+            :env => {
+              "POOL_NETWORK" => config.network["pool_network"],
+              "ALLOW_NETWORKS" => allow_networks.join(" "),
+              "DENY_NETWORKS" => deny_networks.join(" "),
+              "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
+              "CONTAINER_DEPOT_PATH" => container_depot_path,
+              "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
+              "DISK_QUOTA_ENABLED" => disk_quota_enabled.to_s,
+            },
+            :timeout => nil
+          }
 
-            sh File.join(root_path, "setup.sh"), options
+          sh File.join(root_path, "setup.sh"), options
+        end
+
+        def alive?(path)
+          socket_path = File.join(path, "run", "wshd.sock")
+
+          begin
+            socket = UNIXSocket.new(socket_path)
+          rescue Errno::ECONNREFUSED
+            # wshd is not running
+            return false
+          rescue Errno::ENOENT
+            # unix socket is missing
+            return false
+          else
+            socket.close
           end
+
+          true
         end
       end
 
@@ -63,7 +79,7 @@ module Warden
           "id" => container_id,
           "network_host_ip" => host_ip.to_human,
           "network_container_ip" => container_ip.to_human,
-          "network_netmask" => self.class.network_pool.netmask.to_human,
+          "network_netmask" => self.class.network_pool.pooled_netmask.to_human,
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
         }

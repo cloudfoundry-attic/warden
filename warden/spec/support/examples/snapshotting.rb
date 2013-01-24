@@ -26,7 +26,6 @@ shared_examples "snapshotting_common" do
     handle = client.create.handle
 
     client.spawn(:handle => handle, :script => "echo abc")
-    sleep 0.1
 
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
@@ -38,7 +37,6 @@ shared_examples "snapshotting_common" do
     handle = client.create.handle
 
     client.spawn(:handle => handle, :script => "sleep 2; echo abc")
-    sleep 0.1
 
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
@@ -47,8 +45,6 @@ shared_examples "snapshotting_common" do
 
     job_snapshot = snapshot["jobs"].values.first
     job_snapshot.should be_an_instance_of Hash
-    job_snapshot["stdout"].should == ""
-    job_snapshot["stderr"].should == ""
   end
 end
 
@@ -75,7 +71,5 @@ shared_examples "snapshotting_net_in" do
 
     job_snapshot = snapshot["jobs"].values.first
     job_snapshot.should be_an_instance_of Hash
-    job_snapshot["stdout"].should == ""
-    job_snapshot["stderr"].should == ""
   end
 end

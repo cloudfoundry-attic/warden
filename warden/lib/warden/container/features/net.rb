@@ -30,6 +30,26 @@ module Warden
           val * factor
         end
 
+        def restore
+          super
+
+          # Re-run container-specific networking setup to make sure the
+          # container-specific chains are in place
+          sh(File.join(container_path, "net.sh"), "setup")
+
+          if @resources.has_key?("net_in")
+            @resources["net_in"].each do |host_port, container_port|
+              _net_in(host_port, container_port)
+            end
+          end
+
+          if @resources.has_key?("net_out")
+            @resources["net_out"].each do |network, port|
+              _net_out(network, port)
+            end
+          end
+        end
+
         def do_info(request, response)
           super(request, response)
 
@@ -67,6 +87,13 @@ module Warden
           response.burst = request.burst
         end
 
+        def _net_in(host_port, container_port)
+          sh File.join(container_path, "net.sh"), "in", :env => {
+            "HOST_PORT"      => host_port,
+            "CONTAINER_PORT" => container_port,
+          }
+        end
+
         def do_net_in(request, response)
           if request.host_port.nil?
             host_port = self.class.port_pool.acquire
@@ -82,10 +109,10 @@ module Warden
             container_port = request.container_port || host_port
           end
 
-          sh File.join(container_path, "net.sh"), "in", :env => {
-            "HOST_PORT"      => host_port,
-            "CONTAINER_PORT" => container_port,
-          }
+          _net_in(host_port, container_port)
+
+          @resources["net_in"] ||= []
+          @resources["net_in"] << [host_port, container_port]
 
           response.host_port      = host_port
           response.container_port = container_port
@@ -94,15 +121,18 @@ module Warden
           raise
         end
 
-        def after_net_in(request, response)
-          write_snapshot(:keep_alive => true)
+        def _net_out(network, port)
+          sh File.join(container_path, "net.sh"), "out", :env => {
+            "NETWORK" => network,
+            "PORT"    => port,
+          }
         end
 
         def do_net_out(request, response)
-          sh File.join(container_path, "net.sh"), "out", :env => {
-            "NETWORK" => request.network,
-            "PORT"    => request.port,
-          }
+          _net_out(request.network, request.port)
+
+          @resources["net_out"] ||= []
+          @resources["net_out"] << [request.network, request.port]
         end
 
         def acquire(opts = {})

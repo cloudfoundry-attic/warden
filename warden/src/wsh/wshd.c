@@ -661,6 +661,10 @@ int child_run(void *data) {
   rv = barrier_signal(&w->barrier_child);
   assert(rv == 0);
 
+  /* Detach this process from its original group */
+  rv = setsid();
+  assert(rv > 0 && rv == getpid());
+
   return child_loop(w);
 }
 

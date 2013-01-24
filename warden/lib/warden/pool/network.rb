@@ -9,7 +9,7 @@ module Warden
 
     class Network < Base
 
-      attr_reader :netmask
+      attr_reader :pooled_netmask
 
       # The release delay can be used to postpone address being acquired again
       # after being released. This can be used to make sure the kernel has time
@@ -34,7 +34,7 @@ module Warden
 
         @start_address = address.network(pooled_netmask)
         @end_address = @start_address + (pooled_netmask.size * (count - 1))
-        @netmask = netmask
+        @pooled_netmask = pooled_netmask
 
         options[:release_delay] ||= 5.0
 

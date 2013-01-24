@@ -1,14 +1,65 @@
-#include <sys/param.h>
-#include <sys/eventfd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/eventfd.h>
+#include <sys/param.h>
+#include <sys/prctl.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+/* `detect_oom` returns zero when OOM was detected, non-zero otherwise. */
+int detect_oom(int event_fd, const char *event_control_path) {
+  fd_set rfds;
+  int rv;
+
+  FD_ZERO(&rfds);
+
+  /* Stick around for read on eventfd */
+  FD_SET(event_fd, &rfds);
+
+  do {
+    rv = select(event_fd + 1, &rfds, NULL, NULL, NULL);
+  } while(rv == -1 && errno == EINTR);
+
+  /* Return if something other than an OOM happened */
+  if (!FD_ISSET(event_fd, &rfds)) {
+    return -1;
+  }
+
+  uint64_t result;
+
+  do {
+    rv = read(event_fd, &result, sizeof(result));
+  } while (rv == -1 && errno == EINTR);
+
+  if (rv == -1) {
+    perror("read");
+    return -1;
+  }
+
+  assert(rv == sizeof(result));
+
+  /* Check if the event_fd triggered because the cgroup was removed */
+  rv = access(event_control_path, W_OK);
+  if (rv == -1 && errno == ENOENT) {
+    perror("access");
+    return -1;
+  }
+
+  if (rv == -1) {
+    perror("access");
+    return -1;
+  }
+
+  /* Read from event_fd, and cgroup is present */
+  return 0;
+}
 
 int main(int argc, char **argv) {
   int event_fd = -1;
@@ -21,18 +72,24 @@ int main(int argc, char **argv) {
   char line[LINE_MAX];
   size_t line_len;
   int rv;
-  uint64_t result;
 
   if (argc != 2) {
     fprintf(stderr, "Usage: %s <path to cgroup>\n", argv[0]);
-    exit(1);
+    return 1;
+  }
+
+  /* Die when parent dies */
+  rv = prctl(PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0);
+  if (rv == -1) {
+    perror("prctl");
+    return 1;
   }
 
   /* Open event fd */
   event_fd = eventfd(0, 0);
   if (event_fd == -1) {
     perror("eventfd");
-    goto err;
+    return 1;
   }
 
   /* Open oom control file */
@@ -42,7 +99,7 @@ int main(int argc, char **argv) {
   oom_control_fd = open(oom_control_path, O_RDONLY);
   if (oom_control_fd == -1) {
     perror("open");
-    goto err;
+    return 1;
   }
 
   /* Open event control file */
@@ -52,7 +109,7 @@ int main(int argc, char **argv) {
   event_control_fd = open(event_control_path, O_WRONLY);
   if (event_control_fd == -1) {
     perror("open");
-    goto err;
+    return 1;
   }
 
   /* Write event fd and oom control fd to event control fd */
@@ -62,54 +119,14 @@ int main(int argc, char **argv) {
   rv = write(event_control_fd, line, line_len);
   if (rv == -1) {
     perror("write");
-    goto err;
+    return 1;
   }
 
-  /* Read oom */
-  do {
-    rv = read(event_fd, &result, sizeof(result));
-  } while (rv == -1 && errno == EINTR);
-
+  rv = detect_oom(event_fd, event_control_path);
   if (rv == -1) {
-    perror("read");
-    goto err;
+    return 1;
   }
 
-  assert(rv == sizeof(result));
-
-  rv = access(event_control_path, W_OK);
-  if (rv == -1 && errno == ENOENT) {
-    /* The cgroup appears to be removed */
-    perror("access");
-    goto err;
-  }
-
-  if (rv == -1) {
-    perror("access");
-    goto err;
-  }
-
-  fprintf(stdout, "oom");
-
-  rv = 0;
-  goto out;
-
-err:
-  rv = 1;
-  goto out;
-
-out:
-  if (event_fd >= 0) {
-    close(event_fd);
-  }
-
-  if (oom_control_fd >= 0) {
-    close(oom_control_fd);
-  }
-
-  if (event_control_fd >= 0) {
-    close(event_control_fd);
-  }
-
-  return rv;
+  /* OOM happened */
+  return 0;
 }

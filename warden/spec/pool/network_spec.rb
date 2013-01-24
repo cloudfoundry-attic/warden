@@ -29,7 +29,7 @@ describe Warden::Pool::Network do
 
     it "should have a netmask" do
       pool = Warden::Pool::Network.new("127.0.0.0/32")
-      pool.netmask.should be_a(Warden::Network::Netmask)
+      pool.pooled_netmask.should be_a(Warden::Network::Netmask)
     end
 
     it "should default to a proper release delay" do
