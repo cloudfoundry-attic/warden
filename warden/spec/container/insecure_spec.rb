@@ -123,7 +123,9 @@ describe "insecure" do
 
       # Connect via external IP
       external_ip = `ip route get 1.1.1.1`.split(/\n/).first.split(/\s+/).last
-      `nc #{external_ip} #{response.host_port}`.chomp.should == "ok"
+
+      # Pipe echo to give nc a stdin (it quits immediately after connecting if it doesn't have a stdin)
+      `echo | nc #{external_ip} #{response.host_port}`.chomp.should == "ok"
 
       # Clean up
       client.link(:handle => handle, :job_id => job_id)
