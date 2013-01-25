@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cloudfoundry/warden.png)](https://travis-ci.org/cloudfoundry/warden)
+
 # warden
 
 A framework for managing isolated and resource controlled environments.
