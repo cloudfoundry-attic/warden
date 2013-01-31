@@ -6,13 +6,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-/*
- * The code in this file is not portable.
- *
- * Search for implementations of closefrom(2) for a portable version.
- */
-
-int main(int argc, char **argv) {
+#ifdef __linux__
+static void close_linux() {
   DIR *dirp;
   struct dirent *entry;
   int fd;
@@ -35,6 +30,27 @@ int main(int argc, char **argv) {
 
   closedir(dirp);
 
+}
+static void (*close_nonstandard_fds)(void) = close_linux;
+#else
+static void close_sysconf() {
+  int max;
+
+  max = sysconf(_SC_OPEN_MAX);
+  while (--max > 2) {
+    while (close(max) == -1 && errno == EINTR);
+  }
+}
+static void (*close_nonstandard_fds)(void) = close_sysconf;
+#endif
+
+int main(int argc, char **argv) {
+  if (argc == 1) {
+    fprintf(stderr, "%s: No arguments provided\n", argv[0]);
+    exit(255);
+  }
+
+  close_nonstandard_fds ();
   execvp(argv[1], &argv[1]);
   perror("execvp");
   exit(255);
