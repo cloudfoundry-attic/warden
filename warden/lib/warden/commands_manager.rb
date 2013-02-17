@@ -465,7 +465,7 @@ module Warden
 
           field = fields[element.name]
           if field.rule == :repeated
-            # Ensure that indexing is correct of repeated field.
+            # Ensure that indexing is correct for repeated field.
             check_indexing_exists(flag_str, element)
             list = initialize_list(pb_handle, element)
             check_indexing(flag_str, list, element)
