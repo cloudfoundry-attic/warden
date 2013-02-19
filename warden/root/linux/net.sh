@@ -73,7 +73,7 @@ function setup_filter() {
   iptables -N ${filter_default_chain} 2> /dev/null || iptables -F ${filter_default_chain}
 
   # Whitelist
-  for n in "${ALLOW_NETWORKS}"; do
+  for n in ${ALLOW_NETWORKS}; do
     if [ "$n" == "" ]
     then
       break
@@ -82,7 +82,7 @@ function setup_filter() {
     iptables -A ${filter_default_chain} --destination "$n" --jump RETURN
   done
 
-  for n in "${DENY_NETWORKS}"; do
+  for n in ${DENY_NETWORKS}; do
     if [ "$n" == "" ]
     then
       break
