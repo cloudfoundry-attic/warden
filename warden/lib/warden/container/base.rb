@@ -327,7 +327,7 @@ module Warden
         FileUtils.rm_f(snapshot_path)
       end
 
-      def write_snapshot(opts = {})
+      def write_snapshot
         logger.info("Writing snapshot for container #{handle}")
 
         jobs_snapshot = {}
@@ -892,7 +892,7 @@ module Warden
 
         def resume(status)
           @status = status
-          @container.write_snapshot(:keep_alive => true)
+          @container.write_snapshot
           @yielded.each { |f| f.resume(@status) }
         end
 
