@@ -50,14 +50,14 @@ module Warden
       end
 
       def register_connection(conn)
-        logger.debug("Connection registered: #{conn}")
+        logger.debug2("Connection registered: #{conn}")
 
         @connections.add(conn)
         run_machine
       end
 
       def unregister_connection(conn)
-        logger.debug("Connection unregistered: #{conn}")
+        logger.debug2("Connection unregistered: #{conn}")
 
         @connections.delete(conn)
         run_machine
@@ -201,8 +201,7 @@ module Warden
 
         c = container_klass.from_snapshot(path)
 
-        logger.debug("Recovered container from: #{path}")
-        logger.debug("Container resources: #{c.resources}")
+        logger.info("Recovered container at: #{path}", :resources => c.resources)
 
         c.jobs.each do |job_id, job|
           max_job_id = job_id > max_job_id ? job_id : max_job_id
@@ -222,7 +221,10 @@ module Warden
       old_soft, old_hard = Process.getrlimit(:NOFILE)
       Process.setrlimit(Process::RLIMIT_NOFILE, 32768)
       new_soft, new_hard = Process.getrlimit(:NOFILE)
-      logger.debug("rlimit_nofile: %d => %d" % [old_soft, new_soft])
+      logger.debug2("rlimit_nofile: %d => %d" % [old_soft, new_soft])
+
+      # Log configuration
+      logger.info("Configuration", config.to_hash)
 
       ::EM.run {
         f = Fiber.new do
@@ -257,10 +259,7 @@ module Warden
           FileUtils.chmod(unix_domain_permissions, unix_domain_path)
 
           # Let the world know Warden is ready for action.
-          logger.info("Listening on #{unix_domain_path}, and ready for action.")
-
-          # Log configuration
-          logger.info("Configuration", config.to_hash)
+          logger.info("Listening on #{unix_domain_path}")
         end
 
         f.resume
@@ -310,15 +309,15 @@ module Warden
       end
 
       def drain
-        logger.debug("Draining connection")
+        logger.debug("Draining connection on: #{self}")
 
         @draining = true
 
         if PREEMPTIVELY_CLOSE_ON_DRAIN.include?(@current_request.class)
-          logger.debug("Current request is #{@current_request.class}, closing connection")
+          logger.debug("Current request is #{@current_request.class}, closing connection on #{self}")
           close
         else
-          logger.debug("Current request is #{@current_request.class}, waiting for completion")
+          logger.debug("Current request is #{@current_request.class}, waiting for completion on #{self}")
         end
       end
 
@@ -369,7 +368,7 @@ module Warden
             @blocked = false
 
             if @draining
-              logger.debug2("Finished processing request, closing")
+              logger.debug("Finished processing request, closing #{self}")
               close
             else
               # Resume processing the input buffer

@@ -188,7 +188,7 @@ module Warden
       def cancel_grace_timer
         return unless @destroy_timer
 
-        logger.debug("Grace timer: cancel")
+        logger.debug2("Grace timer: cancel")
 
         ::EM.cancel_timer(@destroy_timer)
         @destroy_timer = nil
@@ -197,17 +197,16 @@ module Warden
       def setup_grace_timer
         return if grace_time.nil?
 
-        logger.debug("Grace timer: setup (fires in %.3fs)" % grace_time)
+        logger.debug2("Grace timer: setup (fires in %.3fs)" % grace_time)
 
         @destroy_timer = ::EM.add_timer(grace_time) do
-          logger.debug("Grace timer: fire")
           fire_grace_timer
         end
       end
 
       def fire_grace_timer
         f = Fiber.new do
-          logger.debug("Grace timer: issue destroy")
+          logger.info("Grace timer fired, destroying container")
 
           begin
             dispatch(Protocol::DestroyRequest.new)
@@ -286,7 +285,7 @@ module Warden
       end
 
       def dispatch(request, &blk)
-        logger.debug2("Request: #{request.inspect}")
+        logger.debug2("Request", request.to_hash)
 
         klass_name = request.class.name.split("::").last
         klass_name = klass_name.gsub(/Request$/, "")
@@ -294,6 +293,8 @@ module Warden
         klass_name = klass_name.downcase
 
         response = request.create_response
+
+        t1 = Time.now
 
         before_method = "before_%s" % klass_name
         hook(before_method, request, response)
@@ -309,7 +310,11 @@ module Warden
         emit(after_method.to_sym)
         hook(after_method, request, response)
 
-        logger.debug2("Response: #{response.inspect}")
+        t2 = Time.now
+
+        logger.debug("%s %s completed in %.6f" % [klass_name, request.to_hash.inspect, t2 - t1])
+
+        logger.debug2("Response", response.to_hash)
 
         response
       end
@@ -327,7 +332,7 @@ module Warden
       end
 
       def write_snapshot
-        logger.info("Writing snapshot for container #{handle}")
+        t1 = Time.now
 
         jobs_snapshot = {}
         jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
@@ -346,6 +351,10 @@ module Warden
         file.close
 
         File.rename(file.path, snapshot_path)
+
+        t2 = Time.now
+
+        logger.debug("Wrote snapshot in %.6f" % [t2 - t1])
 
         nil
       end
