@@ -335,7 +335,7 @@ module Warden
         t1 = Time.now
 
         jobs_snapshot = {}
-        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+        jobs.each { |id, job| jobs_snapshot[id] = job.snapshot }
 
         snapshot = {
           "events"     => events.to_a,
@@ -857,14 +857,14 @@ module Warden
 
         attr_reader :container
         attr_reader :job_id
-        attr_reader :options
+        attr_reader :snapshot
 
         attr_accessor :logger
 
-        def initialize(container, job_id, options = {})
+        def initialize(container, job_id, snapshot = {})
           @container = container
           @job_id = job_id
-          @options = options
+          @snapshot = snapshot
 
           @yielded = []
         end
@@ -877,14 +877,15 @@ module Warden
           File.join(job_root_path, "cursors")
         end
 
+        def terminated?
+          @snapshot.has_key?("status")
+        end
+
         def run
-          if options["status"]
-            @status = options["status"]
-          else
-            @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
-                                       "-w", cursors_path, job_root_path,
-                                       :prepend_stdout => options["stdout"],
-                                       :prepend_stderr => options["stderr"])
+          if !terminated?
+            argv = [File.join(container.bin_path, "iomux-link"), "-w", cursors_path, job_root_path]
+
+            @child = DeferredChild.new(*argv)
             @child.logger = logger
             @child.run
 
@@ -892,27 +893,26 @@ module Warden
           end
         end
 
-        def terminated?
-          !!@status
-        end
-
         def yield
-          return @status if @status
-          @yielded << Fiber.current
-          Fiber.yield
+          if !terminated?
+            @yielded << Fiber.current
+            Fiber.yield
+          else
+            @snapshot["status"]
+          end
         end
 
         def resume(status)
-          @status = status
+          @snapshot["status"] = status
           @container.write_snapshot
-          @yielded.each { |f| f.resume(@status) }
+          @yielded.each { |f| f.resume(@snapshot["status"]) }
         end
 
         def stream(&block)
           # Handle the case where we are restarted after the job has completed.
           # In this situation there will be no child, hence no stream listeners.
-          if @status
-            exit_status, stdout, stderr = @status
+          if terminated?
+            exit_status, stdout, stderr = @snapshot["status"]
             block.call("stdout", stdout) unless stdout.empty?
             block.call("stderr", stderr) unless stderr.empty?
             return exit_status
@@ -929,29 +929,13 @@ module Warden
           end
 
           # Wait until we have the exit status.
-          unless @status
+          if !terminated?
             @yielded << Fiber.current
             Fiber.yield
           end
 
-          exit_status, _, _ = @status
+          exit_status, _, _ = @snapshot["status"]
           exit_status
-        end
-
-        def create_snapshot(opts = {})
-          s = {}
-
-          if @status
-            s["status"] = @status
-          end
-
-          # Ignore stdout/stderr for snapshots
-          #
-          # There is no way we can be sure we can ever capture everything
-          # without writing both streams to a file. Therefore, we don't even
-          # make an effort in being able to restore stdout/stderr.
-
-          s
         end
 
         protected
