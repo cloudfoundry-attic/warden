@@ -11,7 +11,7 @@ module Warden
       module Cgroup
 
         def cgroup_path(subsystem)
-          File.join("/sys/fs/cgroup", subsystem.to_s, "instance-#{self.handle}")
+          File.join("/sys/fs/cgroup", subsystem.to_s, "instance-#{self.container_id}")
         end
 
         def do_info(request, response)

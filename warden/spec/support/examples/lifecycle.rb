@@ -11,6 +11,14 @@ shared_examples "lifecycle" do
     response.handle.should == "test_handle"
   end
 
+  it "should allow to use a container created with a custom handle" do
+    response = client.create(:handle => "test_handle")
+    response.handle.should == "test_handle"
+
+    info = client.info(:handle => "test_handle")
+    info.should_not be_nil
+  end
+
   it "should not allow to recreate a container that already exists" do
     response = client.create(:handle => "test_handle")
     response.handle.should == "test_handle"

@@ -166,12 +166,11 @@ module Warden
       end
 
       def handle
-        @handle ||= resources["handle"] if resources.has_key?("handle")
-        @handle ||= container_id
+        @resources["handle"]
       end
 
       def container_id
-        @container_id ||= self.class.generate_container_id
+        @resources["container_id"]
       end
 
       def host_ip
@@ -370,16 +369,20 @@ module Warden
 
       # Acquire resources required for every container instance.
       def acquire(opts = {})
-        if @resources.has_key?("handle")
-          # Restored from snapshot
-        elsif opts[:handle]
-          if self.class.registry[opts[:handle]]
-            raise WardenError.new("container with handle: #{opts[:handle]} already exists.")
-          end
+        if !@resources.has_key?("container_id")
+          @resources["container_id"] = self.class.generate_container_id
+        end
 
-          @resources["handle"] = opts[:handle]
-        else
-          @resources["handle"] = handle
+        if !@resources.has_key?("handle")
+          if opts[:handle]
+            if self.class.registry[opts[:handle]]
+              raise WardenError.new("container with handle: #{opts[:handle]} already exists.")
+            end
+
+            @resources["handle"] = opts[:handle]
+          else
+            @resources["handle"] = @resources["container_id"]
+          end
         end
 
         if @resources.has_key?("network")

@@ -53,7 +53,7 @@ module Warden
         def do_info(request, response)
           super(request, response)
 
-          id = request.handle
+          container_id = self.class.registry[request.handle].container_id
 
           ret = {}
 
@@ -63,7 +63,7 @@ module Warden
             # Set default rate value to 0xffffffff default burst value to 0xffffffff
             ret[v[:rate_key]], ret[v[:burst_key]] = [0xffffffff, 0xffffffff]
             info = sh File.join(container_path, "net.sh"), v[:bash_key], :env => {
-              "ID" => id
+              "ID" => container_id
             }
             info.split("\n").each do |line|
               if band_info = v[:reg].match(line)
