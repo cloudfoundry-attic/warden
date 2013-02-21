@@ -933,12 +933,7 @@ module Warden
           end
 
           # Wait until we have the exit status.
-          if !terminated?
-            @yielded << Fiber.current
-            Fiber.yield
-          end
-
-          exit_status, _, _ = @snapshot["status"]
+          exit_status, _, _ = self.yield
           exit_status
         end
 
