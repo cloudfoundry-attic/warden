@@ -322,6 +322,8 @@ module Warden
       end
 
       def send_response(obj)
+        logger.debug2(obj.inspect)
+
         data = obj.wrap.encode.to_s
         send_data data.length.to_s + "\r\n"
         send_data data + "\r\n"
@@ -355,7 +357,7 @@ module Warden
 
         return if request.nil?
 
-        logger.debug2(request)
+        logger.debug2(request.inspect)
 
         f = Fiber.new {
           begin

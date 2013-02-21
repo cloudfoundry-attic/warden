@@ -285,8 +285,6 @@ module Warden
       end
 
       def dispatch(request, &blk)
-        logger.debug2("Request", request.to_hash)
-
         klass_name = request.class.name.split("::").last
         klass_name = klass_name.gsub(/Request$/, "")
         klass_name = klass_name.gsub(/(.)([A-Z])/) { |m| "#{m[0]}_#{m[1]}" }
@@ -312,9 +310,9 @@ module Warden
 
         t2 = Time.now
 
-        logger.debug("%s %s completed in %.6f" % [klass_name, request.to_hash.inspect, t2 - t1])
-
-        logger.debug2("Response", response.to_hash)
+        logger.info("%s (took %.6f)" % [klass_name, t2 - t1],
+                    :request => request.to_hash,
+                    :response => response.to_hash)
 
         response
       end
