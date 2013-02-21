@@ -584,6 +584,8 @@ module Warden
         end
 
         response.exit_status = job.stream(&blk)
+
+        job.cleanup
       end
 
       def do_run(request, response)
