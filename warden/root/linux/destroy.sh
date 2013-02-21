@@ -13,6 +13,12 @@ fi
 
 target=$1
 
+# Ignore tmp directory
+if [ $(basename $target) == "tmp" ]
+then
+  exit 0
+fi
+
 if [ -d $target ]
 then
   if [ -f $target/destroy.sh ]
