@@ -123,21 +123,23 @@ shared_examples "running commands" do
     end
 
     it "should stream an unfinished job" do
-      job_id = client.spawn(:handle => handle, :script => "sleep 0.1").job_id
+      job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.1; printf B;").job_id
 
       r = stream(client, job_id)
-      r.should have(1).response
-      r[0].exit_status.should == 0
+      r.select { |e| e.name == "stdout" }.collect(&:data).join.should == "AB"
+      r.select { |e| e.name == "stderr" }.collect(&:data).join.should == ""
+      r.last.exit_status.should == 0
     end
 
     it "should stream a finished job" do
-      job_id = client.spawn(:handle => handle, :script => "sleep 0.0").job_id
+      job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.0; printf B;").job_id
 
       sleep 0.1
 
       r = stream(client, job_id)
-      r.should have(1).response
-      r[0].exit_status.should == 0
+      r.select { |e| e.name == "stdout" }.collect(&:data).join.should == "AB"
+      r.select { |e| e.name == "stderr" }.collect(&:data).join.should == ""
+      r.last.exit_status.should == 0
     end
 
     it "should return an error after a job has already been streamed" do
