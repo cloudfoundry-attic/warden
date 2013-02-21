@@ -95,7 +95,6 @@ describe "insecure" do
 
   it_should_behave_like "lifecycle"
   it_should_behave_like "running commands"
-  it_should_behave_like "streaming commands"
   it_should_behave_like "info"
   it_should_behave_like "file transfer"
   it_should_behave_like "drain"

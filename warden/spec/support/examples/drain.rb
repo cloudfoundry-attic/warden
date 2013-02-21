@@ -105,32 +105,19 @@ shared_examples "drain" do
     get_uid(c, h).should == (old_uid + 1)
   end
 
-  it "should allow linking to jobs that have already exited" do
-    exp_status = 2
-    exp_stdout = "hello"
-
-    h = client.create.handle
-    spawn_resp = client.spawn(:handle => h, :script => "echo -n #{exp_stdout}; exit #{exp_status}")
-    job_id = spawn_resp.job_id
-    link_resp = client.link(:handle => h, :job_id => job_id)
-    link_resp.exit_status.should == exp_status
-    link_resp.stdout.should == exp_stdout
-
-    drain_and_restart
-
-    c = create_client
-    link_resp = c.link(:handle => h, :job_id => job_id)
-    link_resp.exit_status.should == exp_status
-    link_resp.stdout.should == exp_stdout
-  end
-
   it "should allow linking to jobs that exit after the the restart" do
     exp_status = 2
-    exp_stdout = "012345"
-    script = "for x in {0..5}; do echo -n $x; sleep 1; done; exit #{exp_status}"
+    exp_stdout = "0123456789"
+    script = "for x in {0..9}; do sleep 0.2; echo -n $x; done; exit #{exp_status}"
 
     h = client.create.handle
     job_id = client.spawn(:handle => h, :script => script).job_id
+
+    # A link request must be in flight when draining
+    # to make sure the job isn't cleaned up.
+    c = create_client
+    c.write(Warden::Protocol::LinkRequest.new(:handle => h, :job_id => job_id))
+    sleep 0.1
 
     drain_and_restart
 
@@ -145,32 +132,19 @@ shared_examples "drain" do
     elapsed.should be > 1
   end
 
-  it "should allow streaming jobs that have already exited" do
-    exp_status = 2
-    exp_stdout = "hello"
-
-    h = client.create.handle
-    spawn_resp = client.spawn(:handle => h, :script => "echo -n #{exp_stdout}; exit #{exp_status}")
-    job_id = spawn_resp.job_id
-    link_resp = client.link(:handle => h, :job_id => job_id)
-    link_resp.exit_status.should == exp_status
-    link_resp.stdout.should == exp_stdout
-
-    drain_and_restart
-
-    c = create_client
-    streams = read_streams(c, h, job_id)
-    streams.size.should == 1
-    streams["stdout"].should == exp_stdout
-  end
-
   it "should allow streaming jobs that exit after the restart" do
     exp_status = 2
-    exp_stdout = "012345"
-    script = "for x in {0..5}; do echo -n $x; sleep 1; done; exit #{exp_status}"
+    exp_stdout = "0123456789"
+    script = "for x in {0..9}; do sleep 0.2; echo -n $x; done; exit #{exp_status}"
 
     h = client.create.handle
     job_id = client.spawn(:handle => h, :script => script).job_id
+
+    # A link request must be in flight when draining
+    # to make sure the job isn't cleaned up.
+    c = create_client
+    c.write(Warden::Protocol::LinkRequest.new(:handle => h, :job_id => job_id))
+    sleep 0.1
 
     drain_and_restart
 

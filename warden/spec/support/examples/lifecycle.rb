@@ -51,6 +51,10 @@ shared_examples "lifecycle" do
     attr_reader :handle
     attr_reader :job_id
 
+    let(:stream_client) { create_client }
+    let(:link_client) { create_client }
+    let(:stop_client) { create_client }
+
     before do
       @handle = client.create.handle
 
@@ -61,7 +65,6 @@ shared_examples "lifecycle" do
       @job_id = response.job_id
 
       # Make sure that the process is actually running inside the container
-      stream_client = create_client
       stream_client.write(Warden::Protocol::StreamRequest.new(:handle => handle,
                                                               :job_id => @job_id))
       response = stream_client.read
@@ -73,18 +76,26 @@ shared_examples "lifecycle" do
     end
 
     it "can run in the background" do
-      client.stop(:handle => handle, :background => true)
+      link_client.write(Warden::Protocol::LinkRequest.new(:handle => handle,
+                                                          :job_id => @job_id))
+
+
+      stop_client.stop(:handle => handle, :background => true)
 
       # Test that exit status is returned (because of SIGTERM)
-      response = client.link(:handle => handle, :job_id => job_id)
+      response = link_client.read
       response.exit_status.should == 37
     end
 
     it "can kill everything ungracefully" do
-      client.stop(:handle => handle, :kill => true)
+      link_client.write(Warden::Protocol::LinkRequest.new(:handle => handle,
+                                                          :job_id => @job_id))
+
+
+      stop_client.stop(:handle => handle, :kill => true)
 
       # Test that no exit status is returned (because of SIGKILL)
-      response = client.link(:handle => handle, :job_id => job_id)
+      response = link_client.read
       response.exit_status.should == 255
     end
   end

@@ -123,12 +123,13 @@ module Warden
 
         # Helper to inject log message
         def set_deferred_success
+          message = "Exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect]
+          data = { :stdout => stdout, :stderr => stderr }
+
           if !success?
-            logger.warn("Exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect])
-            logger.warn("Stdout: #{stdout}")
-            logger.warn("Stderr: #{stderr}")
+            logger.warn(message, data)
           else
-            logger.debug("Exited with status %d (%.3fs): %s" % [exit_status.to_i, runtime, argv.inspect])
+            logger.debug2(message, data)
           end
 
           super
@@ -136,9 +137,7 @@ module Warden
 
         # Helper to inject log message
         def set_deferred_failure(err)
-          logger.error("Error running #{argv.inspect}: #{err.message}")
-          logger.warn("Stdout (maybe incomplete): #{stdout}")
-          logger.warn("Stderr (maybe incomplete): #{stderr}")
+          logger.error("Error running #{argv.inspect}: #{err.message}", :stdout => stdout, :stderr => stderr)
           super
         end
 

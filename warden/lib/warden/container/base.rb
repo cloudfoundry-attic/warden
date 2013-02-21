@@ -188,7 +188,7 @@ module Warden
       def cancel_grace_timer
         return unless @destroy_timer
 
-        logger.debug("Grace timer: cancel")
+        logger.debug2("Grace timer: cancel")
 
         ::EM.cancel_timer(@destroy_timer)
         @destroy_timer = nil
@@ -197,17 +197,16 @@ module Warden
       def setup_grace_timer
         return if grace_time.nil?
 
-        logger.debug("Grace timer: setup (fires in %.3fs)" % grace_time)
+        logger.debug2("Grace timer: setup (fires in %.3fs)" % grace_time)
 
         @destroy_timer = ::EM.add_timer(grace_time) do
-          logger.debug("Grace timer: fire")
           fire_grace_timer
         end
       end
 
       def fire_grace_timer
         f = Fiber.new do
-          logger.debug("Grace timer: issue destroy")
+          logger.info("Grace timer fired, destroying container")
 
           begin
             dispatch(Protocol::DestroyRequest.new)
@@ -286,14 +285,14 @@ module Warden
       end
 
       def dispatch(request, &blk)
-        logger.debug2("Request: #{request.inspect}")
-
         klass_name = request.class.name.split("::").last
         klass_name = klass_name.gsub(/Request$/, "")
         klass_name = klass_name.gsub(/(.)([A-Z])/) { |m| "#{m[0]}_#{m[1]}" }
         klass_name = klass_name.downcase
 
         response = request.create_response
+
+        t1 = Time.now
 
         before_method = "before_%s" % klass_name
         hook(before_method, request, response)
@@ -309,7 +308,11 @@ module Warden
         emit(after_method.to_sym)
         hook(after_method, request, response)
 
-        logger.debug2("Response: #{response.inspect}")
+        t2 = Time.now
+
+        logger.info("%s (took %.6f)" % [klass_name, t2 - t1],
+                    :request => request.to_hash,
+                    :response => response.to_hash)
 
         response
       end
@@ -327,10 +330,10 @@ module Warden
       end
 
       def write_snapshot
-        logger.info("Writing snapshot for container #{handle}")
+        t1 = Time.now
 
         jobs_snapshot = {}
-        jobs.each { |id, job| jobs_snapshot[id] = job.create_snapshot }
+        jobs.each { |id, job| jobs_snapshot[id] = job.snapshot }
 
         snapshot = {
           "events"     => events.to_a,
@@ -346,6 +349,10 @@ module Warden
         file.close
 
         File.rename(file.path, snapshot_path)
+
+        t2 = Time.now
+
+        logger.debug("Wrote snapshot in %.6f" % [t2 - t1])
 
         nil
       end
@@ -560,6 +567,8 @@ module Warden
 
         exit_status, stdout, stderr = job.yield
 
+        job.cleanup
+
         response.exit_status = exit_status
         response.stdout = stdout
         response.stderr = stderr
@@ -573,6 +582,8 @@ module Warden
         end
 
         response.exit_status = job.stream(&blk)
+
+        job.cleanup
       end
 
       def do_run(request, response)
@@ -848,14 +859,14 @@ module Warden
 
         attr_reader :container
         attr_reader :job_id
-        attr_reader :options
+        attr_reader :snapshot
 
         attr_accessor :logger
 
-        def initialize(container, job_id, options = {})
+        def initialize(container, job_id, snapshot = {})
           @container = container
           @job_id = job_id
-          @options = options
+          @snapshot = snapshot
 
           @yielded = []
         end
@@ -868,14 +879,15 @@ module Warden
           File.join(job_root_path, "cursors")
         end
 
+        def terminated?
+          @snapshot.has_key?("status")
+        end
+
         def run
-          if options["status"]
-            @status = options["status"]
-          else
-            @child = DeferredChild.new(File.join(container.bin_path, "iomux-link"),
-                                       "-w", cursors_path, job_root_path,
-                                       :prepend_stdout => options["stdout"],
-                                       :prepend_stderr => options["stderr"])
+          if !terminated?
+            argv = [File.join(container.bin_path, "iomux-link"), "-w", cursors_path, job_root_path]
+
+            @child = DeferredChild.new(*argv)
             @child.logger = logger
             @child.run
 
@@ -883,27 +895,26 @@ module Warden
           end
         end
 
-        def terminated?
-          !!@status
-        end
-
         def yield
-          return @status if @status
-          @yielded << Fiber.current
-          Fiber.yield
+          if !terminated?
+            @yielded << Fiber.current
+            Fiber.yield
+          else
+            @snapshot["status"]
+          end
         end
 
         def resume(status)
-          @status = status
+          @snapshot["status"] = status
           @container.write_snapshot
-          @yielded.each { |f| f.resume(@status) }
+          @yielded.each { |f| f.resume(@snapshot["status"]) }
         end
 
         def stream(&block)
           # Handle the case where we are restarted after the job has completed.
           # In this situation there will be no child, hence no stream listeners.
-          if @status
-            exit_status, stdout, stderr = @status
+          if terminated?
+            exit_status, stdout, stderr = @snapshot["status"]
             block.call("stdout", stdout) unless stdout.empty?
             block.call("stderr", stderr) unless stderr.empty?
             return exit_status
@@ -920,29 +931,18 @@ module Warden
           end
 
           # Wait until we have the exit status.
-          unless @status
-            @yielded << Fiber.current
-            Fiber.yield
-          end
-
-          exit_status, _, _ = @status
+          exit_status, _, _ = self.yield
           exit_status
         end
 
-        def create_snapshot(opts = {})
-          s = {}
-
-          if @status
-            s["status"] = @status
+        def cleanup
+          # Clean up job root path
+          EM.defer do
+            FileUtils.rm_rf(job_root_path) if File.directory?(job_root_path)
           end
 
-          # Ignore stdout/stderr for snapshots
-          #
-          # There is no way we can be sure we can ever capture everything
-          # without writing both streams to a file. Therefore, we don't even
-          # make an effort in being able to restore stdout/stderr.
-
-          s
+          # Clear job from registry
+          container.jobs.delete(job_id)
         end
 
         protected

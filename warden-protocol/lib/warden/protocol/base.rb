@@ -146,6 +146,16 @@ module Warden
         end
       end
 
+      def to_hash
+        fields.values.inject({}) do |h, fld|
+          if v = self[fld.name]
+            v = v.to_hash if v.respond_to?(:to_hash)
+            h[fld.name] = v
+          end
+          h
+        end
+      end
+
       class << self
         def type
           Type.const_get(type_name)
