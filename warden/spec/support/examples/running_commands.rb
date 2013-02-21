@@ -47,7 +47,7 @@ shared_examples "running commands" do
   end
 
   describe "via spawn/link" do
-    it "works when linking an unfinished job" do
+    it "should link an unfinished job" do
       response = client.spawn(:handle => handle, :script => "sleep 0.1")
       job_id = response.job_id
 
@@ -56,7 +56,7 @@ shared_examples "running commands" do
       response.exit_status.should == 0
     end
 
-    it "works when linking a finished job" do
+    it "should link a finished job" do
       response = client.spawn(:handle => handle, :script => "sleep 0.0")
       job_id = response.job_id
 
@@ -65,15 +65,33 @@ shared_examples "running commands" do
       response.exit_status.should == 0
     end
 
+    it "should return an error after a job has already been linked" do
+      job_id = client.spawn(:handle => handle, :script => "sleep 0.0").job_id
+      client.link(:handle => handle, :job_id => job_id).should_not be_nil
+
+      expect do
+        client.link(:handle => handle, :job_id => job_id)
+      end.to raise_error(Warden::Client::ServerError, "no such job")
+    end
+
     describe "on different connections" do
       let(:c1) { create_client }
       let(:c2) { create_client }
 
-      it "works when both link an unfinished job" do
-        response = c1.spawn(:handle => handle, :script => "sleep 0.1")
-        job_id = response.job_id
+      attr_reader :job_id
 
-        sleep 0.0
+      before do
+        @job_id = c1.spawn(:handle => handle, :script => "sleep 0.1").job_id
+      end
+
+      after do
+        expect do
+          c = create_client
+          c.link(:handle => handle, :job_id => job_id)
+        end.to raise_error(Warden::Client::ServerError, "no such job")
+      end
+
+      it "should work when both link an unfinished job" do
         c1.write(Warden::Protocol::LinkRequest.new(:handle => handle, :job_id => job_id))
         c2.write(Warden::Protocol::LinkRequest.new(:handle => handle, :job_id => job_id))
 
@@ -82,22 +100,7 @@ shared_examples "running commands" do
         r1.should == r2
       end
 
-      it "works when both link a finished job" do
-        response = c1.spawn(:handle => handle, :script => "sleep 0.0")
-        job_id = response.job_id
-
-        sleep 0.1
-        c1.write(Warden::Protocol::LinkRequest.new(:handle => handle, :job_id => job_id))
-        c2.write(Warden::Protocol::LinkRequest.new(:handle => handle, :job_id => job_id))
-
-        r1 = c1.read
-        r2 = c2.read
-        r1.should == r2
-      end
-
-      it "works when the one spawning disconnects" do
-        response = c1.spawn(:handle => handle, :script => "sleep 0.1")
-        job_id = response.job_id
+      it "should work when the connection that spawned the job disconnects" do
         c1.disconnect
 
         response = c2.link(:handle => handle, :job_id => job_id)

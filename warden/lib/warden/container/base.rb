@@ -569,6 +569,8 @@ module Warden
 
         exit_status, stdout, stderr = job.yield
 
+        job.cleanup
+
         response.exit_status = exit_status
         response.stdout = stdout
         response.stderr = stderr
@@ -936,6 +938,16 @@ module Warden
 
           exit_status, _, _ = @snapshot["status"]
           exit_status
+        end
+
+        def cleanup
+          # Clean up job root path
+          EM.defer do
+            FileUtils.rm_rf(job_root_path) if File.directory?(job_root_path)
+          end
+
+          # Clear job from registry
+          container.jobs.delete(job_id)
         end
 
         protected
