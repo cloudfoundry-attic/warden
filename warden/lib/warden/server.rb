@@ -23,6 +23,21 @@ module Warden
   module Server
 
     class Drainer
+      class DrainNotifier < ::EM::Connection
+        def initialize(drainer)
+          @drainer = drainer
+        end
+
+        def notify_readable
+          begin
+            @io.read_nonblock(65536)
+          rescue IO::WaitReadable
+          end
+
+          @drainer.drain
+        end
+      end
+
       module State
         INACTIVE             = 0 # Drain not yet initiated
         START                = 1 # Drain initiated, closing accept socket
@@ -32,11 +47,31 @@ module Warden
         DONE                 = 5 # Accept socket closed, no active conns
       end
 
-      def initialize(server)
+      def initialize(server, signal)
         @server = server
         @connections = Set.new
         @state = State::INACTIVE
         @on_complete_callbacks = []
+
+        setup(signal)
+      end
+
+      # The signal handler writes to a pipe to make it work with EventMachine.
+      # If a signal handler calls into EventMachine directly it may result in
+      # recursive locking, crashing the process.
+      def setup(signal)
+        @pipe = IO.pipe
+        @notifier = ::EM.watch(@pipe[0], DrainNotifier, self)
+        @notifier.notify_readable = true
+
+        @prev_handler = ::Signal.trap(signal) do
+          begin
+            @pipe[1].write_nonblock("x")
+          rescue IO::WaitWritable
+          end
+
+          @prev_handler.call if @prev_handler.respond_to?(:call)
+        end
       end
 
       def drain
@@ -242,7 +277,7 @@ module Warden
                             config.health_check_server["port"],
                             HealthCheck)
 
-          @drainer = Drainer.new(server)
+          @drainer = Drainer.new(server, "USR2")
           @drainer.on_complete do
             Fiber.new do
               logger.info("Drain complete")
@@ -252,7 +287,6 @@ module Warden
               EM.stop
             end.resume
           end
-          Signal.trap("USR2") { @drainer.drain }
 
           # This is intentionally blocking. We do not want to start accepting
           # connections before permissions have been set on the socket.
