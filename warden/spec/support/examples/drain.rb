@@ -177,6 +177,22 @@ shared_examples "drain" do
     end
   end
 
+  it "should not persist stdout/stderr over a restart" do
+    c = create_client
+    @handle = c.create.handle
+    @job_id = client.spawn(:handle => @handle, :script => "echo hello; exit 2").job_id
+
+    sleep 0.1
+
+    drain_and_restart
+
+    c = create_client
+    link_response = c.link(:handle => @handle, :job_id => @job_id)
+    link_response.stdout.should == ""
+    link_response.stderr.should == ""
+    link_response.exit_status.should == 2
+  end
+
   def drain
     Process.kill("USR2", @pid)
     Process.waitpid(@pid)

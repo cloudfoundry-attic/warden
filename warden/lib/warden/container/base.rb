@@ -333,7 +333,7 @@ module Warden
         t1 = Time.now
 
         jobs_snapshot = {}
-        jobs.each { |id, job| jobs_snapshot[id] = job.snapshot }
+        jobs.each { |id, job| jobs_snapshot[id] = job.to_snapshot }
 
         snapshot = {
           "events"     => events.to_a,
@@ -832,7 +832,7 @@ module Warden
         jobs_snapshot.each do |job_id, job_snapshot|
           job = Job.new(self, Integer(job_id), job_snapshot)
 
-          if job.stale?
+          if !job.terminated? && job.stale?
             job.cleanup
             next
           end
@@ -954,6 +954,15 @@ module Warden
 
           # Clear job from registry
           registry.delete(job_id)
+        end
+
+        def to_snapshot
+          # Drop stdout and stderr because we don't want to recover those after restart
+          snapshot.dup.tap do |s|
+            if s.has_key?("status")
+              s["status"] = [s["status"].first, "", ""]
+            end
+          end
         end
 
         protected
