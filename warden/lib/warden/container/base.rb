@@ -567,7 +567,7 @@ module Warden
 
         exit_status, stdout, stderr = job.yield
 
-        job.cleanup
+        job.cleanup(@jobs)
 
         response.exit_status = exit_status
         response.stdout = stdout
@@ -583,7 +583,7 @@ module Warden
 
         response.exit_status = job.stream(&blk)
 
-        job.cleanup
+        job.cleanup(@jobs)
       end
 
       def do_run(request, response)
@@ -831,6 +831,12 @@ module Warden
 
         jobs_snapshot.each do |job_id, job_snapshot|
           job = Job.new(self, Integer(job_id), job_snapshot)
+
+          if job.stale?
+            job.cleanup
+            next
+          end
+
           job.logger = logger
           job.run
 
@@ -877,6 +883,11 @@ module Warden
 
         def cursors_path
           File.join(job_root_path, "cursors")
+        end
+
+        # Assumption: spawner cleans up after itself
+        def stale?
+          File.directory?(job_root_path) && Dir.glob(File.join(job_root_path, "*.sock")).empty?
         end
 
         def terminated?
@@ -935,14 +946,14 @@ module Warden
           exit_status
         end
 
-        def cleanup
+        def cleanup(registry = {})
           # Clean up job root path
           EM.defer do
             FileUtils.rm_rf(job_root_path) if File.directory?(job_root_path)
           end
 
           # Clear job from registry
-          container.jobs.delete(job_id)
+          registry.delete(job_id)
         end
 
         protected

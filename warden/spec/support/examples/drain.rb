@@ -159,6 +159,39 @@ shared_examples "drain" do
     elapsed.should be > 1
   end
 
+  describe "jobs that exit before a restart" do
+    before do
+      c = create_client
+      @handle = c.create.handle
+      @job_id = client.spawn(:handle => @handle, :script => "sleep 0.2").job_id
+
+      c = create_client
+      c.write(Warden::Protocol::LinkRequest.new(:handle => @handle, :job_id => @job_id))
+
+      sleep 0.1
+
+      drain
+
+      sleep 0.1
+
+      start_warden
+    end
+
+    it "should not allow linking" do
+      c = create_client
+      expect do
+        c.link(:handle => @handle, :job_id => @job_id)
+      end.to raise_error(Warden::Client::ServerError, "no such job")
+    end
+
+    it "should not allow streaming" do
+      c = create_client
+      expect do
+        read_streams(c, @handle, @job_id)
+      end.to raise_error(Warden::Client::ServerError, "no such job")
+    end
+  end
+
   def drain
     Process.kill("USR2", @pid)
     Process.waitpid(@pid)
