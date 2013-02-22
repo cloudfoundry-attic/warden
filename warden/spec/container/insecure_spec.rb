@@ -34,8 +34,8 @@ describe "insecure" do
   end
 
   after do
-    `kill -9 -#{@pid}`
-    Process.waitpid(@pid)
+    Process.kill("KILL", -@pid) rescue Errno::ECHILD
+    Process.waitpid(@pid) rescue Errno::ECHILD
 
     # Destroy all artifacts
     Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|

@@ -1,8 +1,13 @@
 require "thread"
 
 shared_examples "drain" do
+  def warden_running?
+    # After hook reaps exit status
+    File.read("/proc/#{@pid}/status") =~ /zombie/
+  end
+
   it "should cause the warden to exit after all connections are closed" do
-    drain
+    Process.kill("USR2", @pid)
 
     20.times do
       break if !warden_running?
@@ -16,8 +21,6 @@ shared_examples "drain" do
     handle = client.create.handle
 
     drain
-    # HACK: Make sure drain is processed before attempting destroy
-    sleep 0.1
 
     expect do
       client.destroy(:handle => handle)
@@ -49,8 +52,6 @@ shared_examples "drain" do
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
 
     drain
-    # HACK: Make sure drain is processed
-    sleep 0.1
 
     File.exist?(snapshot_path).should be_true
   end
@@ -160,11 +161,11 @@ shared_examples "drain" do
 
   def drain
     Process.kill("USR2", @pid)
+    Process.waitpid(@pid)
   end
 
   def drain_and_restart
     drain
-    Process.waitpid(@pid)
     start_warden
   end
 
@@ -190,11 +191,6 @@ shared_examples "drain" do
     Integer(run_resp.stdout.chomp)
   end
 
-  def warden_running?
-    # After hook reaps exit status
-    File.read("/proc/#{@pid}/status") =~ /zombie/
-  end
-
   def check_request_broken(&blk)
     handle = client.create.handle
 
@@ -203,6 +199,7 @@ shared_examples "drain" do
         blk.call
       end.to raise_error
     end
+
     # Force the request before the drain
     t.run if t.alive?
 

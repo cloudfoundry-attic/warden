@@ -138,8 +138,8 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   def stop_warden(signal = "USR2")
-    `kill -#{signal} -#{@pid}`
-    Process.waitpid(@pid)
+    Process.kill(signal, -@pid) rescue Errno::ECHILD
+    Process.waitpid(@pid) rescue Errno::ECHILD
   end
 
   def restart_warden(signal = "USR2")
