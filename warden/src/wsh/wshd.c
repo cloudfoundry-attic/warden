@@ -657,13 +657,13 @@ int child_run(void *data) {
     exit(1);
   }
 
-  /* Signal parent */
-  rv = barrier_signal(&w->barrier_child);
-  assert(rv == 0);
-
   /* Detach this process from its original group */
   rv = setsid();
   assert(rv > 0 && rv == getpid());
+
+  /* Signal parent */
+  rv = barrier_signal(&w->barrier_child);
+  assert(rv == 0);
 
   return child_loop(w);
 }
