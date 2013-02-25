@@ -1,5 +1,7 @@
 package warden;
 
+// The byte limits are used to compute block limits on the server side.
+
 message LimitDiskRequest {
   required string handle = 1;
 
