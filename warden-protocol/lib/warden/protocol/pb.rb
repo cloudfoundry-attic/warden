@@ -357,8 +357,8 @@ module Warden
       include Warden::Protocol::BaseMessage
 
 
-      optional :host_port, :uint32, 1
-      optional :container_port, :uint32, 2
+      required :host_port, :uint32, 1
+      required :container_port, :uint32, 2
 
     end
 

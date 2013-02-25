@@ -8,6 +8,6 @@ message NetInRequest {
 }
 
 message NetInResponse {
-  optional uint32 host_port      = 1;
-  optional uint32 container_port = 2;
+  required uint32 host_port      = 1;
+  required uint32 container_port = 2;
 }
