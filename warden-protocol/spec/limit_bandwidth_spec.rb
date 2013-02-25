@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/limit_bandwidth"
 
 describe Warden::Protocol::LimitBandwidthRequest do
   subject(:request) do

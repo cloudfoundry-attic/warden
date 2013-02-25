@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/copy_in"
 
 describe Warden::Protocol::CopyInRequest do
   subject(:request) do

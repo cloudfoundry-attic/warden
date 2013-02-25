@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/error"
 
 describe Warden::Protocol::ErrorResponse do
   subject(:response) do

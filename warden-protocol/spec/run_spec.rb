@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/run"
 
 describe Warden::Protocol::RunRequest do
   subject(:request) do

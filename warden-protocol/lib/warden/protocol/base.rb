@@ -16,8 +16,6 @@ module Beefcake
   end
 end
 
-require "warden/protocol/type"
-
 module Warden
   module Protocol
     TypeConverter = {
@@ -126,7 +124,7 @@ module Warden
 
       module ClassMethods
         def type
-          Type.const_get(type_name)
+          Message::Type.const_get(type_name)
         end
 
         def type_camelized
@@ -170,10 +168,11 @@ module Warden
       end
 
       def error?
-        self.class.type == Type::Error
+        self.class.type == Message::Type::Error
       end
     end
   end
 end
 
+require "warden/protocol/pb"
 require "warden/protocol/message"

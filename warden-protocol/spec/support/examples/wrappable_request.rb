@@ -7,7 +7,7 @@ shared_examples "wrappable request" do
     wrapped.should be_a(Warden::Protocol::Message)
 
     type_const = described_class.name.split("::").last.gsub(/Request$/, "")
-    wrapped.type.should == Warden::Protocol::Type.const_get(type_const)
+    wrapped.type.should == Warden::Protocol::Message::Type.const_get(type_const)
     wrapped.payload.to_s.should == subject.encode.to_s
   end
 

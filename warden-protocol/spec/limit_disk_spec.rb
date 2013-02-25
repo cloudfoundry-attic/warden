@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/limit_disk"
 
 shared_examples "disk limiting" do
   field :block_limit do

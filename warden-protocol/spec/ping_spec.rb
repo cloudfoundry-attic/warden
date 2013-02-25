@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/ping"
 
 describe Warden::Protocol::PingRequest do
   subject(:request) do

@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/net_out"
 
 describe Warden::Protocol::NetOutRequest do
   subject(:request) do

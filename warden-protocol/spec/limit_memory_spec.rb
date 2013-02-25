@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/limit_memory"
 
 describe Warden::Protocol::LimitMemoryRequest do
   subject(:request) do

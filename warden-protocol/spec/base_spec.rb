@@ -46,7 +46,7 @@ end
 describe "wrapped request" do
   it "should respond to #request" do
     w = Warden::Protocol::Message.new
-    w.type = Warden::Protocol::Type::Spawn
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = Warden::Protocol::SpawnRequest.new(:handle => "blah",
                                                    :script => "script").encode
     w.should be_valid
@@ -56,7 +56,7 @@ describe "wrapped request" do
 
   it "should wrap beefcake errors" do
     w = Warden::Protocol::Message.new
-    w.type = Warden::Protocol::Type::Spawn
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = "bad payload"
     w.should be_valid
 
@@ -67,7 +67,7 @@ end
 describe "wrapped response" do
   it "should respond to #response" do
     w = Warden::Protocol::Message.new
-    w.type = Warden::Protocol::Type::Spawn
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = Warden::Protocol::SpawnResponse.new(:handle => "blah",
                                                     :job_id => 2).encode
     w.should be_valid
@@ -77,7 +77,7 @@ describe "wrapped response" do
 
   it "should wrap beefcake errors" do
     w = Warden::Protocol::Message.new
-    w.type = Warden::Protocol::Type::Spawn
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = "bad payload"
 
     w.should be_valid

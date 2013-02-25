@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/create"
 
 describe Warden::Protocol::CreateRequest do
   subject(:request) do

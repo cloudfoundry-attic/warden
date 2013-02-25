@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/link"
 
 describe Warden::Protocol::LinkRequest do
   subject(:request) do

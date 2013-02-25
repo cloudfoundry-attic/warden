@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/net_in"
 
 describe Warden::Protocol::NetInRequest do
   subject(:request) do

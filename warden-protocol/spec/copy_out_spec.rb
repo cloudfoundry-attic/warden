@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/copy_out"
 
 describe Warden::Protocol::CopyOutRequest do
   subject(:request) do

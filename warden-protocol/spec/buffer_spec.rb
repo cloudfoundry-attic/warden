@@ -2,7 +2,6 @@
 
 require "spec_helper"
 require "warden/protocol/buffer"
-require "warden/protocol/echo"
 
 describe Warden::Protocol::Buffer do
   let(:request) { Warden::Protocol::EchoRequest.new(:message => "request") }

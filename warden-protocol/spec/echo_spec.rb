@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/echo"
 
 describe Warden::Protocol::EchoRequest do
   subject(:request) do
