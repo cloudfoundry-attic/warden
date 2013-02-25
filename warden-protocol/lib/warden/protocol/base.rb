@@ -135,9 +135,11 @@ module Warden
       include Beefcake::Message
 
       def safe
-          yield
-        rescue WrongTypeError, InvalidValueError, RequiredFieldNotSetError => e
-          raise ProtocolError, e
+        yield
+      rescue Beefcake::Message::WrongTypeError,
+             Beefcake::Message::InvalidValueError,
+             Beefcake::Message::RequiredFieldNotSetError => e
+        raise ProtocolError, e
       end
 
       def reload
