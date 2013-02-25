@@ -31,13 +31,13 @@ module Warden
 
       def each_request(&blk)
         each do |payload|
-          yield(Warden::Protocol::WrappedRequest.decode(payload).request)
+          yield(Warden::Protocol::Message.decode(payload).request)
         end
       end
 
       def each_response(&blk)
         each do |payload|
-          yield(Warden::Protocol::WrappedResponse.decode(payload).response)
+          yield(Warden::Protocol::Message.decode(payload).response)
         end
       end
 
