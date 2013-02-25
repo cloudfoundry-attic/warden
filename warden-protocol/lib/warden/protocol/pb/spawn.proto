@@ -1,0 +1,13 @@
+package warden;
+
+message SpawnRequest {
+  required string handle = 1;
+
+  required string script = 2;
+  optional bool privileged = 3 [default = false];
+  optional ResourceLimits rlimits = 4;
+}
+
+message SpawnResponse {
+  required uint32 job_id = 1;
+}

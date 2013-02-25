@@ -1,0 +1,13 @@
+package warden;
+
+message LimitBandwidthRequest {
+  required string handle = 1;
+
+  optional uint64 rate  = 2; // Bandwidth rate in byte(s)/sec
+  optional uint64 burst = 3; // Allow burst size in byte(s)
+}
+
+message LimitBandwidthResponse {
+  optional uint64 rate  = 1; // Bandwidth rate in byte(s)/sec
+  optional uint64 burst = 2; // Allow burst size in byte(s)
+}

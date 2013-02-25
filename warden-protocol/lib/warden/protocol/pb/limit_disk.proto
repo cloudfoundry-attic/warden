@@ -1,0 +1,37 @@
+package warden;
+
+message LimitDiskRequest {
+  required string handle = 1;
+
+  optional uint32 block_limit = 10; // Alias for `block_hard`
+  optional uint64 block       = 11; // Alias for `block_hard`
+  optional uint64 block_soft  = 12;
+  optional uint64 block_hard  = 13;
+
+  optional uint32 inode_limit = 20; // Alias for `inode_hard`
+  optional uint64 inode       = 21; // Alias for `inode_hard`
+  optional uint64 inode_soft  = 22;
+  optional uint64 inode_hard  = 23;
+
+  optional uint32 byte_limit  = 30; // Alias for `byte_hard`
+  optional uint64 byte        = 31; // Alias for `byte_hard`
+  optional uint64 byte_soft   = 32;
+  optional uint64 byte_hard   = 33;
+}
+
+message LimitDiskResponse {
+  optional uint32 block_limit = 10; // Alias for `block_hard`
+  optional uint64 block       = 11; // Alias for `block_hard`
+  optional uint64 block_soft  = 12;
+  optional uint64 block_hard  = 13;
+
+  optional uint32 inode_limit = 20; // Alias for `inode_hard`
+  optional uint64 inode       = 21; // Alias for `inode_hard`
+  optional uint64 inode_soft  = 22;
+  optional uint64 inode_hard  = 23;
+
+  optional uint32 byte_limit  = 30; // Alias for `byte_hard`
+  optional uint64 byte        = 31; // Alias for `byte_hard`
+  optional uint64 byte_soft   = 32;
+  optional uint64 byte_hard   = 33;
+}

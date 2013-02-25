@@ -1,0 +1,13 @@
+package warden;
+
+message NetInRequest {
+  required string handle = 1;
+
+  optional uint32 host_port      = 3;
+  optional uint32 container_port = 2;
+}
+
+message NetInResponse {
+  optional uint32 host_port      = 1;
+  optional uint32 container_port = 2;
+}
