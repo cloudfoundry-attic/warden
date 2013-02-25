@@ -4,7 +4,9 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class ResourceLimits < BaseMessage
+    class ResourceLimits
+      include Warden::Protocol::BaseMessage
+
       optional :as, :uint64, 1
       optional :core, :uint64, 2
       optional :cpu, :uint64, 3

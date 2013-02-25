@@ -4,13 +4,16 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class PingRequest < BaseRequest
+    class PingRequest
+      include Warden::Protocol::BaseMessage
+
       def self.description
         "Ping warden."
       end
     end
 
-    class PingResponse < BaseResponse
+    class PingResponse
+      include Warden::Protocol::BaseMessage
     end
   end
 end

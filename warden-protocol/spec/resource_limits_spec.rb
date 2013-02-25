@@ -8,9 +8,6 @@ describe Warden::Protocol::ResourceLimits do
     described_class.new
   end
 
-  its("class.type_camelized") { should == "ResourceLimits" }
-  its("class.type_underscored") { should == "resource_limits" }
-
   field :as do
     it_should_be_optional
     it_should_be_typed_as_uint64

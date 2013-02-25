@@ -4,7 +4,9 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class InfoRequest < BaseRequest
+    class InfoRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
 
       def self.description
@@ -12,8 +14,12 @@ module Warden
       end
     end
 
-    class InfoResponse < BaseResponse
-      class MemoryStat < BaseMessage
+    class InfoResponse
+      include Warden::Protocol::BaseMessage
+
+      class MemoryStat
+        include Warden::Protocol::BaseMessage
+
         optional :cache, :uint64, 1
         optional :rss, :uint64, 2
         optional :mapped_file, :uint64, 3
@@ -44,18 +50,24 @@ module Warden
         optional :total_unevictable, :uint64, 28
       end
 
-      class CpuStat < BaseMessage
+      class CpuStat
+        include Warden::Protocol::BaseMessage
+
         optional :usage,  :uint64, 1 # Nanoseconds
         optional :user,   :uint64, 2 # Hz (USER_HZ specifically)
         optional :system, :uint64, 3 # Hz
       end
 
-      class DiskStat < BaseMessage
+      class DiskStat
+        include Warden::Protocol::BaseMessage
+
         optional :bytes_used,  :uint64, 1
         optional :inodes_used, :uint64, 2
       end
 
-      class BandwidthStat < BaseMessage
+      class BandwidthStat
+        include Warden::Protocol::BaseMessage
+
         optional :in_rate, :uint64, 1
         optional :in_burst, :uint64, 2
         optional :out_rate, :uint64, 3

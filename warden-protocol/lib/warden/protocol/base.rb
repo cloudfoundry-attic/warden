@@ -131,8 +131,21 @@ module Warden
       raise TypeError, "Non-existent protocol type passed: '#{protocol_type}'."
     end
 
-    class BaseMessage
-      include Beefcake::Message
+    module BaseMessage
+      def self.included(base)
+        base.send(:include, Beefcake::Message)
+
+        if base.name =~ /(Request|Response)$/
+          base.extend(ClassMethods)
+
+          case $1
+          when "Request"
+            base.send(:include, BaseRequest)
+          when "Response"
+            base.send(:include, BaseResponse)
+          end
+        end
+      end
 
       def safe
         yield
@@ -158,7 +171,7 @@ module Warden
         end
       end
 
-      class << self
+      module ClassMethods
         def type
           Type.const_get(type_name)
         end
@@ -179,7 +192,11 @@ module Warden
       end
     end
 
-    class BaseRequest < BaseMessage
+    module BaseRequest
+      def self.included(base)
+        base.extend(ClassMethods)
+      end
+
       def create_response(attributes = {})
         klass_name = self.class.name.gsub(/Request$/, "Response")
         klass_name = klass_name.split("::").last
@@ -193,12 +210,14 @@ module Warden
         end
       end
 
-      def self.description
-        type_underscored.gsub("_", " ").capitalize
+      module ClassMethods
+        def description
+          type_underscored.gsub("_", " ").capitalize
+        end
       end
     end
 
-    class BaseResponse < BaseMessage
+    module BaseResponse
       def ok?
         !error?
       end
@@ -214,7 +233,9 @@ module Warden
       end
     end
 
-    class WrappedRequest < BaseRequest
+    class WrappedRequest
+      include BaseMessage
+
       required :type, Type, 1
       required :payload, :string, 2
 
@@ -225,7 +246,9 @@ module Warden
       end
     end
 
-    class WrappedResponse < BaseResponse
+    class WrappedResponse
+      include BaseMessage
+
       required :type, Type, 1
       required :payload, :string, 2
 

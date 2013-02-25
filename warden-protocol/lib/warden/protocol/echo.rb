@@ -4,7 +4,9 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class EchoRequest < BaseRequest
+    class EchoRequest
+      include Warden::Protocol::BaseMessage
+
       required :message, :string, 1
 
       def self.description
@@ -12,7 +14,9 @@ module Warden
       end
     end
 
-    class EchoResponse < BaseResponse
+    class EchoResponse
+      include Warden::Protocol::BaseMessage
+
       required :message, :string, 1
     end
   end

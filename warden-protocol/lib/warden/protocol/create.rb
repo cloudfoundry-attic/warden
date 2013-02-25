@@ -4,8 +4,12 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class CreateRequest < BaseRequest
-      class BindMount < BaseMessage
+    class CreateRequest
+      include Warden::Protocol::BaseMessage
+
+      class BindMount
+        include Warden::Protocol::BaseMessage
+
         module Mode
           RO = 0
           RW = 1
@@ -27,7 +31,9 @@ module Warden
       end
     end
 
-    class CreateResponse < BaseResponse
+    class CreateResponse
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
     end
   end

@@ -4,7 +4,9 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class DestroyRequest < BaseRequest
+    class DestroyRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
 
       def self.description
@@ -12,7 +14,8 @@ module Warden
       end
     end
 
-    class DestroyResponse < BaseResponse
+    class DestroyResponse
+      include Warden::Protocol::BaseMessage
     end
   end
 end

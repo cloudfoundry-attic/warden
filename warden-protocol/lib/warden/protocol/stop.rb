@@ -4,7 +4,9 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class StopRequest < BaseRequest
+    class StopRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
       optional :background, :bool, 10
       optional :kill, :bool, 20
@@ -14,7 +16,8 @@ module Warden
       end
     end
 
-    class StopResponse < BaseResponse
+    class StopResponse
+      include Warden::Protocol::BaseMessage
     end
   end
 end

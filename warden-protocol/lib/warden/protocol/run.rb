@@ -5,7 +5,9 @@ require "warden/protocol/resource_limits"
 
 module Warden
   module Protocol
-    class RunRequest < BaseRequest
+    class RunRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
       required :script, :string, 2
       optional :privileged, :bool, 3, :default => false
@@ -16,7 +18,9 @@ module Warden
       end
     end
 
-    class RunResponse < BaseResponse
+    class RunResponse
+      include Warden::Protocol::BaseMessage
+
       optional :exit_status, :uint32, 1
       optional :stdout, :string, 2
       optional :stderr, :string, 3

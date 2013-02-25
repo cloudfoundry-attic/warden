@@ -4,13 +4,17 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class ListRequest < BaseRequest
+    class ListRequest
+      include Warden::Protocol::BaseMessage
+
       def self.description
         "List containers."
       end
     end
 
-    class ListResponse < BaseResponse
+    class ListResponse
+      include Warden::Protocol::BaseMessage
+
       repeated :handles, :string, 1
     end
   end

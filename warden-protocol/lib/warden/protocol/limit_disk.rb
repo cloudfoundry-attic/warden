@@ -7,7 +7,9 @@ module Warden
 
     # The byte limits are used to compute block limits on the server side.
 
-    class LimitDiskRequest < BaseRequest
+    class LimitDiskRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
 
       optional :block_limit, :uint32, 10 # Alias for `block_hard`
@@ -30,7 +32,9 @@ module Warden
       end
     end
 
-    class LimitDiskResponse < BaseResponse
+    class LimitDiskResponse
+      include Warden::Protocol::BaseMessage
+
       optional :block_limit, :uint32, 10 # Alias for `block_hard`
       optional :block,       :uint64, 11 # Alias for `block_hard`
       optional :block_soft,  :uint64, 12

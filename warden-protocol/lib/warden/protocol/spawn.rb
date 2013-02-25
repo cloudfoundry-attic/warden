@@ -5,7 +5,9 @@ require "warden/protocol/resource_limits"
 
 module Warden
   module Protocol
-    class SpawnRequest < BaseRequest
+    class SpawnRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
       required :script, :string, 2
       optional :privileged, :bool, 3, :default => false
@@ -16,7 +18,9 @@ module Warden
       end
     end
 
-    class SpawnResponse < BaseResponse
+    class SpawnResponse
+      include Warden::Protocol::BaseMessage
+
       required :job_id, :uint32, 1
     end
   end

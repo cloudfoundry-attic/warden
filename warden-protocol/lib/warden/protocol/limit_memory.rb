@@ -4,7 +4,9 @@ require "warden/protocol/base"
 
 module Warden
   module Protocol
-    class LimitMemoryRequest < BaseRequest
+    class LimitMemoryRequest
+      include Warden::Protocol::BaseMessage
+
       required :handle, :string, 1
       optional :limit_in_bytes, :uint64, 2
 
@@ -13,7 +15,9 @@ module Warden
       end
     end
 
-    class LimitMemoryResponse < BaseResponse
+    class LimitMemoryResponse
+      include Warden::Protocol::BaseMessage
+
       optional :limit_in_bytes, :uint64, 1
     end
   end
