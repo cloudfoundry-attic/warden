@@ -251,7 +251,7 @@ module Warden
       end
 
       def container_path
-        @container_path ||= File.join(container_depot_path, handle)
+        @container_path ||= File.join(container_depot_path, container_id)
       end
 
       def container_path=(path)
