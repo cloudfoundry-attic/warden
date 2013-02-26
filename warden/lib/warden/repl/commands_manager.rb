@@ -113,25 +113,26 @@ module Warden::Repl
       end
     end
 
-    # If not previously generated, generates a hash with each key being the
-    # string representation of a command and value being the description
-    # defined in the protocol buffer request definition corresponding to that
-    # command.
-    #
-    # Returns:
-    #    Hash with each key being a command name [String] and its value
-    #    being the description [String] defined in the protocol buffer
-    #    request definition.
     def command_descriptions
-      unless @desc_map
-        @klass_map = generate_commands_map unless @klass_map
-        @desc_map = {}
-        @klass_map.each_pair do |key, value|
-          @desc_map[key] = value.description
-        end
-      end
-
-      @desc_map.freeze
+      @desc_map ||= {
+        "copy_in" => "Copy files/directories into the container.",
+        "copy_out" => "Copy files/directories out of the container.",
+        "create" => "Create a container, optionally pass options.",
+        "destroy" => "Shutdown a container.",
+        "echo" => "Echo a message.",
+        "info" => "Show metadata for a container.",
+        "limit_disk" => "set or get the disk limit for the container.",
+        "limit_memory" => "Set or get the memory limit for the container.",
+        "link" => "Do blocking read on results from a job.",
+        "list" => "List containers.",
+        "net_in" => "Forward port on external interface to container.",
+        "net_out" => "Allow traffic from the container to address.",
+        "ping" => "Ping warden.",
+        "run" => "Short hand for spawn(link(cmd)) i.e. spawns a command, links to the result.",
+        "spawn" => "Spawns a command inside a container and returns the job id.",
+        "stop" => "Stop all processes inside a container.",
+        "stream" => "Do blocking stream on results from a job.",
+      }
     end
 
     # Deserializes a command and its arguments into an object of the
@@ -371,7 +372,7 @@ module Warden::Repl
 
     def generate_commands_map
       klass_map = {}
-      map = Warden::Protocol::Type.generate_klass_map("Request")
+      map = Warden::Protocol::Message::Type.generate_klass_map("Request")
       map.each_value { |value| klass_map[to_type(value)] = value }
       klass_map
     end

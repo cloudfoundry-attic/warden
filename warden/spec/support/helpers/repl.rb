@@ -1,60 +1,50 @@
 module Helpers
   module Repl
-    class SimpleTest < Warden::Protocol::BaseRequest
+    class SimpleTest
+      include Warden::Protocol::BaseMessage
+
       required :field, :string, 1
-
-      def self.description
-        "Simple test command."
-      end
     end
 
-    class RepeatedTest < Warden::Protocol::BaseRequest
+    class RepeatedTest
+      include Warden::Protocol::BaseMessage
+
       repeated :field, :string, 1
-
-      def self.description
-        "Repeated test command."
-      end
     end
 
-    class NestedTest < Warden::Protocol::BaseRequest
+    class NestedTest
+      include Warden::Protocol::BaseMessage
+
       required :complex_field, SimpleTest, 1
-
-      def self.description
-        "Nested test command."
-      end
     end
 
-    class BoolTest < Warden::Protocol::BaseRequest
+    class BoolTest
+      include Warden::Protocol::BaseMessage
+
       required :field, :bool, 1
-
-      def self.description
-        "Bool test command."
-      end
     end
 
-    class MixedTest < Warden::Protocol::BaseRequest
+    class MixedTest
+      include Warden::Protocol::BaseMessage
+
       repeated :complex_field, SimpleTest, 1
       required :bool_field, :bool, 2
-
-      def self.description
-        "Mixed test command."
-      end
     end
 
-    class EnumTest < Warden::Protocol::BaseRequest
+    class EnumTest
+      include Warden::Protocol::BaseMessage
+
       module Enum
         A = 1
         B = 2
       end
 
       required :field, Enum, 1
-
-      def self.description
-        "Enum test command."
-      end
     end
 
-    class BadEnumTest < Warden::Protocol::BaseRequest
+    class BadEnumTest
+      include Warden::Protocol::BaseMessage
+
       # this will test the case where an error is thrown during serialization if
       # two enum constants can't have the same value.
       module BadEnum
@@ -63,40 +53,30 @@ module Helpers
       end
 
       required :field, BadEnum, 1
-
-      def self.description
-        "Bad enum test command."
-      end
     end
 
-    class WrongTypeTest < Warden::Protocol::BaseRequest
+    class WrongTypeTest
+      include Warden::Protocol::BaseMessage
+
       required :int_field, :uint32, 1
-
-      def self.description
-        "Wrong type test command."
-      end
     end
 
-    class SimpleFieldsHelpTest < Warden::Protocol::BaseRequest
+    class SimpleFieldsHelpTest
+      include Warden::Protocol::BaseMessage
+
       required :req_field, :string, 1
       repeated :rep_field, :uint32, 2
       optional :opt_field, :string, 3, :default => "default_value"
       required :req_bool_field, :bool, 4
-
-      def self.description
-        "Test generation of help for simple fields."
-      end
     end
 
-    class NestedFieldsHelpTest < Warden::Protocol::BaseRequest
+    class NestedFieldsHelpTest
+      include Warden::Protocol::BaseMessage
+
       required :req_complex_field, SimpleFieldsHelpTest, 1
-
-      def self.description
-        "Test generation of help for nested field."
-      end
     end
 
-    def test_klass_map
+    def self.test_klass_map
       {
         1 => SimpleTest,
         2 => RepeatedTest,
@@ -111,19 +91,19 @@ module Helpers
       }
     end
 
-    def test_desc_map
-      klass_map = {}
-
-      map = test_klass_map
-      map.each_value do |value|
-        key = value.name.gsub(/(Request|Response)$/, "")
-        key = key.split("::").last
-        key = key.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
-
-        klass_map[key] = value.description
-      end
-
-      klass_map
+    def self.test_description_map
+      {
+        "simple_test" => "Simple test command.",
+        "repeated_test" => "Repeated test command.",
+        "nested_test" => "Nested test command.",
+        "bool_test" => "Bool test command.",
+        "mixed_test" => "Mixed test command.",
+        "enum_test" => "Enum test command.",
+        "bad_enum_test" => "Bad enum test command.",
+        "wrong_type_test" => "Wrong type test command.",
+        "simple_fields_help_test" => "Test generation of help for simple fields.",
+        "nested_fields_help_test" => "Test generation of help for nested field.",
+      }
     end
   end
 end

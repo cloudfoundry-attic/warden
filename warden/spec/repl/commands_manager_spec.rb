@@ -126,8 +126,8 @@ describe Warden::Repl::CommandsManager do
     context "parse valid fields" do
       before :each do
         @request = nil
-        Warden::Protocol::Type.should_receive(:generate_klass_map).
-          with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+          with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
       after :each do
@@ -282,8 +282,8 @@ describe Warden::Repl::CommandsManager do
 
     context "reject invalid commands and fields" do
       before :each do
-        Warden::Protocol::Type.should_receive(:generate_klass_map).
-          with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+          with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
       it "should raise an error when command is bad" do
@@ -510,8 +510,10 @@ describe Warden::Repl::CommandsManager do
     context "generate help" do
 
       before(:each) do
-        Warden::Protocol::Type.should_receive(:generate_klass_map).once.
-          with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+          with("Request").and_return(Helpers::Repl.test_klass_map)
+        @subject.stub(:command_descriptions).
+          and_return(Helpers::Repl.test_description_map)
       end
 
       it "should generate help for a command with simple field(s)" do
@@ -599,39 +601,6 @@ describe Warden::Repl::CommandsManager do
             :required => nested_field_help
           }
         }
-      end
-
-      it "should generate descriptions for all commands" do
-        @subject.command_descriptions.should == test_desc_map
-      end
-
-      it "should cache the generated class map of commands" do
-        args = ["simple_test",
-                "--field", "value"]
-
-        request = @subject.deserialize(args)
-
-        request.should be_an_instance_of Helpers::Repl::SimpleTest
-        request.field.should == "value"
-
-        args = ["repeated_test",
-                "--field[0]", "value_0",
-                "--field[1]", "value_1"]
-
-        request = @subject.deserialize(args)
-
-        request.should be_an_instance_of Helpers::Repl::RepeatedTest
-        request.field.size.should == 2
-        request.field[0].should == "value_0"
-        request.field[1].should == "value_1"
-      end
-
-      it "should cache the generated descriptions of commands" do
-        hash_1 = @subject.command_descriptions
-        hash_2 = @subject.command_descriptions
-        hash_1.should == test_desc_map
-        hash_2.should == test_desc_map
-        hash_1.object_id.should == hash_2.object_id
       end
     end
   end
