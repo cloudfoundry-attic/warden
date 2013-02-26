@@ -144,21 +144,11 @@ module Warden
     end
 
     module BaseRequest
-      def self.included(base)
-        base.extend(ClassMethods)
-      end
-
       def create_response(attributes = {})
         klass_name = self.class.name.gsub(/Request$/, "Response")
         klass_name = klass_name.split("::").last
         klass = Protocol.const_get(klass_name)
         klass.new(attributes)
-      end
-
-      module ClassMethods
-        def description
-          type_underscored.gsub("_", " ").capitalize
-        end
       end
     end
 

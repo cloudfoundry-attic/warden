@@ -25,8 +25,6 @@ describe Warden::Protocol::LinkRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LinkResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::LinkResponse do

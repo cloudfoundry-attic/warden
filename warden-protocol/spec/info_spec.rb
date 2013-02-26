@@ -20,8 +20,6 @@ describe Warden::Protocol::InfoRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::InfoResponse)
   end
-
-    it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::InfoResponse::CpuStat do

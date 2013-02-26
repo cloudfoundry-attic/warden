@@ -33,8 +33,6 @@ describe Warden::Protocol::SpawnRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::SpawnResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::SpawnResponse do
