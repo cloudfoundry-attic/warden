@@ -247,15 +247,22 @@ module Warden
     class EnumEncodingError < StandardError
     end
 
+    def to_type(klass)
+      type = klass.name.gsub(/(Request|Response)$/, "")
+      type = type.split("::").last
+      type = type.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+      type
+    end
+
     def generate_help(cmd_type, opts = {})
       help = do_generate_help(cmd_type, opts)
-      { cmd_type.type_underscored.to_sym => help }
+      { to_type(cmd_type).to_sym => help }
     end
 
     # Generates help for a command type recursively.
     def do_generate_help(cmd_type, opts = {})
       help = {}
-      help[:description] = command_descriptions[cmd_type.type_underscored]
+      help[:description] = command_descriptions[to_type(cmd_type)]
 
       help_generator = lambda do |field, prefix|
         field_str = ""
@@ -365,7 +372,7 @@ module Warden
     def generate_commands_map
       klass_map = {}
       map = Warden::Protocol::Type.generate_klass_map("Request")
-      map.each_value { |value| klass_map[value.type_underscored] = value }
+      map.each_value { |value| klass_map[to_type(value)] = value }
       klass_map
     end
 

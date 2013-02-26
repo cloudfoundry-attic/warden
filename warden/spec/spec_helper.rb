@@ -177,10 +177,16 @@ def test_klass_map
 end
 
 def test_desc_map
-  test_desc_map = {}
-  test_klass_map.each_pair do |k, type|
-    test_desc_map[type.type_underscored] = type.description
+  klass_map = {}
+
+  map = test_klass_map
+  map.each_value do |value|
+    key = value.name.gsub(/(Request|Response)$/, "")
+    key = key.split("::").last
+    key = key.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+
+    klass_map[key] = value.description
   end
 
-  test_desc_map
+  klass_map
 end

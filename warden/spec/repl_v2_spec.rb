@@ -246,7 +246,7 @@ describe Warden::Repl do
         repl = described_class.new
         command_info = repl.process_line("--help")
 
-        width = Warden::Protocol::RunRequest.type_underscored.size + 2
+        width = "run".length + 2
         expected = "\n"
         expected << "\trun  #{described_class.run_command_description}\n"
         expected << "\thelp Show help.\n"
@@ -306,7 +306,7 @@ describe Warden::Repl do
 
         command_info = repl.process_line("--help")
 
-        width = NestedFieldsHelpTest.type_underscored.size + 2
+        width = "nested_fields_help_test".length + 2
         expected = "\n"
         test_desc_map.each_pair do |command, description|
           expected << "\t%-#{width}s%s\n" % [command, description]
@@ -325,9 +325,9 @@ describe Warden::Repl do
 
         command_info = repl.process_line("simple_test --help")
 
-        expected = "command: #{SimpleTest.type_underscored}\n"
+        expected = "command: simple_test\n"
         expected << "description: #{SimpleTest.description}\n"
-        expected << "usage: #{SimpleTest.type_underscored} [options]\n\n"
+        expected << "usage: simple_test [options]\n\n"
         expected << "[options] can be one of the following:\n\n"
         expected << "\t--field <field> (string)  # required\n"
 
@@ -339,9 +339,9 @@ describe Warden::Repl do
 
         command_info = repl.process_line("mixed_test --help")
 
-        expected = "command: #{MixedTest.type_underscored}\n"
+        expected = "command: mixed_test\n"
         expected << "description: #{MixedTest.description}\n"
-        expected << "usage: #{MixedTest.type_underscored} [options]\n\n"
+        expected << "usage: mixed_test [options]\n\n"
         expected << "[options] can be one of the following:\n\n"
         expected << "\t--bool_field  # required\n"
         expected << "\t--complex_field[index]  # array\n"

@@ -148,6 +148,13 @@ module Warden
       text
     end
 
+    def to_type(klass)
+      type = klass.name.gsub(/(Request|Response)$/, "")
+      type = type.split("::").last
+      type = type.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+      type
+    end
+
     def process_command(command_args)
       command_info = { :result => "" }
       command_info[:result] << "+ #{command_args.join(" ")}\n" if @trace
@@ -161,7 +168,7 @@ module Warden
       else
         @client.connect() unless @client.connected?
 
-        type = command.class.type_underscored.to_sym
+        type = to_type(command.class).to_sym
 
         if type == :stream || type == :run
           process_stream = lambda do |response|
