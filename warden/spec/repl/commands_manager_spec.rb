@@ -110,6 +110,8 @@ describe Warden::Repl::CommandsManager::Flag do
 end
 
 describe Warden::Repl::CommandsManager do
+  include Helpers::Repl
+
   before :each do
     @subject = Object.new
     @subject.extend(described_class)
@@ -138,7 +140,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.field.should == "value"
       end
 
@@ -149,7 +151,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of RepeatedTest
+        @request.should be_an_instance_of Helpers::Repl::RepeatedTest
         @request.field.size.should == 2
         @request.field[0].should == "value_0"
         @request.field[1].should == "value_1"
@@ -161,7 +163,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of NestedTest
+        @request.should be_an_instance_of Helpers::Repl::NestedTest
         @request.complex_field.field.should == "value"
       end
 
@@ -171,7 +173,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of BoolTest
+        @request.should be_an_instance_of Helpers::Repl::BoolTest
         @request.field.should be_true
       end
 
@@ -181,8 +183,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of EnumTest
-        @request.field.should == EnumTest::Enum::A
+        @request.should be_an_instance_of Helpers::Repl::EnumTest
+        @request.field.should == Helpers::Repl::EnumTest::Enum::A
       end
 
       it "should parse mixed fields" do
@@ -192,10 +194,10 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of MixedTest
+        @request.should be_an_instance_of Helpers::Repl::MixedTest
         @request.complex_field.should be_an_instance_of Array
         @request.complex_field.size.should == 1
-        @request.complex_field[0].should be_an_instance_of SimpleTest
+        @request.complex_field[0].should be_an_instance_of Helpers::Repl::SimpleTest
         @request.complex_field[0].field.should == "value"
         @request.bool_field.should == true
       end
@@ -207,7 +209,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.field.should == "overwrite"
       end
 
@@ -218,7 +220,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of RepeatedTest
+        @request.should be_an_instance_of Helpers::Repl::RepeatedTest
         @request.field.size.should == 1
         @request.field[0].should == "overwrite"
       end
@@ -230,8 +232,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of NestedTest
-        @request.complex_field.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::NestedTest
+        @request.complex_field.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.complex_field.field.should == "overwrite"
       end
 
@@ -242,7 +244,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of BoolTest
+        @request.should be_an_instance_of Helpers::Repl::BoolTest
         @request.field.should be_true
       end
 
@@ -253,8 +255,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of EnumTest
-        @request.field.should == EnumTest::Enum::B
+        @request.should be_an_instance_of Helpers::Repl::EnumTest
+        @request.field.should == Helpers::Repl::EnumTest::Enum::B
       end
 
       it "should work for a different field delimiter" do
@@ -263,7 +265,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args, ":")
 
-        @request.should be_an_instance_of NestedTest
+        @request.should be_an_instance_of Helpers::Repl::NestedTest
         @request.complex_field.field.should == "value"
       end
 
@@ -273,7 +275,7 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.field.should == "ab --help"
       end
     end
@@ -609,7 +611,7 @@ describe Warden::Repl::CommandsManager do
 
         request = @subject.deserialize(args)
 
-        request.should be_an_instance_of SimpleTest
+        request.should be_an_instance_of Helpers::Repl::SimpleTest
         request.field.should == "value"
 
         args = ["repeated_test",
@@ -618,7 +620,7 @@ describe Warden::Repl::CommandsManager do
 
         request = @subject.deserialize(args)
 
-        request.should be_an_instance_of RepeatedTest
+        request.should be_an_instance_of Helpers::Repl::RepeatedTest
         request.field.size.should == 2
         request.field[0].should == "value_0"
         request.field[1].should == "value_1"
@@ -637,7 +639,7 @@ describe Warden::Repl::CommandsManager do
   describe "#serialize" do
     context "serialize valid protocol objects" do
       it "should serialize simple field" do
-        pb_handle = SimpleTest.new
+        pb_handle = Helpers::Repl::SimpleTest.new
         pb_handle.field = "field"
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -646,7 +648,7 @@ describe Warden::Repl::CommandsManager do
       end
 
       it "should serialize repeated field" do
-        pb_handle = RepeatedTest.new
+        pb_handle = Helpers::Repl::RepeatedTest.new
         pb_handle.field = ["value_0", "value_1"]
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -656,8 +658,8 @@ describe Warden::Repl::CommandsManager do
       end
 
       it "should serialize nested field" do
-        pb_handle = NestedTest.new
-        pb_handle.complex_field = SimpleTest.new
+        pb_handle = Helpers::Repl::NestedTest.new
+        pb_handle.complex_field = Helpers::Repl::SimpleTest.new
         pb_handle.complex_field.field = "field"
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -666,7 +668,7 @@ describe Warden::Repl::CommandsManager do
       end
 
       it "should serialize bool field" do
-        pb_handle = BoolTest.new
+        pb_handle = Helpers::Repl::BoolTest.new
         pb_handle.field = true
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -675,8 +677,8 @@ describe Warden::Repl::CommandsManager do
       end
 
       it "should serialize enum field" do
-        pb_handle = EnumTest.new
-        pb_handle.field = EnumTest::Enum::A
+        pb_handle = Helpers::Repl::EnumTest.new
+        pb_handle.field = Helpers::Repl::EnumTest::Enum::A
         hash = @subject.serialize(pb_handle)
         hash.should == {
           "field" => "A",
@@ -686,8 +688,8 @@ describe Warden::Repl::CommandsManager do
 
     context "reject invalid protocol objects" do
       it "should raise an error when ambiguous constants are defined in the module defining the enum field" do
-        pb_handle = BadEnumTest.new
-        pb_handle.field = BadEnumTest::BadEnum::A
+        pb_handle = Helpers::Repl::BadEnumTest.new
+        pb_handle.field = Helpers::Repl::BadEnumTest::BadEnum::A
 
         expect {
           @subject.serialize(pb_handle)
@@ -697,7 +699,7 @@ describe Warden::Repl::CommandsManager do
 
           msg = "Cannot serialize enum field: field."
           msg << " Duplicate constants defined in module:"
-          msg << " #{BadEnumTest::BadEnum}."
+          msg << " #{Helpers::Repl::BadEnumTest::BadEnum}."
 
           error.message.should == msg
         }

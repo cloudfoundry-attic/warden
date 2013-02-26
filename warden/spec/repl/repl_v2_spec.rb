@@ -4,6 +4,8 @@ require "warden/repl/repl_v2"
 require "spec_helper"
 
 describe Warden::Repl::Repl do
+  include Helpers::Repl
+
   describe "#start" do
     before :each do
       Readline.should_receive(:completion_append_character=).once
@@ -273,7 +275,7 @@ describe Warden::Repl::Repl do
       end
 
       it "should add command trace to output" do
-        request = response = SimpleTest.new
+        request = response = Helpers::Repl::SimpleTest.new
         request.field = "field"
 
         @client.should_receive(:connected?).once.and_return(true)
@@ -288,7 +290,7 @@ describe Warden::Repl::Repl do
       end
 
       it "should serialize response from warden server" do
-        request = response = SimpleTest.new
+        request = response = Helpers::Repl::SimpleTest.new
         request.field = "field"
 
         @client.should_receive(:connected?).once.and_return(true)
@@ -326,7 +328,7 @@ describe Warden::Repl::Repl do
         command_info = repl.process_line("simple_test --help")
 
         expected = "command: simple_test\n"
-        expected << "description: #{SimpleTest.description}\n"
+        expected << "description: #{Helpers::Repl::SimpleTest.description}\n"
         expected << "usage: simple_test [options]\n\n"
         expected << "[options] can be one of the following:\n\n"
         expected << "\t--field <field> (string)  # required\n"
@@ -340,7 +342,7 @@ describe Warden::Repl::Repl do
         command_info = repl.process_line("mixed_test --help")
 
         expected = "command: mixed_test\n"
-        expected << "description: #{MixedTest.description}\n"
+        expected << "description: #{Helpers::Repl::MixedTest.description}\n"
         expected << "usage: mixed_test [options]\n\n"
         expected << "[options] can be one of the following:\n\n"
         expected << "\t--bool_field  # required\n"
