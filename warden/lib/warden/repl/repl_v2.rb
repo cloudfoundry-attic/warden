@@ -1,7 +1,7 @@
 # coding: UTF-8
 
 require "warden/client"
-require "warden/commands_manager"
+require "warden/repl/commands_manager"
 
 require "readline"
 require "shellwords"
@@ -9,14 +9,14 @@ require "json"
 require "pp"
 require "optparse"
 
-module Warden
+module Warden::Repl
   # Runs either interactively (or) non-interactively. Returns the output
   # and exit status of a command and raises errors (if any) in non-interactive
   # execution. Autocompletes commands, writes their output to standard out and
   # writes the errors to standard error in interactive execution.
   class Repl
 
-    include Warden::CommandsManager
+    include Warden::Repl::CommandsManager
 
     # Parameters:
     # - opts [Hash]
@@ -70,7 +70,7 @@ module Warden
           end
         rescue Warden::Protocol::ProtocolError,
           Warden::Client::ServerError,
-          Warden::CommandsManager::CommandError => ce
+          Warden::Repl::CommandsManager::CommandError => ce
           STDERR.write("#{ce.message}\n")
           break if @exit_on_error
         end
@@ -148,6 +148,13 @@ module Warden
       text
     end
 
+    def to_type(klass)
+      type = klass.name.gsub(/(Request|Response)$/, "")
+      type = type.split("::").last
+      type = type.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+      type
+    end
+
     def process_command(command_args)
       command_info = { :result => "" }
       command_info[:result] << "+ #{command_args.join(" ")}\n" if @trace
@@ -161,7 +168,7 @@ module Warden
       else
         @client.connect() unless @client.connected?
 
-        type = command.class.type_underscored.to_sym
+        type = to_type(command.class).to_sym
 
         if type == :stream || type == :run
           process_stream = lambda do |response|

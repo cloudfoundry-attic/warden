@@ -3,7 +3,7 @@
 require "warden/protocol"
 require "forwardable"
 
-module Warden
+module Warden::Repl
   module CommandsManager
 
     # Raised when an erroneous command is detected.
@@ -113,25 +113,26 @@ module Warden
       end
     end
 
-    # If not previously generated, generates a hash with each key being the
-    # string representation of a command and value being the description
-    # defined in the protocol buffer request definition corresponding to that
-    # command.
-    #
-    # Returns:
-    #    Hash with each key being a command name [String] and its value
-    #    being the description [String] defined in the protocol buffer
-    #    request definition.
     def command_descriptions
-      unless @desc_map
-        @klass_map = generate_commands_map unless @klass_map
-        @desc_map = {}
-        @klass_map.each_pair do |key, value|
-          @desc_map[key] = value.description
-        end
-      end
-
-      @desc_map.freeze
+      @desc_map ||= {
+        "copy_in" => "Copy files/directories into the container.",
+        "copy_out" => "Copy files/directories out of the container.",
+        "create" => "Create a container, optionally pass options.",
+        "destroy" => "Shutdown a container.",
+        "echo" => "Echo a message.",
+        "info" => "Show metadata for a container.",
+        "limit_disk" => "set or get the disk limit for the container.",
+        "limit_memory" => "Set or get the memory limit for the container.",
+        "link" => "Do blocking read on results from a job.",
+        "list" => "List containers.",
+        "net_in" => "Forward port on external interface to container.",
+        "net_out" => "Allow traffic from the container to address.",
+        "ping" => "Ping warden.",
+        "run" => "Short hand for spawn(link(cmd)) i.e. spawns a command, links to the result.",
+        "spawn" => "Spawns a command inside a container and returns the job id.",
+        "stop" => "Stop all processes inside a container.",
+        "stream" => "Do blocking stream on results from a job.",
+      }
     end
 
     # Deserializes a command and its arguments into an object of the
@@ -247,15 +248,22 @@ module Warden
     class EnumEncodingError < StandardError
     end
 
+    def to_type(klass)
+      type = klass.name.gsub(/(Request|Response)$/, "")
+      type = type.split("::").last
+      type = type.gsub(/(.)([A-Z])/, "\\1_\\2").downcase
+      type
+    end
+
     def generate_help(cmd_type, opts = {})
       help = do_generate_help(cmd_type, opts)
-      { cmd_type.type_underscored.to_sym => help }
+      { to_type(cmd_type).to_sym => help }
     end
 
     # Generates help for a command type recursively.
     def do_generate_help(cmd_type, opts = {})
       help = {}
-      help[:description] = command_descriptions[cmd_type.type_underscored]
+      help[:description] = command_descriptions[to_type(cmd_type)]
 
       help_generator = lambda do |field, prefix|
         field_str = ""
@@ -364,8 +372,8 @@ module Warden
 
     def generate_commands_map
       klass_map = {}
-      map = Warden::Protocol::Type.generate_klass_map("Request")
-      map.each_value { |value| klass_map[value.type_underscored] = value }
+      map = Warden::Protocol::Message::Type.generate_klass_map("Request")
+      map.each_value { |value| klass_map[to_type(value)] = value }
       klass_map
     end
 

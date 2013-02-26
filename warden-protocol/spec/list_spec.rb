@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/list"
 
 describe Warden::Protocol::ListRequest do
   subject(:request) do

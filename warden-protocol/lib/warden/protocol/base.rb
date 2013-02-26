@@ -18,61 +18,6 @@ end
 
 module Warden
   module Protocol
-    module Type
-      Error = 1
-
-      Create  = 11
-      Stop    = 12
-      Destroy = 13
-      Info    = 14
-
-      Spawn  = 21
-      Link   = 22
-      Run    = 23
-      Stream = 24
-
-      NetIn  = 31
-      NetOut = 32
-
-      CopyIn  = 41
-      CopyOut = 42
-
-      LimitMemory = 51
-      LimitDisk   = 52
-      LimitBandwidth  = 53
-
-      Ping = 91
-      List = 92
-      Echo = 93
-
-      def self.generate_klass_map(suffix)
-        map = Hash[self.constants.map do |name|
-          klass_name = "#{name}#{suffix}"
-          if Protocol.const_defined?(klass_name)
-            [const_get(name), Protocol.const_get(klass_name)]
-          end
-        end]
-
-        if map.respond_to?(:default_proc=)
-          map.default_proc = lambda do |h, k|
-            raise "Unknown request type: #{k}"
-          end
-        end
-
-        map
-      end
-
-      def self.to_request_klass(type)
-        @request_klass_map ||= generate_klass_map("Request")
-        @request_klass_map[type]
-      end
-
-      def self.to_response_klass(type)
-        @response_klass_map ||= generate_klass_map("Response")
-        @response_klass_map[type]
-      end
-    end
-
     TypeConverter = {
       :bool     => lambda do |arg|
         return true if arg.downcase == "true"
@@ -131,18 +76,39 @@ module Warden
       raise TypeError, "Non-existent protocol type passed: '#{protocol_type}'."
     end
 
-    class BaseMessage
-      include Beefcake::Message
+    module BaseMessage
+      def self.included(base)
+        base.send(:include, Beefcake::Message)
+
+        if base.name =~ /(Request|Response)$/
+          base.extend(ClassMethods)
+
+          case $1
+          when "Request"
+            base.send(:include, BaseRequest)
+          when "Response"
+            base.send(:include, BaseResponse)
+          end
+        end
+      end
 
       def safe
-          yield
-        rescue WrongTypeError, InvalidValueError, RequiredFieldNotSetError => e
-          raise ProtocolError, e
+        yield
+      rescue Beefcake::Message::WrongTypeError,
+             Beefcake::Message::InvalidValueError,
+             Beefcake::Message::RequiredFieldNotSetError => e
+        raise ProtocolError, e
       end
 
       def reload
         safe do
           self.class.decode(encode)
+        end
+      end
+
+      def wrap
+        safe do
+          Message.new(:type => self.class.type, :payload => encode)
         end
       end
 
@@ -156,9 +122,9 @@ module Warden
         end
       end
 
-      class << self
+      module ClassMethods
         def type
-          Type.const_get(type_name)
+          Message::Type.const_get(type_name)
         end
 
         def type_camelized
@@ -177,61 +143,26 @@ module Warden
       end
     end
 
-    class BaseRequest < BaseMessage
+    module BaseRequest
       def create_response(attributes = {})
         klass_name = self.class.name.gsub(/Request$/, "Response")
         klass_name = klass_name.split("::").last
         klass = Protocol.const_get(klass_name)
         klass.new(attributes)
       end
-
-      def wrap
-        safe do
-          WrappedRequest.new(:type => self.class.type, :payload => encode)
-        end
-      end
-
-      def self.description
-        type_underscored.gsub("_", " ").capitalize
-      end
     end
 
-    class BaseResponse < BaseMessage
+    module BaseResponse
       def ok?
         !error?
       end
 
       def error?
-        self.class.type == Type::Error
-      end
-
-      def wrap
-        safe do
-          WrappedResponse.new(:type => self.class.type, :payload => encode)
-        end
-      end
-    end
-
-    class WrappedRequest < BaseRequest
-      required :type, Type, 1
-      required :payload, :string, 2
-
-      def request
-        safe do
-          Type.to_request_klass(type).decode(payload)
-        end
-      end
-    end
-
-    class WrappedResponse < BaseResponse
-      required :type, Type, 1
-      required :payload, :string, 2
-
-      def response
-        safe do
-          Type.to_response_klass(type).decode(payload)
-        end
+        self.class.type == Message::Type::Error
       end
     end
   end
 end
+
+require "warden/protocol/pb"
+require "warden/protocol/message"

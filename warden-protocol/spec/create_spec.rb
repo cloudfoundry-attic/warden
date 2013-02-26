@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/create"
 
 describe Warden::Protocol::CreateRequest do
   subject(:request) do
@@ -50,8 +49,6 @@ describe Warden::Protocol::CreateRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::CreateResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::CreateResponse do

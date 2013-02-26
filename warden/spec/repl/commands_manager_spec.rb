@@ -2,23 +2,23 @@
 
 require "spec_helper"
 
-require "warden/commands_manager"
+require "warden/repl/commands_manager"
 require "warden/protocol"
 
-describe Warden::CommandsManager::FlagElement do
+describe Warden::Repl::CommandsManager::FlagElement do
   describe "#new" do
     it "should raise an error when the flag element string is malformed" do
       expect {
         described_class.new("%")
       }.to raise_error { |error|
-        error.should be_an_instance_of Warden::CommandsManager::FlagElementError
+        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagElementError
         error.message.should == "Invalid flag element: '%'."
       }
 
       expect {
         described_class.new("0")
       }.to raise_error { |error|
-        error.should be_an_instance_of Warden::CommandsManager::FlagElementError
+        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagElementError
         error.message.should == "Invalid flag element: '0'."
       }
     end
@@ -64,13 +64,13 @@ describe Warden::CommandsManager::FlagElement do
   end
 end
 
-describe Warden::CommandsManager::Flag do
+describe Warden::Repl::CommandsManager::Flag do
   describe "#new" do
     it "should raise an error when the flag string is malformed" do
       expect {
         described_class.new("blah")
       }.to raise_error{ |error|
-        error.should be_an_instance_of Warden::CommandsManager::FlagError
+        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
         error.message.should == "Invalid flag: 'blah'."
       }
     end
@@ -79,7 +79,7 @@ describe Warden::CommandsManager::Flag do
       expect {
         described_class.new("--blah[0].-$%.foo.bar")
       }.to raise_error { |error|
-        error.should be_an_instance_of Warden::CommandsManager::FlagError
+        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
         msg = "In flag: '--blah[0].-$%.foo.bar', Invalid flag element: '-$%'."
         error.message.should == msg
       }
@@ -88,28 +88,30 @@ describe Warden::CommandsManager::Flag do
 
   describe "#each" do
     it "should allow iteration over flag elements" do
-      elements = [Warden::CommandsManager::FlagElement.new("a[0]"),
-                  Warden::CommandsManager::FlagElement.new("b")]
+      elements = [Warden::Repl::CommandsManager::FlagElement.new("a[0]"),
+                  Warden::Repl::CommandsManager::FlagElement.new("b")]
       obj = described_class.new("--#{elements[0].to_s}.#{elements[1].to_s}")
 
       obj.respond_to?(:each).should be_true
       index = 0
       obj.each do |element|
-        element.should be_an_instance_of Warden::CommandsManager::FlagElement
+        element.should be_an_instance_of Warden::Repl::CommandsManager::FlagElement
         element.should == elements[index]
         index += 1
       end
 
       obj.respond_to?(:each_with_index).should be_true
       obj.each_with_index do |element, index|
-        element.should be_an_instance_of Warden::CommandsManager::FlagElement
+        element.should be_an_instance_of Warden::Repl::CommandsManager::FlagElement
         element.should == elements[index]
       end
     end
   end
 end
 
-describe Warden::CommandsManager do
+describe Warden::Repl::CommandsManager do
+  include Helpers::Repl
+
   before :each do
     @subject = Object.new
     @subject.extend(described_class)
@@ -124,8 +126,8 @@ describe Warden::CommandsManager do
     context "parse valid fields" do
       before :each do
         @request = nil
-        Warden::Protocol::Type.should_receive(:generate_klass_map).
-          with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+          with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
       after :each do
@@ -138,7 +140,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.field.should == "value"
       end
 
@@ -149,7 +151,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of RepeatedTest
+        @request.should be_an_instance_of Helpers::Repl::RepeatedTest
         @request.field.size.should == 2
         @request.field[0].should == "value_0"
         @request.field[1].should == "value_1"
@@ -161,7 +163,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of NestedTest
+        @request.should be_an_instance_of Helpers::Repl::NestedTest
         @request.complex_field.field.should == "value"
       end
 
@@ -171,7 +173,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of BoolTest
+        @request.should be_an_instance_of Helpers::Repl::BoolTest
         @request.field.should be_true
       end
 
@@ -181,8 +183,8 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of EnumTest
-        @request.field.should == EnumTest::Enum::A
+        @request.should be_an_instance_of Helpers::Repl::EnumTest
+        @request.field.should == Helpers::Repl::EnumTest::Enum::A
       end
 
       it "should parse mixed fields" do
@@ -192,10 +194,10 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of MixedTest
+        @request.should be_an_instance_of Helpers::Repl::MixedTest
         @request.complex_field.should be_an_instance_of Array
         @request.complex_field.size.should == 1
-        @request.complex_field[0].should be_an_instance_of SimpleTest
+        @request.complex_field[0].should be_an_instance_of Helpers::Repl::SimpleTest
         @request.complex_field[0].field.should == "value"
         @request.bool_field.should == true
       end
@@ -207,7 +209,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.field.should == "overwrite"
       end
 
@@ -218,7 +220,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of RepeatedTest
+        @request.should be_an_instance_of Helpers::Repl::RepeatedTest
         @request.field.size.should == 1
         @request.field[0].should == "overwrite"
       end
@@ -230,8 +232,8 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of NestedTest
-        @request.complex_field.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::NestedTest
+        @request.complex_field.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.complex_field.field.should == "overwrite"
       end
 
@@ -242,7 +244,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of BoolTest
+        @request.should be_an_instance_of Helpers::Repl::BoolTest
         @request.field.should be_true
       end
 
@@ -253,8 +255,8 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of EnumTest
-        @request.field.should == EnumTest::Enum::B
+        @request.should be_an_instance_of Helpers::Repl::EnumTest
+        @request.field.should == Helpers::Repl::EnumTest::Enum::B
       end
 
       it "should work for a different field delimiter" do
@@ -263,7 +265,7 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args, ":")
 
-        @request.should be_an_instance_of NestedTest
+        @request.should be_an_instance_of Helpers::Repl::NestedTest
         @request.complex_field.field.should == "value"
       end
 
@@ -273,15 +275,15 @@ describe Warden::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of SimpleTest
+        @request.should be_an_instance_of Helpers::Repl::SimpleTest
         @request.field.should == "ab --help"
       end
     end
 
     context "reject invalid commands and fields" do
       before :each do
-        Warden::Protocol::Type.should_receive(:generate_klass_map).
-          with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+          with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
       it "should raise an error when command is bad" do
@@ -290,7 +292,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::CommandError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::CommandError
           error.message.should == "Command: 'absent_command' is non-existent."
         }
       end
@@ -302,7 +304,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'help'."
         }
       end
@@ -313,7 +315,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'field'."
         }
 
@@ -322,7 +324,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: '--field'."
         }
 
@@ -331,7 +333,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--bad_field', the field: 'bad_field' is invalid."
           error.message.should == msg
         }
@@ -343,7 +345,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'field'."
         }
 
@@ -352,7 +354,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field', the field: 'field' is not indexed."
           error.message.should == msg
         }
@@ -362,7 +364,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[1]', the field: 'field[1]' is not indexed"
           msg << " correctly."
           error.message.should == msg
@@ -373,7 +375,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[bad_index]',"
           msg << " Invalid flag element: 'field[bad_index]'."
           error.message.should == msg
@@ -385,7 +387,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[-1]', Invalid flag element: 'field[-1]'."
           error.message.should == msg
         }
@@ -396,7 +398,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[2]',"
           msg << " the field: 'field[2]' is not indexed correctly."
           error.message.should == msg
@@ -409,7 +411,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'complex_field'."
         }
 
@@ -418,7 +420,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: '--complex_field'."
         }
 
@@ -427,7 +429,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--complex_field.absent_field',"
           msg << " the field: 'absent_field' is invalid."
           error.message.should == msg
@@ -438,7 +440,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: '--complex_field.field'."
         }
       end
@@ -449,7 +451,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'field'."
         }
 
@@ -458,7 +460,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'value'."
         }
       end
@@ -469,7 +471,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: 'field'."
         }
 
@@ -478,7 +480,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           error.message.should == "Invalid flag: '--field'."
         }
 
@@ -487,7 +489,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::FlagError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--bad_field', the field: 'bad_field' is invalid."
           error.message.should == msg
         }
@@ -499,7 +501,7 @@ describe Warden::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::CommandsManager::CommandError
+          error.should be_an_instance_of Warden::Repl::CommandsManager::CommandError
           error.message.should == "invalid value for Integer(): \"blah\""
         }
       end
@@ -508,8 +510,10 @@ describe Warden::CommandsManager do
     context "generate help" do
 
       before(:each) do
-        Warden::Protocol::Type.should_receive(:generate_klass_map).once.
-          with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+          with("Request").and_return(Helpers::Repl.test_klass_map)
+        @subject.stub(:command_descriptions).
+          and_return(Helpers::Repl.test_description_map)
       end
 
       it "should generate help for a command with simple field(s)" do
@@ -598,46 +602,13 @@ describe Warden::CommandsManager do
           }
         }
       end
-
-      it "should generate descriptions for all commands" do
-        @subject.command_descriptions.should == test_desc_map
-      end
-
-      it "should cache the generated class map of commands" do
-        args = ["simple_test",
-                "--field", "value"]
-
-        request = @subject.deserialize(args)
-
-        request.should be_an_instance_of SimpleTest
-        request.field.should == "value"
-
-        args = ["repeated_test",
-                "--field[0]", "value_0",
-                "--field[1]", "value_1"]
-
-        request = @subject.deserialize(args)
-
-        request.should be_an_instance_of RepeatedTest
-        request.field.size.should == 2
-        request.field[0].should == "value_0"
-        request.field[1].should == "value_1"
-      end
-
-      it "should cache the generated descriptions of commands" do
-        hash_1 = @subject.command_descriptions
-        hash_2 = @subject.command_descriptions
-        hash_1.should == test_desc_map
-        hash_2.should == test_desc_map
-        hash_1.object_id.should == hash_2.object_id
-      end
     end
   end
 
   describe "#serialize" do
     context "serialize valid protocol objects" do
       it "should serialize simple field" do
-        pb_handle = SimpleTest.new
+        pb_handle = Helpers::Repl::SimpleTest.new
         pb_handle.field = "field"
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -646,7 +617,7 @@ describe Warden::CommandsManager do
       end
 
       it "should serialize repeated field" do
-        pb_handle = RepeatedTest.new
+        pb_handle = Helpers::Repl::RepeatedTest.new
         pb_handle.field = ["value_0", "value_1"]
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -656,8 +627,8 @@ describe Warden::CommandsManager do
       end
 
       it "should serialize nested field" do
-        pb_handle = NestedTest.new
-        pb_handle.complex_field = SimpleTest.new
+        pb_handle = Helpers::Repl::NestedTest.new
+        pb_handle.complex_field = Helpers::Repl::SimpleTest.new
         pb_handle.complex_field.field = "field"
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -666,7 +637,7 @@ describe Warden::CommandsManager do
       end
 
       it "should serialize bool field" do
-        pb_handle = BoolTest.new
+        pb_handle = Helpers::Repl::BoolTest.new
         pb_handle.field = true
         hash = @subject.serialize(pb_handle)
         hash.should == {
@@ -675,8 +646,8 @@ describe Warden::CommandsManager do
       end
 
       it "should serialize enum field" do
-        pb_handle = EnumTest.new
-        pb_handle.field = EnumTest::Enum::A
+        pb_handle = Helpers::Repl::EnumTest.new
+        pb_handle.field = Helpers::Repl::EnumTest::Enum::A
         hash = @subject.serialize(pb_handle)
         hash.should == {
           "field" => "A",
@@ -686,18 +657,18 @@ describe Warden::CommandsManager do
 
     context "reject invalid protocol objects" do
       it "should raise an error when ambiguous constants are defined in the module defining the enum field" do
-        pb_handle = BadEnumTest.new
-        pb_handle.field = BadEnumTest::BadEnum::A
+        pb_handle = Helpers::Repl::BadEnumTest.new
+        pb_handle.field = Helpers::Repl::BadEnumTest::BadEnum::A
 
         expect {
           @subject.serialize(pb_handle)
         }.to raise_error{ |error|
-          err_type = Warden::CommandsManager::SerializationError
+          err_type = Warden::Repl::CommandsManager::SerializationError
           error.should be_an_instance_of err_type
 
           msg = "Cannot serialize enum field: field."
           msg << " Duplicate constants defined in module:"
-          msg << " #{BadEnumTest::BadEnum}."
+          msg << " #{Helpers::Repl::BadEnumTest::BadEnum}."
 
           error.message.should == msg
         }

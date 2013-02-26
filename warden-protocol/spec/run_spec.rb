@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/run"
 
 describe Warden::Protocol::RunRequest do
   subject(:request) do
@@ -38,8 +37,6 @@ describe Warden::Protocol::RunRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::RunResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::RunResponse do

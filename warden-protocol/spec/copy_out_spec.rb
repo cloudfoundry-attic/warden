@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/copy_out"
 
 describe Warden::Protocol::CopyOutRequest do
   subject(:request) do
@@ -40,8 +39,6 @@ describe Warden::Protocol::CopyOutRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::CopyOutResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::CopyOutResponse do

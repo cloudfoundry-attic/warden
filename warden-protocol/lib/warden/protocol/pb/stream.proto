@@ -1,0 +1,13 @@
+package warden;
+
+message StreamRequest {
+  required string handle = 1;
+
+  required uint32 job_id = 2;
+}
+
+message StreamResponse {
+  optional string name = 1;
+  optional string data = 2;
+  optional uint32 exit_status = 3;
+}

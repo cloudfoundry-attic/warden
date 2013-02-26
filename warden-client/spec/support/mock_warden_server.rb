@@ -37,8 +37,7 @@ class Session
       # Discard \r\n
       @sock.read(2)
 
-      wrapped_request = Warden::Protocol::WrappedRequest.decode(data)
-      handle(wrapped_request.request)
+      handle(Warden::Protocol::Message.decode(data).request)
     end
   end
 end

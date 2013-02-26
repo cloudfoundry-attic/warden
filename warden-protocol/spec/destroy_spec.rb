@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/destroy"
 
 describe Warden::Protocol::DestroyRequest do
   subject(:request) do
@@ -20,8 +19,6 @@ describe Warden::Protocol::DestroyRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::DestroyResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::DestroyResponse do

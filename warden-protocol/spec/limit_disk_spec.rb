@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/limit_disk"
 
 shared_examples "disk limiting" do
   field :block_limit do
@@ -85,8 +84,6 @@ describe Warden::Protocol::LimitDiskRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LimitDiskResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::LimitDiskResponse do

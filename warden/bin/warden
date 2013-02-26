@@ -6,6 +6,6 @@ $LOAD_PATH.unshift(File.expand_path("../../lib", __FILE__))
 require "bundler"
 Bundler.setup
 
-require "warden/repl_v2_runner"
+require "warden/repl/repl_v2_runner"
 
-Warden::ReplRunner.run(ARGV)
+Warden::Repl::ReplRunner.run(ARGV)

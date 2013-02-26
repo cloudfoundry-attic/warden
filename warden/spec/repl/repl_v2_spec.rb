@@ -1,9 +1,11 @@
 # coding: UTF-8
 
-require "warden/repl_v2"
+require "warden/repl/repl_v2"
 require "spec_helper"
 
-describe Warden::Repl do
+describe Warden::Repl::Repl do
+  include Helpers::Repl
+
   describe "#start" do
     before :each do
       Readline.should_receive(:completion_append_character=).once
@@ -81,7 +83,7 @@ describe Warden::Repl do
       end
 
       it "should write command error messages to stderr" do
-        ce = Warden::CommandsManager::CommandError.new("command error")
+        ce = Warden::Repl::CommandsManager::CommandError.new("command error")
         @repl.should_receive(:process_line).once.with(@command)
           .and_raise(ce)
 
@@ -118,7 +120,7 @@ describe Warden::Repl do
       end
 
       it "should write command error messages to stderr and return 0" do
-        ce = Warden::CommandsManager::CommandError.new("command error")
+        ce = Warden::Repl::CommandsManager::CommandError.new("command error")
         @repl.should_receive(:process_line).once.with(@command)
            .and_raise(ce)
 
@@ -203,7 +205,7 @@ describe Warden::Repl do
 
     context "handle run command" do
       before :each do
-        Warden::Protocol::Type.should_receive(:generate_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map)
           .with("Request").and_return({1 => Warden::Protocol::RunRequest})
       end
 
@@ -244,9 +246,13 @@ describe Warden::Repl do
 
       it "should generate right description for run command in global help" do
         repl = described_class.new
+        repl.stub(:command_descriptions).and_return do
+          {"run" => described_class.run_command_description}
+        end
+
         command_info = repl.process_line("--help")
 
-        width = Warden::Protocol::RunRequest.type_underscored.size + 2
+        width = "run".length + 2
         expected = "\n"
         expected << "\trun  #{described_class.run_command_description}\n"
         expected << "\thelp Show help.\n"
@@ -268,12 +274,12 @@ describe Warden::Repl do
 
     context "handle other commands" do
       before :each do
-        Warden::Protocol::Type.should_receive(:generate_klass_map)
-          .with("Request").and_return(test_klass_map)
+        Warden::Protocol::Message::Type.stub(:generate_klass_map)
+          .with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
       it "should add command trace to output" do
-        request = response = SimpleTest.new
+        request = response = Helpers::Repl::SimpleTest.new
         request.field = "field"
 
         @client.should_receive(:connected?).once.and_return(true)
@@ -288,7 +294,7 @@ describe Warden::Repl do
       end
 
       it "should serialize response from warden server" do
-        request = response = SimpleTest.new
+        request = response = Helpers::Repl::SimpleTest.new
         request.field = "field"
 
         @client.should_receive(:connected?).once.and_return(true)
@@ -303,12 +309,13 @@ describe Warden::Repl do
 
       it "should generate prettified global help" do
         repl = described_class.new
+        repl.stub(:command_descriptions).and_return(Helpers::Repl.test_description_map)
 
         command_info = repl.process_line("--help")
 
-        width = NestedFieldsHelpTest.type_underscored.size + 2
+        width = "nested_fields_help_test".length + 2
         expected = "\n"
-        test_desc_map.each_pair do |command, description|
+        Helpers::Repl.test_description_map.each_pair do |command, description|
           expected << "\t%-#{width}s%s\n" % [command, description]
         end
 
@@ -322,12 +329,14 @@ describe Warden::Repl do
 
       it "should generate prettified command help for simple command" do
         repl = described_class.new
+        repl.stub(:command_descriptions).and_return(Helpers::Repl.test_description_map)
 
         command_info = repl.process_line("simple_test --help")
 
-        expected = "command: #{SimpleTest.type_underscored}\n"
-        expected << "description: #{SimpleTest.description}\n"
-        expected << "usage: #{SimpleTest.type_underscored} [options]\n\n"
+        expected_description = Helpers::Repl.test_description_map["simple_test"]
+        expected = "command: simple_test\n"
+        expected << "description: #{expected_description}\n"
+        expected << "usage: simple_test [options]\n\n"
         expected << "[options] can be one of the following:\n\n"
         expected << "\t--field <field> (string)  # required\n"
 
@@ -336,12 +345,14 @@ describe Warden::Repl do
 
       it "should generate prettified command help for complex command" do
         repl = described_class.new
+        repl.stub(:command_descriptions).and_return(Helpers::Repl.test_description_map)
 
         command_info = repl.process_line("mixed_test --help")
 
-        expected = "command: #{MixedTest.type_underscored}\n"
-        expected << "description: #{MixedTest.description}\n"
-        expected << "usage: #{MixedTest.type_underscored} [options]\n\n"
+        expected_description = Helpers::Repl.test_description_map["mixed_test"]
+        expected = "command: mixed_test\n"
+        expected << "description: #{expected_description}\n"
+        expected << "usage: mixed_test [options]\n\n"
         expected << "[options] can be one of the following:\n\n"
         expected << "\t--bool_field  # required\n"
         expected << "\t--complex_field[index]  # array\n"

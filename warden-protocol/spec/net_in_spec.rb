@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/net_in"
 
 describe Warden::Protocol::NetInRequest do
   subject(:request) do
@@ -31,8 +30,6 @@ describe Warden::Protocol::NetInRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::NetInResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::NetInResponse do

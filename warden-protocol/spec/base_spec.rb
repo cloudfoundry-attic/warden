@@ -8,7 +8,7 @@ describe Warden::Protocol::BaseRequest do
     request = Warden::Protocol::SpawnRequest.new(:handle => "blah",
                                                  :script => "script")
     wrapped = request.wrap
-    wrapped.should be_an_instance_of(Warden::Protocol::WrappedRequest)
+    wrapped.should be_an_instance_of(Warden::Protocol::Message)
     wrapped.type.should == Warden::Protocol::SpawnRequest.type
     decoded = Warden::Protocol::SpawnRequest.decode(wrapped.payload)
     decoded.handle.should == request.handle
@@ -28,7 +28,7 @@ describe Warden::Protocol::BaseResponse do
   it "should respond to #wrap" do
     response = Warden::Protocol::SpawnResponse.new(:job_id => 1)
     wrapped = response.wrap
-    wrapped.should be_an_instance_of(Warden::Protocol::WrappedResponse)
+    wrapped.should be_an_instance_of(Warden::Protocol::Message)
     wrapped.type.should == Warden::Protocol::SpawnResponse.type
     decoded = Warden::Protocol::SpawnResponse.decode(wrapped.payload)
     decoded.job_id.should == response.job_id
@@ -43,10 +43,10 @@ describe Warden::Protocol::BaseResponse do
   end
 end
 
-describe Warden::Protocol::WrappedRequest do
+describe "wrapped request" do
   it "should respond to #request" do
-    w = Warden::Protocol::WrappedRequest.new
-    w.type = Warden::Protocol::Type::Spawn
+    w = Warden::Protocol::Message.new
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = Warden::Protocol::SpawnRequest.new(:handle => "blah",
                                                    :script => "script").encode
     w.should be_valid
@@ -55,8 +55,8 @@ describe Warden::Protocol::WrappedRequest do
   end
 
   it "should wrap beefcake errors" do
-    w = Warden::Protocol::WrappedRequest.new
-    w.type = Warden::Protocol::Type::Spawn
+    w = Warden::Protocol::Message.new
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = "bad payload"
     w.should be_valid
 
@@ -64,10 +64,10 @@ describe Warden::Protocol::WrappedRequest do
   end
 end
 
-describe Warden::Protocol::WrappedResponse do
+describe "wrapped response" do
   it "should respond to #response" do
-    w = Warden::Protocol::WrappedResponse.new
-    w.type = Warden::Protocol::Type::Spawn
+    w = Warden::Protocol::Message.new
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = Warden::Protocol::SpawnResponse.new(:handle => "blah",
                                                     :job_id => 2).encode
     w.should be_valid
@@ -76,8 +76,8 @@ describe Warden::Protocol::WrappedResponse do
   end
 
   it "should wrap beefcake errors" do
-    w = Warden::Protocol::WrappedResponse.new
-    w.type = Warden::Protocol::Type::Spawn
+    w = Warden::Protocol::Message.new
+    w.type = Warden::Protocol::Message::Type::Spawn
     w.payload = "bad payload"
 
     w.should be_valid

@@ -1,8 +1,8 @@
 # coding: UTF-8
 
-require "warden/repl_v2_runner"
+require "warden/repl/repl_v2_runner"
 
-describe Warden::ReplRunner do
+describe Warden::Repl::ReplRunner do
   describe "run" do
     context "parse global arguments" do
       it "should parse global arguments" do
@@ -14,7 +14,7 @@ describe Warden::ReplRunner do
           :socket_path => "/foo/bar",
           :exit_on_error => true,
         }
-        Warden::Repl.should_receive(:new).once.with(expected_options).
+        Warden::Repl::Repl.should_receive(:new).once.with(expected_options).
           and_return(repl)
 
         expect do
@@ -64,7 +64,7 @@ describe Warden::ReplRunner do
         STDERR.should_receive(:write).once.with("\n\nExiting...\n")
 
         repl = double("repl")
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
+        Warden::Repl::Repl.should_receive(:new).once.with({}).and_return(repl)
 
         expect {
           described_class.run
@@ -77,7 +77,7 @@ describe Warden::ReplRunner do
         repl = double("repl")
         repl.should_receive(:start).once.and_return(0)
 
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
+        Warden::Repl::Repl.should_receive(:new).once.with({}).and_return(repl)
 
         expect do
           described_class.run
@@ -93,7 +93,7 @@ describe Warden::ReplRunner do
         repl.should_receive(:process_command).once.with(["command", "--arg"]).
           and_return({ :result => "result", :exit_status => 2 })
 
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
+        Warden::Repl::Repl.should_receive(:new).once.with({}).and_return(repl)
 
         received_output = ""
         STDOUT.should_receive(:write).any_number_of_times do |arg|
@@ -111,11 +111,11 @@ describe Warden::ReplRunner do
 
       it "should write stack back trace of command error to stderr and exit with status 0" do
         repl = double("repl")
-        ce = Warden::CommandsManager::CommandError.new("command error")
+        ce = Warden::Repl::CommandsManager::CommandError.new("command error")
         repl.should_receive(:process_command).once.with(["command", "--arg"]).
           and_raise(ce)
 
-        Warden::Repl.should_receive(:new).once.with({}).and_return(repl)
+        Warden::Repl::Repl.should_receive(:new).once.with({}).and_return(repl)
 
         received_err = ""
         STDERR.should_receive(:write).any_number_of_times do |arg|

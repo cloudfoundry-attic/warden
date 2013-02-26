@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/limit_memory"
 
 describe Warden::Protocol::LimitMemoryRequest do
   subject(:request) do
@@ -26,8 +25,6 @@ describe Warden::Protocol::LimitMemoryRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LimitMemoryResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::LimitMemoryResponse do

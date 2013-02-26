@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/link"
 
 describe Warden::Protocol::LinkRequest do
   subject(:request) do
@@ -26,8 +25,6 @@ describe Warden::Protocol::LinkRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::LinkResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::LinkResponse do

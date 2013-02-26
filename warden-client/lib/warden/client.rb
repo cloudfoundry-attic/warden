@@ -53,8 +53,7 @@ module Warden
       # Discard \r\n
       io { @sock.read(2) }
 
-      wrapped_response = Warden::Protocol::WrappedResponse.decode(data)
-      response = wrapped_response.response
+      response = Warden::Protocol::Message.decode(data).response
 
       # Raise error replies
       if response.is_a?(Warden::Protocol::ErrorResponse)

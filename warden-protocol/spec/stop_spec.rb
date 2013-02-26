@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/stop"
 
 describe Warden::Protocol::StopRequest do
   subject(:request) do
@@ -30,8 +29,6 @@ describe Warden::Protocol::StopRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::StopResponse)
   end
-
-  it_should_behave_like "documented request"
 end
 
 describe Warden::Protocol::StopResponse do

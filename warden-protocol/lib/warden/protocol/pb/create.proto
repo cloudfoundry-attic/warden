@@ -1,0 +1,28 @@
+package warden;
+
+message CreateRequest {
+  message BindMount {
+    enum Mode {
+      RO = 0;
+      RW = 1;
+    }
+
+    required string src_path = 1;
+    required string dst_path = 2;
+    required Mode mode = 3;
+  }
+
+  repeated BindMount bind_mounts = 1;
+
+  optional uint32 grace_time = 2;
+
+  optional string handle = 3;
+
+  optional string network = 4;
+
+  optional string rootfs = 5;
+}
+
+message CreateResponse {
+  required string handle = 1;
+}

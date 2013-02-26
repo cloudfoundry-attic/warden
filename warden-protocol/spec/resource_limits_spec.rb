@@ -1,15 +1,11 @@
 # coding: UTF-8
 
 require "spec_helper"
-require "warden/protocol/run"
 
 describe Warden::Protocol::ResourceLimits do
   subject do
     described_class.new
   end
-
-  its("class.type_camelized") { should == "ResourceLimits" }
-  its("class.type_underscored") { should == "resource_limits" }
 
   field :as do
     it_should_be_optional

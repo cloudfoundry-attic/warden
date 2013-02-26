@@ -1,0 +1,11 @@
+package warden;
+
+message CopyOutRequest {
+  required string handle = 1;
+  required string src_path = 2;
+  required string dst_path = 3;
+  optional string owner = 4;
+}
+
+message CopyOutResponse {
+}

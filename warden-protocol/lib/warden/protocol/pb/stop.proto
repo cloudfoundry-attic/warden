@@ -1,0 +1,11 @@
+package warden;
+
+message StopRequest {
+  required string handle = 1;
+
+  optional bool background = 10 [default = false];
+  optional bool kill       = 20 [default = false];
+}
+
+message StopResponse {
+}
