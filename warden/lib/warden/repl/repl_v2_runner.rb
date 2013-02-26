@@ -1,8 +1,8 @@
 require "optparse"
-require "warden/repl_v2"
-require "warden/commands_manager"
+require "warden/repl/repl_v2"
+require "warden/repl/commands_manager"
 
-module Warden
+module Warden::Repl
   class ReplRunner
 
     # Parses command-line arguments, runs Repl and handles the output and exit
@@ -40,7 +40,7 @@ EOT
           puts op
           puts
           puts "[commands] can be one of the following separated by a newline."
-          puts Warden::Repl.new.describe_commands(op.summary_width - 3)
+          puts Warden::Repl::Repl.new.describe_commands(op.summary_width - 3)
           puts
           exit
         end
@@ -64,7 +64,7 @@ EOT
       end
 
       opt_parser.parse(global_args)
-      repl = Warden::Repl.new(options)
+      repl = Warden::Repl::Repl.new(options)
 
       if command.empty?
         run_interactively(repl)
@@ -89,7 +89,7 @@ EOT
 
       begin
         command_info = repl.process_command(command)
-      rescue Warden::CommandsManager::CommandError => ce
+      rescue Warden::Repl::CommandsManager::CommandError => ce
         STDERR.write("#{ce}\n")
         ce.backtrace.each { |err| STDERR.write("#{err}\n") }
       end

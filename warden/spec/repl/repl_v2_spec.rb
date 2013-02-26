@@ -1,9 +1,9 @@
 # coding: UTF-8
 
-require "warden/repl_v2"
+require "warden/repl/repl_v2"
 require "spec_helper"
 
-describe Warden::Repl do
+describe Warden::Repl::Repl do
   describe "#start" do
     before :each do
       Readline.should_receive(:completion_append_character=).once
@@ -81,7 +81,7 @@ describe Warden::Repl do
       end
 
       it "should write command error messages to stderr" do
-        ce = Warden::CommandsManager::CommandError.new("command error")
+        ce = Warden::Repl::CommandsManager::CommandError.new("command error")
         @repl.should_receive(:process_line).once.with(@command)
           .and_raise(ce)
 
@@ -118,7 +118,7 @@ describe Warden::Repl do
       end
 
       it "should write command error messages to stderr and return 0" do
-        ce = Warden::CommandsManager::CommandError.new("command error")
+        ce = Warden::Repl::CommandsManager::CommandError.new("command error")
         @repl.should_receive(:process_line).once.with(@command)
            .and_raise(ce)
 

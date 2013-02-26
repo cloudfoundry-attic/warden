@@ -3,7 +3,7 @@
 require "warden/protocol"
 require "forwardable"
 
-module Warden
+module Warden::Repl
   module CommandsManager
 
     # Raised when an erroneous command is detected.

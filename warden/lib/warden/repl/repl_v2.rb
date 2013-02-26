@@ -1,7 +1,7 @@
 # coding: UTF-8
 
 require "warden/client"
-require "warden/commands_manager"
+require "warden/repl/commands_manager"
 
 require "readline"
 require "shellwords"
@@ -9,14 +9,14 @@ require "json"
 require "pp"
 require "optparse"
 
-module Warden
+module Warden::Repl
   # Runs either interactively (or) non-interactively. Returns the output
   # and exit status of a command and raises errors (if any) in non-interactive
   # execution. Autocompletes commands, writes their output to standard out and
   # writes the errors to standard error in interactive execution.
   class Repl
 
-    include Warden::CommandsManager
+    include Warden::Repl::CommandsManager
 
     # Parameters:
     # - opts [Hash]
@@ -70,7 +70,7 @@ module Warden
           end
         rescue Warden::Protocol::ProtocolError,
           Warden::Client::ServerError,
-          Warden::CommandsManager::CommandError => ce
+          Warden::Repl::CommandsManager::CommandError => ce
           STDERR.write("#{ce.message}\n")
           break if @exit_on_error
         end
