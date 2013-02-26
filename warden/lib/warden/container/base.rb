@@ -134,6 +134,7 @@ module Warden
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
           c = new(snapshot)
+          c.container_path = container_path
           c.restore
 
           c
@@ -251,6 +252,10 @@ module Warden
 
       def container_path
         @container_path ||= File.join(container_depot_path, handle)
+      end
+
+      def container_path=(path)
+        @container_path ||= path
       end
 
       def hook(name, request, response, &blk)
@@ -372,6 +377,9 @@ module Warden
         if @resources.has_key?("network")
           self.class.network_pool.delete(@resources["network"])
         end
+      rescue WardenError
+        release
+        raise
       end
 
       # Acquire resources required for every container instance.

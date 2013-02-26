@@ -234,15 +234,22 @@ module Warden
           next
         end
 
-        c = container_klass.from_snapshot(path)
+        begin
+          c = container_klass.from_snapshot(path)
 
-        logger.info("Recovered container at: #{path}", :resources => c.resources)
+          logger.info("Recovered container at: #{path}", :resources => c.resources)
 
-        c.jobs.each do |job_id, job|
-          max_job_id = job_id > max_job_id ? job_id : max_job_id
+          c.jobs.each do |job_id, job|
+            max_job_id = job_id > max_job_id ? job_id : max_job_id
+          end
+
+          container_klass.registry[c.handle] = c
+        rescue WardenError => err
+          logger.log_exception(err)
+
+          logger.warn("Destroying unrecoverable container at: #{path}")
+          system(File.join(container_klass.root_path, "destroy.sh"), path)
         end
-
-        container_klass.registry[c.handle] = c
       end
 
       container_klass.job_id = max_job_id

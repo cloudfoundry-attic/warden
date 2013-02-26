@@ -71,6 +71,26 @@ shared_examples "drain" do
     end
   end
 
+  # The only purpose for this test is to make sure we support an upgrade
+  # path where the location of containers (and the path that is
+  # synthesized from their ID) changes between restarts.
+  it "should recreate existing containers whose paths have changed" do
+    c = create_client
+    handle = c.create.handle
+    path = c.info(:handle => handle).container_path
+
+    drain
+
+    # Move container
+    new_path = path + "__"
+    FileUtils.mv(path, new_path)
+
+    start_warden
+
+    c = create_client
+    c.info(:handle => handle).container_path.should == new_path
+  end
+
   it "should not place existing containers networks back into the pool" do
     old_handle = client.create.handle
 
