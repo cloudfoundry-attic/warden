@@ -1,4 +1,4 @@
-# em-warden-client
+# warden
 
 > This README describes a **client** component. Please refer to the top
 > level [README][tlr] for an overview of all components.
