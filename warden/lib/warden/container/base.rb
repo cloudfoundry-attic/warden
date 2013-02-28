@@ -7,11 +7,11 @@ require "warden/util"
 
 require "eventmachine"
 require "fileutils"
-require "json"
 require "set"
 require "steno"
 require "steno/core_ext"
 require "warden/protocol"
+require "yajl"
 
 module Warden
 
@@ -130,7 +130,7 @@ module Warden
         end
 
         def from_snapshot(container_path)
-          snapshot = JSON.parse(File.read(snapshot_path(container_path)))
+          snapshot = Yajl::Parser.parse(File.read(snapshot_path(container_path)), :check_utf8 => false)
           snapshot["resources"]["network"] = Warden::Network::Address.new(snapshot["resources"]["network"])
 
           c = new(snapshot)
@@ -350,7 +350,7 @@ module Warden
         }
 
         file = Tempfile.new("snapshot", File.join(container_path, "tmp"))
-        file.write(JSON.dump(snapshot))
+        file.write(Yajl::Encoder.encode(snapshot, :check_utf8 => false))
         file.close
 
         File.rename(file.path, snapshot_path)

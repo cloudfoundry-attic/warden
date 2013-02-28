@@ -180,9 +180,6 @@ describe Warden::Repl::Repl do
         File.should_receive(:exists?).once.with("history_path")
           .and_return(true)
 
-        JSON.should_receive(:parse).once.with('["test"]')
-          .and_return(["test"])
-
         Readline::HISTORY.should_receive(:push).once.with("test")
           .and_return(nil)
 

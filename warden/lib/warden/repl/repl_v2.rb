@@ -5,9 +5,9 @@ require "warden/repl/commands_manager"
 
 require "readline"
 require "shellwords"
-require "json"
 require "pp"
 require "optparse"
+require "yajl"
 
 module Warden::Repl
   # Runs either interactively (or) non-interactively. Returns the output
@@ -258,14 +258,14 @@ module Warden::Repl
     end
 
     def save_history
-      marshalled = Readline::HISTORY.to_a.to_json
+      marshalled = Yajl::Encoder.encode(Readline::HISTORY.to_a, :check_utf8 => false)
       open(@history_path, 'w+') {|f| f.write(marshalled)}
     end
 
     def restore_history
       return unless File.exists? @history_path
       open(@history_path, 'r') do |file|
-        history = JSON.parse(file.read)
+        history = Yajl::Parser.parse(file.read, :check_utf8 => false)
         history.map {|line| Readline::HISTORY.push line}
       end
     end

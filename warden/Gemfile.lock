@@ -76,3 +76,4 @@ DEPENDENCIES
   sys-filesystem
   warden-client!
   warden-protocol!
+  yajl-ruby

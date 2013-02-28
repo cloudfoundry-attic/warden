@@ -1,5 +1,7 @@
 # coding: UTF-8
 
+require "yajl"
+
 module Warden
 
   module Network
@@ -56,8 +58,8 @@ module Warden
         to_octets.join(".")
       end
 
-      def to_json(*args)
-        to_human.to_json(*args)
+      def to_json
+        Yajl::Encoder.encode(to_human)
       end
 
       protected

@@ -1,11 +1,9 @@
-require "thread"
-
 shared_examples "snapshotting_common" do
   it "should snapshot a container after creation" do
     handle = client.create.handle
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["state"].should == "active"
   end
 
@@ -13,12 +11,12 @@ shared_examples "snapshotting_common" do
     handle = client.create.handle
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["state"].should == "active"
 
     client.stop(:handle => handle)
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["state"].should == "stopped"
   end
 
@@ -29,7 +27,7 @@ shared_examples "snapshotting_common" do
 
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["jobs"].keys.size.should == 1
   end
 
@@ -40,7 +38,7 @@ shared_examples "snapshotting_common" do
 
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["jobs"].keys.size.should == 1
 
     job_snapshot = snapshot["jobs"].values.first
@@ -55,7 +53,7 @@ shared_examples "snapshotting_net_in" do
 
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["resources"]["ports"].size.should == 1
   end
 
@@ -66,7 +64,7 @@ shared_examples "snapshotting_net_in" do
 
     snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
     File.exist?(snapshot_path).should be_true
-    snapshot = JSON.parse(File.read(snapshot_path))
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
     snapshot["jobs"].keys.size.should == 1
 
     job_snapshot = snapshot["jobs"].values.first

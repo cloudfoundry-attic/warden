@@ -11,6 +11,11 @@ shared_examples "lifecycle" do
     response.handle.should == "test_handle"
   end
 
+  it "should allow to create a container with a custom non-ASCII handle" do
+    response = client.create(:handle => "\x80")
+    response.handle.should == "\x80".force_encoding("BINARY")
+  end
+
   it "should allow to use a container created with a custom handle" do
     response = client.create(:handle => "test_handle")
     response.handle.should == "test_handle"
