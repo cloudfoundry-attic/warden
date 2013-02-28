@@ -204,6 +204,12 @@ module Warden
             src_path = bind_mount.src_path
             dst_path = bind_mount.dst_path
 
+            # Check that the source path exists
+            stat = File.stat(src_path) rescue nil
+            if stat.nil?
+              raise WardenError.new("Source path for bind mount does not exist: #{src_path}")
+            end
+
             # Fix up destination path to be an absolute path inside the union
             dst_path = File.join(container_path, "mnt", dst_path[1..-1])
 

@@ -576,6 +576,15 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.stdout.should be_empty
       response.stderr.should be_empty
     end
+
+    it "should return an error when a bind mount does not exist" do
+      @bind_mount.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
+      @bind_mount.src_path = tmpdir + ".doesnt.exist"
+
+      expect do
+        create
+      end.to raise_error(Warden::Client::ServerError, /\bdoes not exist\b/i)
+    end
   end
 
   describe "create with network" do
