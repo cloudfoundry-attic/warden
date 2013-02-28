@@ -1,3 +1,31 @@
+// Copies files out of a container.
+//
+// File permissions and symbolic links are be preserved, while hard links
+// are materialized. If the source path contains a trailing `/`, only the
+// contents of the directory will be copied. Otherwise, the outermost
+// directory, along with its contents, will be copied.
+//
+// By default, the files on the host will be owned by root.
+// If the `owner` field in the request is specified (in the form of `USER:GROUP`),
+// the resulting files and directories will be owned by this user and group.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `src_path`: Path in the container to copy from.
+// * `dst_path`: Path on the host to copy to.
+//
+// ### Response
+//
+// Empty.
+//
+// ### Errors
+//
+// > **TODO**
+//
+// ### Definition
+//
+
 package warden;
 
 message CopyOutRequest {

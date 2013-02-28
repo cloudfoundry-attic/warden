@@ -1,3 +1,20 @@
+// Echoes a message.
+//
+// ### Request
+//
+// * `message`: Message to echo.
+//
+// ### Response
+//
+// * `message`: Echoed message.
+//
+// ### Errors
+//
+// None.
+//
+// ### Definition
+//
+
 package warden;
 
 message EchoRequest {

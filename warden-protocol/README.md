@@ -1,6 +1,6 @@
-# em-warden-client
+# warden-protocol
 
-> This README describes a **client** component. Please refer to the top
+> This README describes the **protocol** library. Please refer to the top
 > level [README][tlr] for an overview of all components.
 
 [tlr]: /README.md

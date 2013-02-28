@@ -1,3 +1,30 @@
+// Stream a job.
+//
+// A stream request is followed by one or more stream responses.
+//
+// A job is removed after it has completed and the terminating stream response was sent.
+//
+// > **TODO** Talk about nomenclature (what is a job).
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `job_id`: Job ID.
+//
+// ### Response
+//
+// * `name`: Name of stream (either `stdout` or `stderr`).
+// * `data`: A chunk of data from the stream specified in `name`.
+// * `exit_status`: Exit status of the job. If set, this is the terminating response for the request.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+// * When `job_id` does not refer to a job.
+//
+// ### Definition
+//
+
 package warden;
 
 message StreamRequest {

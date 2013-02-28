@@ -1,3 +1,29 @@
+// Set up a port mapping on the host to forward traffic to a specific port to a container.
+//
+// > **TODO** Link to page explaining how networking works.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `host_port`: External port to be mapped.
+//    If not specified, a port will be acquired from the server's port pool.
+//    If specified, the user is expected to manage port availability.
+// * `container_port`: Port on the container's interface that traffic should be forwarded to.
+//    If not specified, the port will be the same as `host_port`, whether it is specified or not.
+//
+// ### Response
+//
+// * `host_port`: External port that was mapped.
+// * `container_port`: Port on the container's interface that traffic will be forwarded to.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+// * When no port can be acquired from the server's port pool.
+//
+// ### Definition
+//
+
 package warden;
 
 message NetInRequest {

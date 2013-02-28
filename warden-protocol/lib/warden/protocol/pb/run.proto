@@ -1,3 +1,16 @@
+// Run a job inside a container.
+//
+// This request is equivalent to spawning a job and immediately linking to it.
+//
+// See `Spawn` and `Link` for a description of the request and response.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+//
+// ### Definition
+//
+
 package warden;
 
 message RunRequest {

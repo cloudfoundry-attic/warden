@@ -1,3 +1,20 @@
+// Lists all containers.
+//
+// ### Request
+//
+// Empty.
+//
+// ### Response
+//
+// * `handles`: List of container handles.
+//
+// ### Errors
+//
+// None.
+//
+// ### Definition
+//
+
 package warden;
 
 message ListRequest {

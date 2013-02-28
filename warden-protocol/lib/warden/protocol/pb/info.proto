@@ -1,3 +1,27 @@
+// Returns information about a container.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+//
+// ### Response
+//
+// * `state`: Either "active" or "stopped".
+// * `events`: List of events that occurred for the container. It currently includes only "oom" (Out Of Memory) event if it occurred.
+// * `host_ip`: IP address of the host side of the container's virtual ethernet pair.
+// * `container_ip`: IP address of the container side of the container's virtual ethernet pair.
+// * `container_path`: Path to the directory holding the container's files (both its control scripts and filesystem).
+// * `job_ids`: List of running jobs.
+//
+// > **TODO** Describe different types of stats.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+//
+// ### Definition
+//
+
 package warden;
 
 message InfoRequest {

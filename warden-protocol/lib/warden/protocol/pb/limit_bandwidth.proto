@@ -1,3 +1,20 @@
+// Limits the network bandwidth for a container.
+//
+// ### Request
+//
+// > **TODO**
+//
+// ### Response
+//
+// > **TODO**
+//
+// ### Errors
+//
+// > **TODO**
+//
+// ### Definition
+//
+
 package warden;
 
 message LimitBandwidthRequest {

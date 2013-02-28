@@ -1,3 +1,29 @@
+// Link to a job.
+//
+// A request blocks until the job completes.
+// A job is removed after it has completed and has been linked to.
+//
+// > **TODO** Talk about nomenclature (what is a job).
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `job_id`: Job ID.
+//
+// ### Response
+//
+// * `exit_status`: Exit status of the job.
+// * `stdout`: Standard out produced by the job.
+// * `stderr`: Standard error produced by the job.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+// * When `job_id` does not refer to a job.
+//
+// ### Definition
+//
+
 package warden;
 
 message LinkRequest {

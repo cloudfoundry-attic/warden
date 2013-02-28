@@ -1,3 +1,26 @@
+// > **TODO** Link to page explaining how memory limits works.
+//
+// ### Request
+//
+// The field `limit_in_bytes` is optional.
+// When it is not specified, the memory usage limit will not be changed.
+// When it is specified, but not a multiple of the page size,
+// it is rounded up to the nearest multiple of the page size (the default page size is 4K).
+//
+// * `handle`: Container handle.
+// * `limit_in_bytes`: New memory usage limit in bytes.
+//
+// ### Response
+//
+// * `limit_in_bytes`: Memory usage limit in bytes.
+//
+// ### Errors
+//
+// > **TODO**
+//
+// ### Definition
+//
+
 package warden;
 
 message LimitMemoryRequest {

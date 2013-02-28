@@ -1,3 +1,5 @@
+// nodoc
+
 package warden;
 
 message Message {

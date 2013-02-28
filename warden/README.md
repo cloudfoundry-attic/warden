@@ -1,8 +1,9 @@
-[![Build Status](https://travis-ci.org/cloudfoundry/warden.png)](https://travis-ci.org/cloudfoundry/warden)
-
 # warden
 
-A framework for managing isolated and resource controlled environments.
+> This README describes the **server** component. Please refer to the top
+> level [README][tlr] for an overview of all components.
+
+[tlr]: /README.md
 
 ## Introduction
 
@@ -373,3 +374,10 @@ prerequisites to be in place. They need to be run as root if the backend
 to be tested requires it.
 
 See `root/<backend>/README.md` for backend-specific information.
+
+## License
+
+The project is licensed under the Apache 2.0 license (see the
+[`LICENSE`][license] file in the root directory of the repository).
+
+[license]: /LICENSE
