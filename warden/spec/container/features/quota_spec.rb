@@ -19,24 +19,33 @@ describe Warden::Container::Features::Quota do
 
     instance.stub(:uid).and_return(1001)
 
-    instance.stub(:setquota) do |uid, limits|
-      # repquota returns what setquota sets
-      instance.class.stub(:repquota).with(uid) do
-        {
-          uid => {
-            :quota => {
-              :block => {
-                :soft => limits[:block_soft] || 0,
-                :hard => limits[:block_hard] || 0,
-              },
-              :inode => {
-                :soft => limits[:inode_soft] || 0,
-                :hard => limits[:inode_hard] || 0,
-              },
-            }
-          }
-        }
-      end
+    @current_limits = {}
+    @default_limits = {
+      :block_soft => 0,
+      :block_hard => 0,
+      :inode_soft => 0,
+      :inode_hard => 0,
+    }
+
+    instance.class.stub(:repquota) do |uid|
+      {
+        uid => {
+          :quota => {
+            :block => {
+              :soft => @current_limits[:block_soft] || @default_limits[:block_soft],
+              :hard => @current_limits[:block_hard] || @default_limits[:block_hard],
+            },
+            :inode => {
+              :soft => @current_limits[:inode_soft] || @default_limits[:inode_soft],
+              :hard => @current_limits[:inode_hard] || @default_limits[:inode_hard],
+            },
+          },
+        },
+      }
+    end
+
+    instance.stub(:setquota) do |_, limits|
+      @current_limits = limits
     end
   end
 
@@ -73,6 +82,10 @@ describe Warden::Container::Features::Quota do
           request.send(byte_property + "=", 8000)
           request.send(block_property + "=", 1)
         end
+      end
+
+      it "isn't overwritten when not specified" do
+        @current_limits[:block_soft] = 1
       end
     end
 
@@ -111,6 +124,10 @@ describe Warden::Container::Features::Quota do
           request.send(block_property + "=", 1)
         end
       end
+
+      it "isn't overwritten when not specified" do
+        @current_limits[:block_hard] = 1
+      end
     end
 
     describe "setting 'inode_soft'" do
@@ -128,6 +145,10 @@ describe Warden::Container::Features::Quota do
         it "via '#{inode_property}'" do
           request.send(inode_property + "=", 1024)
         end
+      end
+
+      it "isn't overwritten when not specified" do
+        @current_limits[:inode_soft] = 1024
       end
     end
 
@@ -148,6 +169,10 @@ describe Warden::Container::Features::Quota do
         it "via '#{inode_property}'" do
           request.send(inode_property + "=", 1024)
         end
+      end
+
+      it "isn't overwritten when not specified" do
+        @current_limits[:inode_hard] = 1024
       end
     end
 

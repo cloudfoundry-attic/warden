@@ -40,7 +40,14 @@ module Warden
           # return directly if the disk quota is diabled
           return nil unless self.class.disk_quota_enabled
 
+          # Use current limits as defaults
+          repquota = self.class.repquota(uid)
+
           limits = {}
+          limits[:block_soft] = repquota[uid][:quota][:block][:soft]
+          limits[:block_hard] = repquota[uid][:quota][:block][:hard]
+          limits[:inode_soft] = repquota[uid][:quota][:inode][:soft]
+          limits[:inode_hard] = repquota[uid][:quota][:inode][:hard]
 
           to_blocks = lambda do |bytes|
             bytes = bytes.to_i + container_depot_block_size - 1
