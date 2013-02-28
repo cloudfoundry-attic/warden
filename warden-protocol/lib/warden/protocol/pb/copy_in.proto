@@ -1,3 +1,28 @@
+// Copies files into a container.
+//
+// File permissions and symbolic links are be preserved, while hard links
+// are materialized. If the source path contains a trailing `/`, only the
+// contents of the directory will be copied. Otherwise, the outermost
+// directory, along with its contents, will be copied. The unprivileged
+// user inside the container is made owner of the resulting files.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `src_path`: Path on the host to copy from.
+// * `dst_path`: Path in the container to copy to.
+//
+// ### Response
+//
+// Empty.
+//
+// ### Errors
+//
+// > **TODO**
+//
+// ### Definition
+//
+
 package warden;
 
 message CopyInRequest {

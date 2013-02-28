@@ -1,3 +1,14 @@
+// This structure is neither a request nor a response.
+//
+// It is a structure that is shared between `Spawn` and `Run` requests.
+//
+// Please refer to the manual page of [`getrlimit(2)`][getrlimit] for a description of the individual fields.
+//
+// [getrlimit]: http://www.kernel.org/doc/man-pages/online/pages/man2/getrlimit.2.html
+//
+// ### Definition
+//
+
 package warden;
 
 message ResourceLimits {

@@ -1,3 +1,28 @@
+// Destroys a container.
+//
+// When a container is destroyed, its resource allocations are released,
+// its filesystem is removed, and all references to its handle are removed.
+//
+// All resources that have been acquired during the lifetime of the container are released.
+// Examples of these resources are its subnet, its UID, and ports that were redirected to the container.
+//
+// > **TODO** Link to list of resources that can be acquired during the lifetime of a container.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+//
+// ### Response
+//
+// Empty.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+//
+// ### Definition
+//
+
 package warden;
 
 message DestroyRequest {

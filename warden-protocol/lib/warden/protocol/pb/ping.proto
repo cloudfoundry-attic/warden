@@ -1,3 +1,20 @@
+// Pings.
+//
+// ### Request
+//
+// Empty.
+//
+// ### Response
+//
+// Empty.
+//
+// ### Errors
+//
+// None.
+//
+// ### Definition
+//
+
 package warden;
 
 message PingRequest {

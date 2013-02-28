@@ -1,3 +1,40 @@
+// Creates a new container.
+//
+// ### Request
+//
+// All parameters are optional.
+//
+// * `bind_mounts`: Contains the paths that should be mounted in the
+// container's filesystem. The `src_path` field for every bind mount holds the
+// path as seen from the host, where the `dst_path` field holds the path as
+// seem from the container.
+//
+// * `grace_time`: Can be used to specify how long a container can go
+// unreferenced by any client connection. After this time, the container will
+// automatically be destroyed. If not specified, the container will be
+// subject to the globally configured grace time.
+//
+// * `handle`: If specified, its value must be used to refer to the
+// container in future requests. If it is not specified,
+// warden uses its internal container ID as the container handle.
+//
+// > **TODO**: `network` and `rootfs`
+//
+// ### Response
+//
+// The `handle` field contains the handle that must be used to refer to the
+// container in future request. It is the same as the `handle` field in the
+// request, if it was passed.
+//
+// ### Errors
+//
+// * When the `handle`, if specified, is already taken.
+// * When one of the `bind_mount` paths does not exist.
+// * When resource allocations fail (subnet, user ID, etc).
+//
+// ### Definition
+//
+
 package warden;
 
 message CreateRequest {

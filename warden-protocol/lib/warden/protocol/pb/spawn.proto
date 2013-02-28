@@ -1,3 +1,27 @@
+// Spawn a job inside a container.
+//
+// > **TODO** Talk about nomenclature (what is a job).
+//
+// ### Request
+//
+// The specified script is interpreted by `/bin/bash` inside the container.
+//
+// * `handle`: Container handle.
+// * `script`: Script to execute.
+// * `privileged`: Whether to run the script as root or not.
+// * `rlimits`: Resource limits (see `ResourceLimits`).
+//
+// ### Response
+//
+// * `job_id`: Job ID.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+//
+// ### Definition
+//
+
 package warden;
 
 message SpawnRequest {

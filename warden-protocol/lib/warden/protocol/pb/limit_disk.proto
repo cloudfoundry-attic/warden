@@ -1,6 +1,37 @@
-package warden;
+// Limits the disk usage for a container.
+//
+// The disk limits that are set by this command only have effect for the container's unprivileged user.
+// Files/directories created by its privileged user are not subject to these limits.
+//
+// > **TODO** Link to page explaining how disk management works.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `block_soft`: New soft block limit.
+// * `block_hard`: New hard block limit.
+// * `inode_soft`: New soft inode limit.
+// * `inode_hard`: New hard inode limit.
+// * `byte_soft`: New soft block limit specified in bytes. Only has effect when `block_soft` is not specified.
+// * `byte_hard`: New hard block limit specified in bytes. Only has effect when `block_hard` is not specified.
+//
+// ### Response
+//
+// * `block_soft`: Soft block limit.
+// * `block_hard`: Hard block limit.
+// * `inode_soft`: Soft inode limit.
+// * `inode_hard`: Hard inode limit.
+// * `byte_soft`: Soft block limit specified in bytes.
+// * `byte_hard`: Hard block limit specified in bytes.
+//
+// ### Errors
+//
+// > **TODO**
+//
+// ### Definition
+//
 
-// The byte limits are used to compute block limits on the server side.
+package warden;
 
 message LimitDiskRequest {
   required string handle = 1;

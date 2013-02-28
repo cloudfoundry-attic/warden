@@ -1,3 +1,27 @@
+// Whitelist network traffic.
+//
+// If the configuration directive `deny_networks` is not used,
+// all networks are already whitelisted and this command is effectively a no-op.
+//
+// > **TODO** Link to page explaining how networking works.
+//
+// ### Request
+//
+// * `handle`: Container handle.
+// * `network`: Network to whitelist (in the form `1.2.3.4/8`).
+// * `port`: Port to whitelist.
+//
+// ### Response
+//
+// Empty.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+//
+// ### Definition
+//
+
 package warden;
 
 message NetOutRequest {

@@ -1,3 +1,32 @@
+// Stops a container.
+//
+// Once a container is stopped, warden does not allow spawning new processes inside the container.
+// It is possible to copy files in to and out of a stopped container.
+// It is only when a container is destroyed that its filesystem is cleaned up.
+//
+// ### Request
+//
+// Warden stops a container by sending the processes running inside it the `SIGTERM` signal.
+// It then waits for the processes to terminate before returning a response.
+// If one or more processes do not terminate within 10 seconds,
+// the warden server sends these processes the `SIGKILL` signal,
+// killing them ungracefully.
+//
+// * `handle`: Container handle.
+// * `background`: Return a response immediately instead of waiting for the container to be stopped.
+// * `kill`: Send SIGKILL instead of SIGTERM.
+//
+// ### Response
+//
+// Empty.
+//
+// ### Errors
+//
+// * When `handle` does not refer to a container.
+//
+// ### Definition
+//
+
 package warden;
 
 message StopRequest {
