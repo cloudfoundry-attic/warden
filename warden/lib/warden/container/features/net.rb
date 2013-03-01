@@ -129,6 +129,10 @@ module Warden
         end
 
         def do_net_out(request, response)
+          unless request.network || request.port
+            raise WardenError.new("Please specify network and/or port.")
+          end
+
           _net_out(request.network, request.port)
 
           @resources["net_out"] ||= []

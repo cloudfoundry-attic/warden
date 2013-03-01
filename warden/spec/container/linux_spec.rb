@@ -333,10 +333,15 @@ describe "linux", :platform => "linux", :needs_root => true do
   describe "net_out", :netfilter => true do
     attr_reader :handle
 
-    def net_out(options = {})
+    def net_out_ok?(options = {})
       response = client.net_out(options.merge(:handle => handle))
       response.should be_ok
-      response
+    end
+
+    def net_out_not_ok?(err_message, options = {})
+      expect do
+        client.net_out(options.merge(:handle => handle))
+      end.to raise_error(Warden::Client::ServerError, /#{err_message}/)
     end
 
     def run(script)
@@ -367,7 +372,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       it "should allow traffic after explicitly allowing it" do
-        net_out(:network => "4.2.2.2")
+        net_out_ok?(:network => "4.2.2.2")
         reachable?("4.2.2.2").should be_true
       end
     end
@@ -381,6 +386,24 @@ describe "linux", :platform => "linux", :needs_root => true do
     describe "to other range" do
       it "should allow traffic" do
         reachable?("8.8.8.8").should be_true
+      end
+    end
+
+    describe "check network and port fields" do
+      it "should raise error when both fields are absent" do
+        net_out_not_ok?("specify network and/or port")
+      end
+
+      it "should not raise error when network field is present" do
+        net_out_ok?(:network => "4.2.2.2")
+      end
+
+      it "should not raise error when port field is present" do
+        net_out_ok?(:port => 1234)
+      end
+
+      it "should not raise error when both network and port fields are present" do
+        net_out_ok?(:network => "4.2.2.2", :port => 1234)
       end
     end
   end
