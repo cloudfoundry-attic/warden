@@ -346,6 +346,7 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
     abort();
   }
 
+  /* Master side of the pseudo TTY */
   p[0][0] = rv;
 
   rv = grantpt(p[0][0]);
@@ -366,6 +367,7 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
     abort();
   }
 
+  /* Slave side of the pseudo TTY */
   p[0][1] = rv;
 
   fcntl_mix_cloexec(p[0][0]);
