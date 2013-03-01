@@ -73,6 +73,12 @@ int main(int argc, char *argv[]) {
     set_cloexec(fds[ii]);
   }
 
+  /*
+   * Make sure iomux-spawn runs in an isolated process group such that
+   * it is not affected by signals sent to its parent's process group.
+   */
+  setsid();
+
   child = child_create(argv + 2, argc - 2);
 
   printf("child_pid=%d\n", child->pid);
