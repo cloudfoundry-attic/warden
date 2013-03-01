@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/prctl.h>
 #include <unistd.h>
 
 #include "child.h"
@@ -66,6 +67,9 @@ child_t *child_create(char **argv, size_t argv_size) {
       close(child->stdout[ii]);
       close(child->stderr[ii]);
     }
+
+    /* This child should die with its parent */
+    prctl(PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0);
 
     /* In child, wait to be unblocked */
     atomic_read(child->barrier[0], &buf, 1, &hup);
