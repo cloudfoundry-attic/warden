@@ -110,7 +110,8 @@ describe "linux", :platform => "linux", :needs_root => true do
           "container_klass" => container_klass,
           "container_rootfs_path" => container_rootfs_path,
           "container_depot_path" => container_depot_path,
-          "container_grace_time" => 5 },
+          "container_grace_time" => 5,
+          "job_output_limit" => 100 * 1024 },
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,

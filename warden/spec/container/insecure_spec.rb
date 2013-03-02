@@ -58,7 +58,8 @@ describe "insecure" do
           "unix_domain_path" => unix_domain_path,
           "container_klass" => container_klass,
           "container_depot_path" => container_depot_path,
-          "container_grace_time" => 5 },
+          "container_grace_time" => 5,
+          "job_output_limit" => 100 * 1024 },
         "network" => {
           "pool_start_address" => start_address,
           "pool_size" => 64,

@@ -66,6 +66,10 @@ module Warden
 
         attr_accessor :logger
 
+        def pid
+          @child.pid
+        end
+
         def stdout
           @child.out
         end

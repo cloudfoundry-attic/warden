@@ -9,7 +9,8 @@ module Warden
         "unix_domain_path"        => "/tmp/warden.sock",
         "unix_domain_permissions" => 0755,
         "container_klass"         => "Warden::Container::Insecure",
-        "container_grace_time"    => (5 * 60), # 5 minutes,
+        "container_grace_time"    => (5 * 60), # 5 minutes
+        "job_output_limit"        => (10 * 1024 * 1024), # 10 megabytes
         "quota" => {
           "disk_quota_enabled" => true,
         },
@@ -52,6 +53,9 @@ module Warden
             optional("sigpending") => Integer,
             optional("stack")      => Integer,
           },
+
+          "job_output_limit" => Integer,
+
           "quota" => {
             optional("disk_quota_enabled") => bool,
           },

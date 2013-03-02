@@ -107,6 +107,22 @@ shared_examples "running commands" do
         response.exit_status.should == 0
       end
     end
+
+    describe "buffer limits" do
+      [[:stdout, 1], [:stderr, 2]].each do |(io, fd)|
+        it "should kill a job exceeding #{io} buffer limit" do
+          script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
+
+          response = client.run(:handle => handle, :script => script)
+          response.exit_status.should == 255
+          response.send(io).size.should >= 1024 * 100
+          response.send(io).size.should < 1024 * 100 + 1024 * 64
+
+          # Test that iomux-spawn was killed
+          `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
+        end
+      end
+    end
   end
 
   describe "via spawn/stream" do
@@ -188,6 +204,23 @@ shared_examples "running commands" do
 
         r = stream(c2, job_id)
         r.should_not be_empty
+      end
+    end
+
+    describe "buffer limits" do
+      [[:stdout, 1], [:stderr, 2]].each do |(io, fd)|
+        it "should kill a job exceeding #{io} buffer limit" do
+          script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
+          job_id = client.spawn(:handle => handle, :script => script).job_id
+
+          responses = stream(client, job_id)
+          responses.last.exit_status.should == 255
+          responses.map(&:data).join.size.should >= 1024 * 100
+          responses.map(&:data).join.size.should < 1024 * 100 + 1024 * 64
+
+          # Test that iomux-spawn was killed
+          `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
+        end
       end
     end
   end

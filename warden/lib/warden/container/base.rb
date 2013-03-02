@@ -822,7 +822,7 @@ module Warden
         raise WardenError.new("iomux-spawn failed")  if spawner_alive == :no
 
         # Wait for the spawned child to be continued
-        job = Job.new(self, job_id)
+        job = Job.new(self, job_id, "iomux_spawn_pid" => spawner.pid)
         job.logger = logger
         job.run
 
@@ -906,7 +906,7 @@ module Warden
           if !terminated?
             argv = [File.join(container.bin_path, "iomux-link"), "-w", cursors_path, job_root_path]
 
-            @child = DeferredChild.new(*argv)
+            @child = DeferredChild.new(*argv, :max => Server.config.server["job_output_limit"])
             @child.logger = logger
             @child.run
 
@@ -983,6 +983,7 @@ module Warden
             # [1] The child exited with status 255.
             # [2] iomux linking failed with an internal error and exited with
             #     status of 255.
+            # [3] The child exceeded the set output limit.
             #
             # Currently, we don't care about internal failures in iomux linking
             # and propogate the exit status as such. What we really need is
@@ -992,7 +993,18 @@ module Warden
           end
 
           @child.errback do |err|
-            resume [nil, nil, nil]
+            # The errback is only called when an error occurred, such as when a
+            # timeout happened, or the maximum output size has been exceeded.
+            # Kill iomux-spawn if this happens.
+            pid = @snapshot["iomux_spawn_pid"]
+            begin
+              Process.kill(:TERM, pid) if pid
+            rescue Errno::EPERM => err
+              logger.warn("Cannot kill PID #{pid}: #{err}")
+            end
+
+            # Resume yielded fibers
+            resume [255, @child.stdout, @child.stderr]
           end
         end
       end

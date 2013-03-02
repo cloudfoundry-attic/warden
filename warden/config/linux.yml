@@ -31,6 +31,9 @@ server:
     nofile: 8192
     nproc: 512
 
+  # Specifies the output limit of a job (stdout/stderr combined).
+  job_output_limit: 10485760
+
   quota:
     disk_quota_enabled: true
 
