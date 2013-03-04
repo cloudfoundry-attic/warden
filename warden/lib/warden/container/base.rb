@@ -975,20 +975,20 @@ module Warden
 
         protected
 
+        # An exit status of 255 from the child is ambiguous, and can
+        # mean any one of the following:
+        #
+        # [1] The child exited with status 255.
+        # [2] iomux linking failed with an internal error and exited with
+        #     status of 255.
+        # [3] The child exceeded the set output limit.
+        #
+        # Currently, we don't care about internal failures in iomux linking
+        # and propogate the exit status as such. What we really need is
+        # a clear way to differentiate exit statuses of iomux link from
+        # the underlying child.
         def setup_child_handlers
           @child.callback do
-            # An exit status of 255 from the child is ambiguous, and can
-            # mean any one of the following:
-            #
-            # [1] The child exited with status 255.
-            # [2] iomux linking failed with an internal error and exited with
-            #     status of 255.
-            # [3] The child exceeded the set output limit.
-            #
-            # Currently, we don't care about internal failures in iomux linking
-            # and propogate the exit status as such. What we really need is
-            # a clear way to differentiate exit statuses of iomux link from
-            # the underlying child.
             resume [@child.exit_status, @child.stdout, @child.stderr]
           end
 
