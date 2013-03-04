@@ -228,15 +228,15 @@ module Warden
 
 
       required :handle, :string, 1
-      optional :block_limit, :uint32, 10
+      optional :block_limit, :uint64, 10
       optional :block, :uint64, 11
       optional :block_soft, :uint64, 12
       optional :block_hard, :uint64, 13
-      optional :inode_limit, :uint32, 20
+      optional :inode_limit, :uint64, 20
       optional :inode, :uint64, 21
       optional :inode_soft, :uint64, 22
       optional :inode_hard, :uint64, 23
-      optional :byte_limit, :uint32, 30
+      optional :byte_limit, :uint64, 30
       optional :byte, :uint64, 31
       optional :byte_soft, :uint64, 32
       optional :byte_hard, :uint64, 33
@@ -247,15 +247,15 @@ module Warden
       include Warden::Protocol::BaseMessage
 
 
-      optional :block_limit, :uint32, 10
+      optional :block_limit, :uint64, 10
       optional :block, :uint64, 11
       optional :block_soft, :uint64, 12
       optional :block_hard, :uint64, 13
-      optional :inode_limit, :uint32, 20
+      optional :inode_limit, :uint64, 20
       optional :inode, :uint64, 21
       optional :inode_soft, :uint64, 22
       optional :inode_hard, :uint64, 23
-      optional :byte_limit, :uint32, 30
+      optional :byte_limit, :uint64, 30
       optional :byte, :uint64, 31
       optional :byte_soft, :uint64, 32
       optional :byte_hard, :uint64, 33

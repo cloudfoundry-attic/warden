@@ -5,7 +5,7 @@ require "spec_helper"
 shared_examples "disk limiting" do
   field :block_limit do
     it_should_be_optional
-    it_should_be_typed_as_uint32
+    it_should_be_typed_as_uint64
   end
 
   field :block do
@@ -25,7 +25,7 @@ shared_examples "disk limiting" do
 
   field :inode_limit do
     it_should_be_optional
-    it_should_be_typed_as_uint32
+    it_should_be_typed_as_uint64
   end
 
   field :inode do
@@ -45,7 +45,7 @@ shared_examples "disk limiting" do
 
   field :byte_limit do
     it_should_be_optional
-    it_should_be_typed_as_uint32
+    it_should_be_typed_as_uint64
   end
 
   field :byte do
