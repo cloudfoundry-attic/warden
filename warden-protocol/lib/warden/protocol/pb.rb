@@ -209,8 +209,8 @@ module Warden
 
 
       required :handle, :string, 1
-      optional :rate, :uint64, 2
-      optional :burst, :uint64, 3
+      required :rate, :uint64, 2
+      required :burst, :uint64, 3
 
     end
 
@@ -218,8 +218,8 @@ module Warden
       include Warden::Protocol::BaseMessage
 
 
-      optional :rate, :uint64, 1
-      optional :burst, :uint64, 2
+      required :rate, :uint64, 1
+      required :burst, :uint64, 2
 
     end
 
