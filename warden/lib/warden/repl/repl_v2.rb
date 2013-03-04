@@ -73,6 +73,12 @@ module Warden::Repl
           Warden::Repl::CommandsManager::CommandError => ce
           STDERR.write("#{ce.message}\n")
           break if @exit_on_error
+        rescue Errno::EPIPE
+          STDOUT.write("Reconnecting...")
+          @client.disconnect
+          @client.connect
+          STDOUT.write("\n")
+          retry
         end
 
         if @exit_on_error
