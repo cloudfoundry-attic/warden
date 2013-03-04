@@ -8,8 +8,8 @@ gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git'
 gem "sys-filesystem"
 gem "yajl-ruby"
 
-gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git", :ref => '140ca648'
-gem "warden-client", :git => "https://github.com/cloudfoundry/warden.git", :ref => '140ca648'
+gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git"
+gem "warden-client", :git => "https://github.com/cloudfoundry/warden.git"
 
 group :spec do
   gem "rspec"
