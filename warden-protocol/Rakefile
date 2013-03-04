@@ -10,6 +10,11 @@ RSpec::Core::RakeTask.new(:spec) do |t|
   # See .rspec
 end
 
+desc "Build pb.rb"
+task :build do
+  sh("lib/warden/protocol/build.sh")
+end
+
 task :ensure_coding do
   patterns = [
     /Rakefile$/,

@@ -2,7 +2,7 @@
 
 set -e
 
-cd pb
+cd $(dirname $0)/pb
 
 export BEEFCAKE_NAMESPACE=Warden::Protocol
 
