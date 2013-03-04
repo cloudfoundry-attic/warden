@@ -454,9 +454,10 @@ module Warden
           end
         end
       rescue WardenError => e
-        send_error e
+        send_error(e)
       rescue => e
-        send_error e
+        logger.log_exception(e)
+        send_error(e)
       end
 
       def process_container_request(request, container)
