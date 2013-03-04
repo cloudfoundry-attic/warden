@@ -196,13 +196,40 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.limit_in_bytes.should == 9223372036854775807
     end
 
-    it "sets `memory.limit_in_bytes` in the correct cgroup" do
-      hund_mb = 100 * 1024 * 1024
-      response = limit_memory(:limit_in_bytes => hund_mb)
-      response.limit_in_bytes.should == hund_mb
+    describe "setting limits" do
+      def integer_from_memory_cgroup(file)
+        File.read(File.join("/sys/fs/cgroup/memory", "instance-#{@handle}", file)).to_i
+      end
 
-      raw_lim = File.read(File.join("/sys/fs/cgroup/memory", "instance-#{@handle}", "memory.limit_in_bytes"))
-      raw_lim.to_i.should == hund_mb
+      let(:hundred_mb) { 100 * 1024 * 1024 }
+
+      before do
+        response = limit_memory(:limit_in_bytes => hundred_mb)
+        response.limit_in_bytes.should == hundred_mb
+      end
+
+      it "sets `memory.limit_in_bytes`" do
+        integer_from_memory_cgroup("memory.limit_in_bytes").should == hundred_mb
+      end
+
+      it "sets `memory.memsw.limit_in_bytes`" do
+        integer_from_memory_cgroup("memory.memsw.limit_in_bytes").should == hundred_mb
+      end
+
+      describe "increasing limits" do
+        before do
+          response = limit_memory(:limit_in_bytes => 2 * hundred_mb)
+          response.limit_in_bytes.should == 2 * hundred_mb
+        end
+
+        it "sets `memory.limit_in_bytes`" do
+          integer_from_memory_cgroup("memory.limit_in_bytes").should == 2 * hundred_mb
+        end
+
+        it "sets `memory.memsw.limit_in_bytes`" do
+          integer_from_memory_cgroup("memory.memsw.limit_in_bytes").should == 2 * hundred_mb
+        end
+      end
     end
 
     def self.it_should_stop_container_when_an_oom_event_occurs
