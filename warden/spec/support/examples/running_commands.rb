@@ -115,8 +115,8 @@ shared_examples "running commands" do
 
           response = client.run(:handle => handle, :script => script)
           response.exit_status.should == 255
-          response.send(io).size.should >= 1024 * 100
-          response.send(io).size.should < 1024 * 100 + 1024 * 64
+          response.send(io).size.should > 1024 * 100
+          response.send(io).size.should <= 1024 * 100 + 1024 * 64
 
           # Test that iomux-spawn was killed
           `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
