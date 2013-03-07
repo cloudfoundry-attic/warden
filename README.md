@@ -20,7 +20,9 @@ This repository contains the following components:
 * `warden-client` -- client (Ruby)
 * `em-warden-client` -- client (Ruby's EventMachine)
 
-For information on how to run the warden server and interact with it at the command line, see the [warden server readme](warden/README.md).
+For information on how to run the warden server and interact with it
+at the command line, see the [warden server README](warden/README.md).
+
 ## License
 
 The project is licensed under the Apache 2.0 license (see the
