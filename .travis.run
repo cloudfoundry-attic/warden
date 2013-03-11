@@ -8,6 +8,7 @@ exec 0>&-
 # List stuff
 uname -a
 ls -l /dev/loop*
+sudo losetup -a
 sudo losetup -f
 sudo lsmod
 
