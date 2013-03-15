@@ -27,6 +27,12 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:have_uid_support) { true }
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
 
+  def x(command)
+    `#{command}`.tap do
+      $?.should be_success
+    end
+  end
+
   before do
     FileUtils.mkdir_p(work_path)
 
@@ -38,25 +44,31 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   before do
-    `dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null`
-    $?.should be_success
+    x("dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null")
 
     features  = []
     features << "^has_journal" # don't include a journal
     features << "uninit_bg"    # skip initialization of block groups
 
-    `mkfs.ext4 -b 4096 -q -F -O #{features.join(",")} #{container_depot_file}`
-    $?.should be_success
+    x("mkfs.ext4 -b 4096 -q -F -O #{features.join(",")} #{container_depot_file}")
+    x("losetup -a | grep #{container_depot_file} | cut -d: -f1 | xargs -r -n1 losetup -d")
+    x("losetup -f #{container_depot_file}")
+    @loop_device = x("losetup -a | grep #{container_depot_file} | cut -d: -f1").strip
+  end
 
-    `mount -o loop #{container_depot_file} #{container_depot_path}`
-    $?.should be_success
+  after do
+    x("losetup -a | grep #{container_depot_file} | cut -d: -f1 | xargs -r -n1 losetup -d")
+  end
+
+  before do
+    x("mount #{@loop_device} #{container_depot_path}")
   end
 
   after do
     tries = 0
 
     begin
-      out = `umount #{container_depot_path} 2>&1`
+      out = x("umount #{container_depot_path} 2>&1")
       raise "Failed unmounting #{container_depot_path}: #{out}" unless $?.success?
     rescue
       tries += 1
@@ -68,11 +80,8 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
     end
 
-    `rmdir #{container_depot_path}`
-    $?.should be_success
-
-    `rm #{container_depot_file}`
-    $?.should be_success
+    x("rmdir #{container_depot_path}")
+    x("rm #{container_depot_file}")
   end
 
   before do
@@ -84,7 +93,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     # Destroy all artifacts
     Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
-      `#{clear} #{container_depot_path} > /dev/null`
+      x("#{clear} #{container_depot_path} > /dev/null")
     end
   end
 
