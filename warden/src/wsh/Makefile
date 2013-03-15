@@ -11,10 +11,10 @@ install: all
 
 .PHONY: all clean
 
-wshd: wshd.o barrier.o mount.o un.o util.o msg.o
+wshd: wshd.o barrier.o mount.o un.o util.o msg.o pwd.o
 	$(CC) -static -o $@ $^ -lutil
 
-wsh: wsh.o pump.o un.o util.o msg.o
+wsh: wsh.o pump.o un.o util.o msg.o pwd.o
 	$(CC) -static -o $@ $^ -lutil
 
 %.o: %.c

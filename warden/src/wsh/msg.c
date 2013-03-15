@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +9,7 @@
 #include <unistd.h>
 
 #include "msg.h"
+#include "pwd.h"
 
 int msg_array_import(msg__array_t * a, int count, const char ** ptr) {
   size_t off = 0;

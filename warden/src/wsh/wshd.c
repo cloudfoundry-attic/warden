@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <pwd.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
@@ -24,6 +23,7 @@
 #include "barrier.h"
 #include "msg.h"
 #include "mount.h"
+#include "pwd.h"
 #include "un.h"
 #include "util.h"
 
@@ -888,21 +888,6 @@ int main(int argc, char **argv) {
   assert_directory(w->run_path);
   assert_directory(w->lib_path);
   assert_directory(w->root_path);
-
-  /*
-   * Trigger NSS initialization.
-   *
-   * NSS is initialized on the first call to a function defined in <pwd.h>,
-   * such as getpwnam, getpwuid, getpwent, etc.
-   *
-   * If this initialization step happens _after_ pivot_root(2) the shared
-   * libraries that are picked up may be different from the ones that the
-   * already loaded libc expects, causing inexplicable crashes.
-   *
-   * To prevent a shared library incompatibility, trigger initialization of the
-   * NSS before modifying the environment.
-   */
-  getpwuid(0);
 
   parent_run(w);
 
