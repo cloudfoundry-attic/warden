@@ -125,3 +125,11 @@ EOS
 chroot <<-EOS
 apt-get install -y build-essential
 EOS
+
+# Remove files we don't need or want
+chroot <<-EOS
+rm -f /var/cache/apt/archives/*.deb
+rm -f /var/cache/apt/*cache.bin
+rm -f /var/lib/apt/lists/*_Packages
+rm -f /etc/ssh/ssh_host_*
+EOS

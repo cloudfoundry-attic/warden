@@ -33,15 +33,8 @@ EOS
 
 setup_fs
 
-# Remove files we don't need or want
-rm -f mnt/var/cache/apt/archives/*.deb
-rm -f mnt/var/cache/apt/*cache.bin
-rm -f mnt/var/lib/apt/lists/*_Packages
-rm -f mnt/etc/ssh/ssh_host_*
-
 # Strip /dev down to the bare minimum
-rm -rf mnt/dev
-mkdir -p mnt/dev
+rm -rf mnt/dev/*
 
 # /dev/tty
 file=mnt/dev/tty
