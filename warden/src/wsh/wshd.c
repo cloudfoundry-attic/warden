@@ -23,6 +23,7 @@
 #include "barrier.h"
 #include "msg.h"
 #include "mount.h"
+#include "pty.h"
 #include "pwd.h"
 #include "un.h"
 #include "util.h"
@@ -356,35 +357,11 @@ int child_handle_interactive(int fd, wshd_t *w, msg_request_t *req) {
   fcntl_mix_cloexec(p[1][0]);
   fcntl_mix_cloexec(p[1][1]);
 
-  rv = posix_openpt(O_RDWR | O_NOCTTY);
+  rv = openpty(&p[0][0], &p[0][1], NULL);
   if (rv < 0) {
-    perror("posix_openpt");
+    perror("openpty");
     abort();
   }
-
-  /* Master side of the pseudo TTY */
-  p[0][0] = rv;
-
-  rv = grantpt(p[0][0]);
-  if (rv < 0) {
-    perror("grantpt");
-    abort();
-  }
-
-  rv = unlockpt(p[0][0]);
-  if (rv < 0) {
-    perror("unlockpt");
-    abort();
-  }
-
-  rv = open(ptsname(p[0][0]), O_RDWR);
-  if (rv < 0) {
-    perror("open");
-    abort();
-  }
-
-  /* Slave side of the pseudo TTY */
-  p[0][1] = rv;
 
   fcntl_mix_cloexec(p[0][0]);
   fcntl_mix_cloexec(p[0][1]);
