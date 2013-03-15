@@ -12,10 +12,10 @@ install: all
 .PHONY: all clean
 
 wshd: wshd.o barrier.o mount.o un.o util.o msg.o
-	$(CC) -o $@ $^ -lutil
+	$(CC) -static -o $@ $^ -lutil
 
 wsh: wsh.o pump.o un.o util.o msg.o
-	$(CC) -o $@ $^ -lutil
+	$(CC) -static -o $@ $^ -lutil
 
 %.o: %.c
 	$(CC) -c -Wall $(OPTIMIZATION) $(DEBUG) $(CFLAGS) $<
