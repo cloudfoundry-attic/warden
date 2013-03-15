@@ -28,20 +28,17 @@
 typedef struct wshd_s wshd_t;
 
 struct wshd_s {
-  int argc;
-  char **argv;
-
   /* Path to directory where server socket is placed */
-  const char *run_path;
+  char run_path[256];
 
   /* Path to directory containing hooks */
-  const char *lib_path;
+  char lib_path[256];
 
   /* Path to directory that will become root in the new mount namespace */
-  const char *root_path;
+  char root_path[256];
 
   /* Process title */
-  const char *title;
+  char title[32];
 
   /* File descriptor of listening socket */
   int fd;
@@ -58,8 +55,8 @@ struct wshd_s {
   size_t pid_to_fd_len;
 };
 
-int wshd__usage(wshd_t *w) {
-  fprintf(stderr, "Usage: %s OPTION...\n", w->argv[0]);
+int wshd__usage(wshd_t *w, int argc, char **argv) {
+  fprintf(stderr, "Usage: %s OPTION...\n", argv[0]);
   fprintf(stderr, "\n");
 
   fprintf(stderr, "  --run PATH   "
@@ -81,20 +78,33 @@ int wshd__usage(wshd_t *w) {
   return 0;
 }
 
-int wshd__getopt(wshd_t *w) {
+int wshd__getopt(wshd_t *w, int argc, char **argv) {
   int i = 1;
-  int j = w->argc - i;
+  int j = argc - i;
+  int rv;
 
-  while (i < w->argc) {
+  while (i < argc) {
     if (j >= 2) {
-      if (strcmp("--run", w->argv[i]) == 0) {
-        w->run_path = strdup(w->argv[i+1]);
-      } else if (strcmp("--lib", w->argv[i]) == 0) {
-        w->lib_path = strdup(w->argv[i+1]);
-      } else if (strcmp("--root", w->argv[i]) == 0) {
-        w->root_path = strdup(w->argv[i+1]);
-      } else if (strcmp("--title", w->argv[i]) == 0) {
-        w->title = strdup(w->argv[i+1]);
+      if (strcmp("--run", argv[i]) == 0) {
+        rv = snprintf(w->run_path, sizeof(w->run_path), "%s", argv[i+1]);
+        if (rv >= sizeof(w->run_path)) {
+          goto toolong;
+        }
+      } else if (strcmp("--lib", argv[i]) == 0) {
+        rv = snprintf(w->lib_path, sizeof(w->lib_path), "%s", argv[i+1]);
+        if (rv >= sizeof(w->lib_path)) {
+          goto toolong;
+        }
+      } else if (strcmp("--root", argv[i]) == 0) {
+        rv = snprintf(w->root_path, sizeof(w->root_path), "%s", argv[i+1]);
+        if (rv >= sizeof(w->root_path)) {
+          goto toolong;
+        }
+      } else if (strcmp("--title", argv[i]) == 0) {
+        rv = snprintf(w->title, sizeof(w->title), "%s", argv[i+1]);
+        if (rv >= sizeof(w->title)) {
+          goto toolong;
+        }
       } else {
         goto invalid;
       }
@@ -102,10 +112,10 @@ int wshd__getopt(wshd_t *w) {
       i += 2;
       j -= 2;
     } else if (j == 1) {
-      if (strcmp("-h", w->argv[i]) == 0 ||
-          strcmp("--help", w->argv[i]) == 0)
+      if (strcmp("-h", argv[i]) == 0 ||
+          strcmp("--help", argv[i]) == 0)
       {
-        wshd__usage(w);
+        wshd__usage(w, argc, argv);
         return -1;
       } else {
         goto invalid;
@@ -117,9 +127,14 @@ int wshd__getopt(wshd_t *w) {
 
   return 0;
 
+toolong:
+  fprintf(stderr, "%s: argument too long -- %s\n", argv[0], argv[i]);
+  fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
+  return -1;
+
 invalid:
-  fprintf(stderr, "%s: invalid option -- %s\n", w->argv[0], w->argv[i]);
-  fprintf(stderr, "Try `%s --help' for more information.\n", w->argv[0]);
+  fprintf(stderr, "%s: invalid option -- %s\n", argv[0], argv[i]);
+  fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
   return -1;
 }
 
@@ -767,24 +782,21 @@ int main(int argc, char **argv) {
   w = calloc(1, sizeof(*w));
   assert(w != NULL);
 
-  w->argc = argc;
-  w->argv = argv;
-
-  rv = wshd__getopt(w);
+  rv = wshd__getopt(w, argc, argv);
   if (rv == -1) {
     exit(1);
   }
 
-  if (w->run_path == NULL) {
-    w->run_path = "run";
+  if (strlen(w->run_path) == 0) {
+    strcpy(w->run_path, "run");
   }
 
-  if (w->lib_path == NULL) {
-    w->lib_path = "lib";
+  if (strlen(w->lib_path) == 0) {
+    strcpy(w->lib_path, "lib");
   }
 
-  if (w->root_path == NULL) {
-    w->root_path = "root";
+  if (strlen(w->root_path) == 0) {
+    strcpy(w->root_path, "root");
   }
 
   if (w->title != NULL) {
