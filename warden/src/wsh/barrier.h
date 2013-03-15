@@ -18,6 +18,7 @@ struct barrier_s {
 
 int barrier_open(barrier_t *bar);
 void barrier_close(barrier_t *bar);
+void barrier_mix_cloexec(barrier_t *bar);
 
 void barrier_close_wait(barrier_t *bar);
 void barrier_close_signal(barrier_t *bar);

@@ -18,9 +18,6 @@ int barrier_open(barrier_t *bar) {
     goto err;
   }
 
-  fcntl_mix_cloexec(aux[0]);
-  fcntl_mix_cloexec(aux[1]);
-
   bar->fd[0] = aux[0];
   bar->fd[1] = aux[1];
   return 0;
@@ -34,6 +31,11 @@ err:
 void barrier_close(barrier_t *bar) {
   close(bar->fd[0]);
   close(bar->fd[1]);
+}
+
+void barrier_mix_cloexec(barrier_t *bar) {
+  fcntl_mix_cloexec(bar->fd[0]);
+  fcntl_mix_cloexec(bar->fd[1]);
 }
 
 void barrier_close_wait(barrier_t *bar) {

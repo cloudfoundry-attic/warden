@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/ipc.h>
 #include <sys/param.h>
+#include <sys/shm.h>
 #include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -623,6 +625,65 @@ int child_loop(wshd_t *w) {
 /* No header defines this */
 extern int pivot_root(const char *new_root, const char *put_old);
 
+void child_save_to_shm(wshd_t *w) {
+  int rv;
+  void *w_;
+
+  rv = shmget(0xdeadbeef, sizeof(*w), IPC_CREAT | IPC_EXCL | 0600);
+  if (rv == -1) {
+    perror("shmget");
+    abort();
+  }
+
+  w_ = shmat(rv, NULL, 0);
+  if (w_ == (void *)-1) {
+    perror("shmat");
+    abort();
+  }
+
+  memcpy(w_, w, sizeof(*w));
+}
+
+wshd_t *child_load_from_shm(void) {
+  int rv;
+  wshd_t *w;
+  void *w_;
+
+  rv = shmget(0xdeadbeef, sizeof(*w), 0600);
+  if (rv == -1) {
+    perror("shmget");
+    abort();
+  }
+
+  w_ = shmat(rv, NULL, 0);
+  if (w_ == (void *)-1) {
+    perror("shmat");
+    abort();
+  }
+
+  w = malloc(sizeof(*w));
+  if (w == NULL) {
+    perror("malloc");
+    abort();
+  }
+
+  memcpy(w, w_, sizeof(*w));
+
+  rv = shmdt(w_);
+  if (w_ == (void *)-1) {
+    perror("shmdt");
+    abort();
+  }
+
+  rv = shmctl(0xdeadbeef, IPC_RMID, NULL);
+  if (w_ == (void *)-1) {
+    perror("shmctl");
+    abort();
+  }
+
+  return w;
+}
+
 int child_run(void *data) {
   wshd_t *w = (wshd_t *)data;
   int rv;
@@ -667,6 +728,27 @@ int child_run(void *data) {
 
   rv = run(pivoted_lib_path, "hook-child-after-pivot.sh");
   assert(rv == 0);
+
+  child_save_to_shm(w);
+
+  execl("/sbin/wshd", "/sbin/wshd", "--continue", NULL);
+  perror("exec");
+  abort();
+}
+
+int child_continue(int argc, char **argv) {
+  wshd_t *w;
+  int rv;
+
+  w = child_load_from_shm();
+
+  /* Process MUST not leak file descriptors to children */
+  barrier_mix_cloexec(&w->barrier_child);
+  fcntl_mix_cloexec(w->fd);
+
+  if (strlen(w->title) > 0) {
+    setproctitle(argv, w->title);
+  }
 
   rv = mount_umount_pivoted_root("/mnt");
   if (rv == -1) {
@@ -778,6 +860,11 @@ int main(int argc, char **argv) {
   wshd_t *w;
   int rv;
 
+  /* Continue child execution in the context of the container */
+  if (argc > 1 && strcmp(argv[1], "--continue") == 0) {
+    return child_continue(argc, argv);
+  }
+
   w = calloc(1, sizeof(*w));
   assert(w != NULL);
 
@@ -796,10 +883,6 @@ int main(int argc, char **argv) {
 
   if (strlen(w->root_path) == 0) {
     strcpy(w->root_path, "root");
-  }
-
-  if (w->title != NULL) {
-    setproctitle(argv, w->title);
   }
 
   assert_directory(w->run_path);

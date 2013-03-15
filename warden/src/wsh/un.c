@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #include "un.h"
-#include "util.h"
 
 int un__socket() {
   int fd;
@@ -33,8 +32,6 @@ int un_listen(const char *path) {
   assert(strlen(path) < sizeof(sa.sun_path));
   strcpy(sa.sun_path, path);
   unlink(sa.sun_path);
-
-  fcntl_mix_cloexec(fd);
 
   if (bind(fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
     perror("bind");
