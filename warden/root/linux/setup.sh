@@ -20,11 +20,7 @@ fi
 
 cgroup_path=/tmp/warden/cgroup
 
-if [ ! -d $cgroup_path ]
-then
-  echo "$cgroup_path does not exist..."
-  exit 1
-fi
+mkdir -p $cgroup_path
 
 if grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q cgroup
 then
