@@ -45,7 +45,6 @@ struct wshd_s {
 
   barrier_t barrier_parent;
   barrier_t barrier_child;
-  pid_t pid;
 
   /* Map pids to exit status fds */
   struct {
