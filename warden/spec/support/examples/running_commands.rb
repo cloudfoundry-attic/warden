@@ -215,8 +215,8 @@ shared_examples "running commands" do
 
           responses = stream(client, job_id)
           responses.last.exit_status.should == 255
-          responses.map(&:data).join.size.should >= 1024 * 100
-          responses.map(&:data).join.size.should < 1024 * 100 + 1024 * 64
+          responses.map(&:data).join.size.should > 1024 * 100
+          responses.map(&:data).join.size.should <= 1024 * 100 + 1024 * 64
 
           # Test that iomux-spawn was killed
           `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
