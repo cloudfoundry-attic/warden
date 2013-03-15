@@ -199,7 +199,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     describe "setting limits" do
       def integer_from_memory_cgroup(file)
-        File.read(File.join("/sys/fs/cgroup/memory", "instance-#{@handle}", file)).to_i
+        File.read(File.join("/tmp/warden/cgroup/memory", "instance-#{@handle}", file)).to_i
       end
 
       let(:hundred_mb) { 100 * 1024 * 1024 }

@@ -14,7 +14,7 @@ source ./etc/config
 if [ -f ./run/wshd.pid ]
 then
   pid=$(cat ./run/wshd.pid)
-  path=/sys/fs/cgroup/cpu/instance-$id
+  path=/tmp/warden/cgroup/cpu/instance-$id
   tasks=$path/tasks
 
   if [ -d $path ]
@@ -37,7 +37,7 @@ then
   rm -f ./run/wshd.pid
 
   # Remove cgroups
-  for system_path in /sys/fs/cgroup/*
+  for system_path in /tmp/warden/cgroup/*
   do
     path=$system_path/instance-$id
 
