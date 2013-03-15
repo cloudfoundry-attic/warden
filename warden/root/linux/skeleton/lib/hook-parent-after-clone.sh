@@ -42,7 +42,6 @@ do
     echo "c 136:* rw" > $instance_path/devices.allow
   fi
 
-  echo 1 > $instance_path/cgroup.clone_children
   echo $PID > $instance_path/tasks
 done
 
