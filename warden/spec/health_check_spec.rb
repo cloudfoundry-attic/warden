@@ -11,14 +11,6 @@ require "warden/util"
 
 require "warden/container/linux"
 
-def next_class_c
-  $class_c ||= Warden::Network::Address.new("172.16.0.0")
-
-  rv = $class_c
-  $class_c = $class_c + 256
-  rv
-end
-
 describe "health check" do
   let(:work_path) { File.join(Dir.tmpdir, "warden", "spec") }
   let(:unix_domain_path) { File.join(work_path, "warden.sock") }

@@ -64,4 +64,6 @@ RSpec.configure do |config|
       Warden::Server.setup(config)
     end
   end
+
+  config.include(Helpers::Network)
 end
