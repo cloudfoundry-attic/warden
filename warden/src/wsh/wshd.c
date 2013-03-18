@@ -233,22 +233,9 @@ char **env__add(char **envp, const char *key, const char *value) {
   return envp;
 }
 
-char **child_setup_environment(msg_request_t *req) {
-  const char *user;
-  struct passwd *pw;
+char **child_setup_environment(struct passwd *pw) {
   int rv;
   char **envp = NULL;
-
-  user = req->user.name;
-  if (!strlen(user)) {
-    user = "root";
-  }
-
-  pw = getpwnam(user);
-  if (pw == NULL) {
-    perror("getpwnam");
-    return NULL;
-  }
 
   rv = chdir(pw->pw_dir);
   if (rv == -1) {
@@ -278,6 +265,8 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
   }
 
   if (rv == 0) {
+    const char *user;
+    struct passwd *pw;
     char *default_argv[] = { "/bin/sh", NULL };
     char *default_envp[] = { NULL };
     char **argv = default_argv;
@@ -295,6 +284,21 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
     rv = setsid();
     assert(rv != -1);
 
+    user = req->user.name;
+    if (!strlen(user)) {
+      user = "root";
+    }
+
+    pw = getpwnam(user);
+    if (pw == NULL) {
+      perror("getpwnam");
+      goto error;
+    }
+
+    if (strlen(pw->pw_shell)) {
+      default_argv[0] = strdup(pw->pw_shell);
+    }
+
     /* Set controlling terminal if needed */
     if (isatty(in)) {
       rv = ioctl(STDIN_FILENO, TIOCSCTTY, 1);
@@ -307,25 +311,25 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
       assert(argv != NULL);
     }
 
-    /* Use resource limits from request */
     rv = msg_rlimit_export(&req->rlim);
     if (rv == -1) {
       perror("msg_rlimit_export");
-      exit(255);
+      goto error;
     }
 
-    /* Set user from request */
-    rv = msg_user_export(&req->user);
+    rv = msg_user_export(&req->user, pw);
     if (rv == -1) {
       perror("msg_user_export");
-      exit(255);
+      goto error;
     }
 
-    envp = child_setup_environment(req);
+    envp = child_setup_environment(pw);
     assert(envp != NULL);
 
     execvpe(argv[0], argv, envp);
     perror("execvpe");
+
+error:
     exit(255);
   }
 

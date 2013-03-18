@@ -7,6 +7,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "pwd.h"
+
 typedef struct msg__array_s msg__array_t;
 typedef struct msg__rlimit_s msg__rlimit_t;
 typedef struct msg__user_s msg__user_t;
@@ -49,7 +51,7 @@ int msg_rlimit_import(msg__rlimit_t *);
 int msg_rlimit_export(msg__rlimit_t *);
 
 int msg_user_import(msg__user_t *u, const char *name);
-int msg_user_export(msg__user_t *u);
+int msg_user_export(msg__user_t *u, struct passwd *pw);
 
 void msg_request_init(msg_request_t *req);
 void msg_response_init(msg_response_t *res);
