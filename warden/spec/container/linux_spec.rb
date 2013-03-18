@@ -446,6 +446,15 @@ describe "linux", :platform => "linux", :needs_root => true do
       response
     end
 
+    before(:all) do
+      ["/", container_rootfs_path].each do |root|
+        paths = %w(/bin /usr/bin).map { |e| File.join(root, e) }
+        if !paths.any? { |e| File.exist?(File.join(e, "nc")) }
+          raise "Expected `nc` to be present in [#{paths.join(", ")}]"
+        end
+      end
+    end
+
     before do
       @handle = client.create.handle
     end
