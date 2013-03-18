@@ -4,6 +4,7 @@
 set -o nounset
 set -o errexit
 shopt -s nullglob
+shopt -s globstar
 
 packages="openssh-server,rsync"
 suite="lucid"
@@ -62,18 +63,12 @@ fi
 
 if [ "$#" -ne 1 ]
 then
-  echo "Usage: setup.sh [base_dir]"
-  exit 1
-fi
-
-dirname=$(readlink -nf $(dirname $1))
-if [ ! -d $dirname ]
-then
-  echo "Looks like $dirname doesn't exist or isn't a directory"
+  echo "Usage: setup.sh [TARGET DIRECTORY]"
   exit 1
 fi
 
 target=$1
+mkdir -p $target
 
 debootstrap
 

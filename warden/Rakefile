@@ -49,7 +49,7 @@ namespace :setup do
     end
 
     sh "mkdir -p #{File.dirname(rootfs_path)}"
-    sh "sudo -E unshare -m root/linux/base/setup.sh #{rootfs_path}"
+    sh "sudo -E unshare -m root/linux/rootfs/setup.sh #{rootfs_path}"
   end
 end
 
