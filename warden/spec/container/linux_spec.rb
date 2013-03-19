@@ -95,6 +95,9 @@ describe "linux", :platform => "linux", :needs_root => true do
     client
   end
 
+  let(:allow_networks) { [] }
+  let(:deny_networks) { [] }
+
   def start_warden
     FileUtils.rm_f(unix_domain_path)
 
@@ -116,8 +119,8 @@ describe "linux", :platform => "linux", :needs_root => true do
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,
-          "allow_networks" => ["4.2.2.3/32"],
-          "deny_networks" => ["4.2.2.0/24"] },
+          "allow_networks" => allow_networks,
+          "deny_networks" => deny_networks },
         "port" => {
           "pool_start_port" => 64000,
           "pool_size" => 1000 },
@@ -368,79 +371,88 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   describe "net_out", :netfilter => true do
-    attr_reader :handle
-
-    def net_out_ok?(options = {})
-      response = client.net_out(options.merge(:handle => handle))
+    def net_out(options = {})
+      response = client.net_out(options)
       response.should be_ok
+      response
     end
 
-    def net_out_not_ok?(err_message, options = {})
-      expect do
-        client.net_out(options.merge(:handle => handle))
-      end.to raise_error(Warden::Client::ServerError, /#{err_message}/)
-    end
-
-    def run(script)
+    def run(handle, script)
       response = client.run(:handle => handle, :script => script)
       response.should be_ok
       response
     end
 
-    def reachable?(ip)
-      response = run "ping -q -W 1 -c 1 #{ip}"
+    def reachable?(handle, ip)
+      response = run(handle, "ping -q -W 1 -c 1 #{ip}")
       response.stdout =~ /\b(\d+) received\b/i
       $1.to_i > 0
     end
 
-    before do
-      @handle = client.create.handle
-    end
+    context "reachability" do
+      # Allow traffic to the first two subnets
+      let(:allow_networks) do
+        [0, 4].map do |i|
+          "#{(next_class_c + i).to_human}/30"
+        end
+      end
 
-    describe "to denied range" do
+      # Deny traffic to everywhere else
+      let(:deny_networks) do
+        ["0.0.0.0/0"]
+      end
+
       before do
-        # Make sure the host can reach an ip in the denied range
-        `ping -q -w 1 -c 1 4.2.2.2` =~ /\b(\d+) received\b/i
-        $1.to_i.should == 1
+        @containers = 3.times.inject([]) do |a, _|
+          handle = client.create.handle
+          a << { :handle => handle, :ip => client.info(:handle => handle).container_ip }
+          a
+        end
       end
 
-      it "should deny traffic" do
-        reachable?("4.2.2.2").should be_false
+      it "reaches every container from the host" do
+        @containers.each do |e|
+          `ping -q -w 1 -c 1 #{e[:ip]}` =~ /\b(\d+) received\b/i
+          $1.to_i.should == 1
+        end
       end
 
-      it "should allow traffic after explicitly allowing it" do
-        net_out_ok?(:network => "4.2.2.2")
-        reachable?("4.2.2.2").should be_true
+      it "allows traffic to networks configured in allowed networks" do
+        reachable?(@containers[0][:handle], @containers[1][:ip]).should be_true
+        reachable?(@containers[1][:handle], @containers[0][:ip]).should be_true
       end
-    end
 
-    describe "to allowed range" do
-      it "should allow traffic" do
-        reachable?("4.2.2.3").should be_true
+      it "does not allow traffic to networks not configured in allowed networks" do
+        reachable?(@containers[0][:handle], @containers[2][:ip]).should be_false
+        reachable?(@containers[2][:handle], @containers[0][:ip]).should be_false
       end
-    end
 
-    describe "to other range" do
-      it "should allow traffic" do
-        reachable?("8.8.8.8").should be_true
+      it "allows traffic to networks after net_out" do
+        net_out(:handle => @containers[0][:handle], :network => @containers[2][:ip])
+        reachable?(@containers[0][:handle], @containers[2][:ip]).should be_true
+        reachable?(@containers[2][:handle], @containers[0][:ip]).should be_true
       end
     end
 
     describe "check network and port fields" do
+      let(:handle) { client.create.handle }
+
       it "should raise error when both fields are absent" do
-        net_out_not_ok?("specify network and/or port")
+        expect do
+          net_out(:handle => handle)
+        end.to raise_error(Warden::Client::ServerError, %r"specify network and/or port"i)
       end
 
       it "should not raise error when network field is present" do
-        net_out_ok?(:network => "4.2.2.2")
+        net_out(:handle => handle, :network => "4.2.2.2").should be_ok
       end
 
       it "should not raise error when port field is present" do
-        net_out_ok?(:port => 1234)
+        net_out(:handle => handle, :port => 1234).should be_ok
       end
 
       it "should not raise error when both network and port fields are present" do
-        net_out_ok?(:network => "4.2.2.2", :port => 1234)
+        net_out(:handle => handle, :network => "4.2.2.2", :port => 1234).should be_ok
       end
     end
   end

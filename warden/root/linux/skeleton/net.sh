@@ -9,7 +9,7 @@ cd $(dirname "${0}")
 
 source ./etc/config
 
-filter_dispatch_chain="warden-dispatch"
+filter_forward_chain="warden-forward"
 filter_default_chain="warden-default"
 filter_instance_prefix="warden-instance-"
 filter_instance_chain="${filter_instance_prefix}${id}"
@@ -18,8 +18,8 @@ nat_instance_prefix="warden-instance-"
 nat_instance_chain="${filter_instance_prefix}${id}"
 
 function teardown_filter() {
-  # Prune dispatch chain
-  iptables -S ${filter_dispatch_chain} 2> /dev/null |
+  # Prune forward chain
+  iptables -S ${filter_forward_chain} 2> /dev/null |
     grep "\-g ${filter_instance_chain}\b" |
     sed -e "s/-A/-D/" |
     xargs --no-run-if-empty --max-lines=1 iptables
@@ -37,8 +37,8 @@ function setup_filter() {
   iptables -A ${filter_instance_chain} \
     --goto ${filter_default_chain}
 
-  # Bind instance chain to dispatch chain
-  iptables -I ${filter_dispatch_chain} 2 \
+  # Bind instance chain to forward chain
+  iptables -I ${filter_forward_chain} \
     --in-interface ${network_host_iface} \
     --goto ${filter_instance_chain}
 }
