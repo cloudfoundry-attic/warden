@@ -129,9 +129,17 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     # Wait for the socket to come up
-    until File.exist?(unix_domain_path)
+    loop do
+      begin
+        UNIXSocket.new(unix_domain_path)
+      rescue Errno::ENOENT
+      rescue Errno::ECONNREFUSED
+      else
+        break
+      end
+
       if Process.waitpid(@pid, Process::WNOHANG)
-        STDERR.puts "Warden process exited before socket was up; aborting spec suite."
+        STDERR.puts "Warden exited early aborting spec suite"
         exit 1
       end
 
