@@ -60,7 +60,7 @@ sudo bundle exec rake warden:start[config/linux.yml]
 #### Interact with Warden
 
 ```
-bundle exec bin/warden-repl
+bundle exec bin/warden
 ```
 
 ## Implementation for Linux
