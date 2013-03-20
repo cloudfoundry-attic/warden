@@ -479,20 +479,28 @@ describe "linux", :platform => "linux", :needs_root => true do
       @handle = client.create.handle
     end
 
+    def attempt(n = 10, s = 0.1, &blk)
+      n.times do
+        return if blk.call
+        sleep(s)
+      end
+
+      raise "Failed after #{n} attempts to run #{blk.inspect}"
+    end
+
     def check_mapping(response)
       # Verify that the port mapping in @ports works
       script = "echo ok | nc -l #{response.container_port}"
       job_id = client.spawn(:handle => handle,
                             :script => script).job_id
 
-      # Give nc some time to start
-      sleep 0.2
-
       # Connect via external IP
       external_ip = `ip route get 1.1.1.1`.split(/\n/).first.split(/\s+/).last
 
-      # Pipe echo to give nc a stdin (it quits immediately after connecting if it doesn't have a stdin)
-      `echo | nc #{external_ip} #{response.host_port}`.chomp.should == "ok"
+      # Connect through nc
+      attempt do
+        `echo | nc #{external_ip} #{response.host_port}`.chomp == "ok"
+      end
 
       # Clean up
       client.link(:handle => handle, :job_id => job_id)
