@@ -1,10 +1,20 @@
 #!/bin/bash
 
-set -e
 set -x
 
 # Close stdin
 exec 0>&-
+
+# List stuff
+uname -a
+sudo modprobe loop
+ls -l /dev/loop*
+sudo losetup -a
+sudo losetup -f
+sudo lsmod
+
+# Make everything fail
+exit 1
 
 # Remove remnants of apparmor (specific to Travis VM)
 sudo dpkg --purge apparmor
