@@ -17,18 +17,6 @@ then
 fi
 
 function debootstrap() {
-  if [ -d $target ]
-  then
-    read -p "Target directory already exists. Erase it? "
-    if [[ $REPLY =~ ^[Yy].*$ ]]
-    then
-      rm -rf $target
-    else
-      echo "Aborting..."
-      exit 1
-    fi
-  fi
-
   # -v is too new, revert to old trick
   # ${VAR+X} will be
   #   X     when VAR is unset
@@ -68,6 +56,19 @@ then
 fi
 
 target=$1
+
+if [ -d $target ]
+then
+  read -p "Target directory already exists. Erase it? "
+  if [[ $REPLY =~ ^[Yy].*$ ]]
+  then
+    rm -rf $target
+  else
+    echo "Aborting..."
+    exit 1
+  fi
+fi
+
 mkdir -p $target
 
 debootstrap
