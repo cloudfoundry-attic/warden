@@ -329,6 +329,7 @@ module Warden
         @closing = false
         @requests = []
         @buffer = Protocol::Buffer.new
+        @bind = true
 
         Server.drainer.register_connection(self)
       end
@@ -336,7 +337,7 @@ module Warden
       def unbind
         f = Fiber.new { emit(:close) }
         f.resume
-
+        @bind = false
         Server.drainer.unregister_connection(self)
       end
 
@@ -487,6 +488,7 @@ module Warden
             response.name = name
             response.data = data
             send_response(response)
+            break if !@bind
           end
 
           # Terminate by sending exit status only.
