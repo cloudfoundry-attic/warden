@@ -329,11 +329,18 @@ module Warden
         @closing = false
         @requests = []
         @buffer = Protocol::Buffer.new
+        @bound = true
 
         Server.drainer.register_connection(self)
       end
 
+      def bound?
+        @bound
+      end
+
       def unbind
+        @bound = false
+
         f = Fiber.new { emit(:close) }
         f.resume
 
@@ -483,6 +490,8 @@ module Warden
 
         when Protocol::StreamRequest
           response = container.dispatch(request) do |name, data|
+            break if !bound?
+
             response = request.create_response
             response.name = name
             response.data = data

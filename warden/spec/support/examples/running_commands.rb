@@ -169,6 +169,24 @@ shared_examples "running commands" do
       end.to raise_error(Warden::Client::ServerError, "no such job")
     end
 
+    it "should stream a finished job after another connection streamed and was terminated before completion" do
+      job_id = client.spawn(:handle => handle, :script => "for i in $(seq 2); do echo $i; sleep 0.1; done").job_id
+
+      client.write(Warden::Protocol::StreamRequest.new(:handle => handle, :job_id => job_id))
+
+      client.disconnect
+
+      sleep 0.3
+
+      client.reconnect
+
+      # Attempt to stream the job again; the server should have left it in tact
+      r = stream(client, job_id)
+      r.select { |e| e.name == "stdout" }.collect(&:data).join.should == "1\n2\n"
+      r.select { |e| e.name == "stderr" }.collect(&:data).join.should == ""
+      r.last.exit_status.should == 0
+    end
+
     describe "on different connections" do
       let(:c1) { create_client }
       let(:c2) { create_client }
