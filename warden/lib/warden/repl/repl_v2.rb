@@ -112,7 +112,11 @@ module Warden::Repl
       line = line.strip
       return if line.empty?
 
-      process_command(Shellwords.shellsplit(line))
+      begin
+        process_command(Shellwords.shellsplit(line))
+      rescue ArgumentError => e
+        raise CommandError, e.message
+      end
     end
 
     # Returns a prettified description [String] of all commands defined in the
