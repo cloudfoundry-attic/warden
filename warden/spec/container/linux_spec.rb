@@ -670,9 +670,12 @@ describe "linux", :platform => "linux", :needs_root => true do
       @bind_mount.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
       @bind_mount.src_path = tmpdir + ".doesnt.exist"
 
+      # This will fail from the hook-child-before-pivot hook. It is not
+      # possible to check if a bind mount exists before create is executed,
+      # because the bind mount may be created _during_ create.
       expect do
         create
-      end.to raise_error(Warden::Client::ServerError, /\bdoes not exist\b/i)
+      end.to raise_error(Warden::Client::ServerError)
     end
   end
 

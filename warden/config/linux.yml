@@ -37,6 +37,8 @@ server:
   quota:
     disk_quota_enabled: true
 
+  allow_nested_warden: false
+
 health_check_server:
   port: 2345
 

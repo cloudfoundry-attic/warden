@@ -194,37 +194,50 @@ module Warden
       end
 
       def write_bind_mount_commands(request)
-        return if request.bind_mounts.nil? || request.bind_mounts.empty?
-
-        File.open(File.join(container_path, "lib", "hook-parent-before-clone.sh"), "a") do |file|
+        File.open(File.join(container_path, "lib", "hook-child-before-pivot.sh"), "a") do |file|
           file.puts
           file.puts
 
-          request.bind_mounts.each do |bind_mount|
-            src_path = bind_mount.src_path
-            dst_path = bind_mount.dst_path
-
-            # Check that the source path exists
-            stat = File.stat(src_path) rescue nil
-            if stat.nil?
-              raise WardenError.new("Source path for bind mount does not exist: #{src_path}")
-            end
-
-            # Fix up destination path to be an absolute path inside the union
+          add_bind_mount = lambda do |src_path, dst_path, mode|
             dst_path = File.join(container_path, "mnt", dst_path[1..-1])
-
-            mode = case bind_mount.mode
-                   when Protocol::CreateRequest::BindMount::Mode::RO
-                     "ro"
-                   when Protocol::CreateRequest::BindMount::Mode::RW
-                     "rw"
-                   else
-                     raise "Unknown mode"
-                   end
 
             file.puts "mkdir -p #{dst_path}" % [dst_path]
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
+          end
+
+          if request.bind_mounts.respond_to?(:each)
+            request.bind_mounts.each do |bind_mount|
+              src_path = bind_mount.src_path
+              dst_path = bind_mount.dst_path
+
+              mode = case bind_mount.mode
+                     when Protocol::CreateRequest::BindMount::Mode::RO
+                       "ro"
+                     when Protocol::CreateRequest::BindMount::Mode::RW
+                       "rw"
+                     else
+                       raise "Unknown mode"
+                     end
+
+              add_bind_mount.call(src_path, dst_path, mode)
+            end
+          end
+
+          if Server.config.allow_nested_warden?
+            tmp_warden = File.join(container_path, "tmp", "warden")
+            FileUtils.mkdir_p(tmp_warden)
+
+            # Bind-mount containers
+            add_bind_mount.call(tmp_warden, "/tmp/warden", "rw")
+
+            # Bind-mount rootfs
+            add_bind_mount.call(container_rootfs_path, "/tmp/warden/rootfs", "ro")
+
+            # Bind-mount cgroups
+            %w(cpu cpuacct devices memory).each do |subsystem|
+              add_bind_mount.call(cgroup_path(subsystem), "/tmp/warden/cgroup/#{subsystem}", "rw")
+            end
           end
         end
       end

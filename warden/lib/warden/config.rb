@@ -14,6 +14,7 @@ module Warden
         "quota" => {
           "disk_quota_enabled" => true,
         },
+        "allow_nested_warden" => false,
       }
     end
 
@@ -59,6 +60,8 @@ module Warden
           "quota" => {
             optional("disk_quota_enabled") => bool,
           },
+
+          "allow_nested_warden" => bool,
         }
       end
     end
@@ -201,6 +204,10 @@ module Warden
 
     def rlimits
       @server["container_rlimits"] || {}
+    end
+
+    def allow_nested_warden?
+      !!@server["allow_nested_warden"]
     end
 
     def to_hash
