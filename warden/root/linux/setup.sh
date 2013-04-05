@@ -9,30 +9,27 @@ cd $(dirname "${0}")
 
 cgroup_path=/tmp/warden/cgroup
 
-mkdir -p $cgroup_path
-
-if grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q cgroup
+if [ ! -d $cgroup_path ]
 then
-  find $cgroup_path -mindepth 1 -type d | sort | tac | xargs rmdir
-  umount $cgroup_path
-fi
+  mkdir -p $cgroup_path
 
-# Mount tmpfs
-if ! grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q tmpfs
-then
-  mount -t tmpfs none $cgroup_path
-fi
-
-# Mount cgroup subsystems individually
-for subsystem in cpu cpuacct devices memory
-do
-  mkdir -p $cgroup_path/$subsystem
-
-  if ! grep -q "${cgroup_path}/$subsystem " /proc/mounts
+  # Mount tmpfs
+  if ! grep "${cgroup_path} " /proc/mounts | cut -d' ' -f3 | grep -q tmpfs
   then
-    mount -t cgroup -o $subsystem none $cgroup_path/$subsystem
+    mount -t tmpfs none $cgroup_path
   fi
-done
+
+  # Mount cgroup subsystems individually
+  for subsystem in cpu cpuacct devices memory
+  do
+    mkdir -p $cgroup_path/$subsystem
+
+    if ! grep -q "${cgroup_path}/$subsystem " /proc/mounts
+    then
+      mount -t cgroup -o $subsystem none $cgroup_path/$subsystem
+    fi
+  done
+fi
 
 ./net.sh setup
 
