@@ -39,12 +39,9 @@ if [ -x /etc/init.d/apparmor ]; then
 fi
 
 # quotaon(8) exits with non-zero status when quotas are ENABLED
-if [ "$DISK_QUOTA_ENABLED" = "true" ] && quotaon -p $CONTAINER_DEPOT_MOUNT_POINT_PATH > /dev/null
+if [ "$DISK_QUOTA_ENABLED" == "true" ] && quotaon -p $CONTAINER_DEPOT_MOUNT_POINT_PATH > /dev/null
 then
   mount -o remount,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0 $CONTAINER_DEPOT_MOUNT_POINT_PATH
   quotacheck -ugmb -F vfsv0 $CONTAINER_DEPOT_MOUNT_POINT_PATH
   quotaon $CONTAINER_DEPOT_MOUNT_POINT_PATH
-elif [ "$DISK_QUOTA_ENABLED" = "false" ] && ! quotaon -p $CONTAINER_DEPOT_MOUNT_POINT_PATH > /dev/null
-then
-  quotaoff $CONTAINER_DEPOT_MOUNT_POINT_PATH
 fi
