@@ -82,6 +82,7 @@ module Warden
           "network_netmask" => self.class.network_pool.pooled_netmask.to_human,
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
+	  "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
         }
         env
       end
