@@ -367,6 +367,17 @@ Other dependencies are:
 
 Further bootstrapping of Warden can be done by running `rake setup`.
 
+## Logs
+
+Warden uses [steno](https://github.com/cloudfoundry/steno) for its logging. Here are some examples for each log level:
+
+* `error` - a command has timed out or printed too much output
+* `warn` - a shell command sent to a container has failed
+* `info` - a container is being destroyed due to a timeout, warden displays how long a command
+took
+* `debug2` - a shell command sent to a container has succeeded, a timer has been set or stopped
+* `debug` - a snapshot has been taken, a container was created or destroyed normally
+
 ## Hacking
 
 The included tests create and destroy real containers, so require system
