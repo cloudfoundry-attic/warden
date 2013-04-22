@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/cloudfoundry/warden.png)](https://travis-ci.org/cloudfoundry/warden)
-
 # warden
 
 Manages isolated, ephemeral, and resource controlled environments.
