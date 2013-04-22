@@ -5,7 +5,8 @@ TBD.
 ## Install dependencies
 
 ```
-sudo yum install -y ...
+sudo yum install -y glibc-static
+...
 ```
 
 ## Setup system
