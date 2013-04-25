@@ -31,7 +31,7 @@ sudo apt-get install -y linux-image-generic-lts-backport-natty
 #### Install dependencies
 
 ```
-sudo apt-get install -y build-essential debootstrap
+sudo apt-get install -y build-essential debootstrap quota
 ```
 
 #### Setup Warden
