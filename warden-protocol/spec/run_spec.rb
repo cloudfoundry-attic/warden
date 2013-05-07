@@ -66,4 +66,12 @@ describe Warden::Protocol::RunResponse do
     it_should_be_optional
     it_should_be_typed_as_string
   end
+
+  field :info do
+    it_should_be_optional
+
+    it "should be a InfoResponse" do
+      field.type.should == InfoResponse
+    end
+  end
 end

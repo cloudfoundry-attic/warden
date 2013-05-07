@@ -147,6 +147,7 @@ module Warden
       attr_reader :events
       attr_reader :limits
       attr_reader :state
+      attr_reader :obituary
       attr_accessor :grace_time
 
       def initialize(snapshot = {}, jobs = {})
@@ -320,14 +321,6 @@ module Warden
                     :response => response.to_hash)
 
         response
-      end
-
-      def method_missing(sym, *args, &blk)
-        if args.first.kind_of?(Protocol::BaseRequest)
-          dispatch(args.first, &blk)
-        else
-          super
-        end
       end
 
       def delete_snapshot
@@ -524,16 +517,24 @@ module Warden
       def before_destroy
         check_state_in(State::Born, State::Active, State::Stopped)
 
+        begin
+          @obituary = dispatch(Protocol::InfoRequest.new(:handle => handle))
+        rescue WardenError => e
+          # Ignore, getting info before destroy is a best effort
+          #
+          # It's also likely that the creation of the container is what failed,
+          # so there's no info to get anyway.
+        end
+
         delete_snapshot
 
-        # Clients should no longer be able to look this container up
         self.class.registry.delete(handle)
 
         unless self.state == State::Stopped
+          # Ignore, stopping before destroy is a best effort
           begin
-            self.stop(Protocol::StopRequest.new)
-          rescue WardenError
-            # Ignore, stopping before destroy is a best effort
+            dispatch(Protocol::StopRequest.new)
+          rescue WardenError => e
           end
         end
 
@@ -577,6 +578,7 @@ module Warden
 
         job.cleanup(@jobs)
 
+        response.info = container_info
         response.exit_status = exit_status
         response.stdout = stdout
         response.stderr = stderr
@@ -611,6 +613,7 @@ module Warden
 
         link_response = dispatch(link_request)
 
+        response.info = container_info
         response.exit_status = link_response.exit_status
         response.stdout = link_response.stdout
         response.stderr = link_response.stderr
@@ -725,6 +728,10 @@ module Warden
       end
 
       protected
+
+      def container_info
+        obituary || dispatch(Warden::Protocol::InfoRequest.new(:handle => handle))
+      end
 
       def state
         @state
