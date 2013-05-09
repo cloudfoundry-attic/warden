@@ -160,6 +160,13 @@ module Warden::Protocol
         r.last.exit_status.should == 0
       end
 
+      it "includes container info" do
+        job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.1; printf B;").job_id
+
+        r = stream(client, job_id)
+        r.last.info.should be_kind_of(InfoResponse)
+      end
+
       it "should stream a finished job" do
         job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.0; printf B;").job_id
 
@@ -224,7 +231,8 @@ module Warden::Protocol
             end
           end.map do |t|
             t.join
-            t[:result]
+            # we don't care to compare container info
+            t[:result].each { |r| r.info = nil }
           end
 
           r[0].should == r[1]

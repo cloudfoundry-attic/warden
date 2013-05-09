@@ -591,6 +591,7 @@ module Warden
           raise WardenError.new("no such job")
         end
 
+        response.info = container_info
         response.exit_status = job.stream(&blk)
 
         job.cleanup(@jobs)
