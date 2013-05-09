@@ -490,6 +490,7 @@ module Warden
       optional :name, :string, 1
       optional :data, :string, 2
       optional :exit_status, :uint32, 3
+      optional :info, InfoResponse, 4
 
     end
   end
