@@ -191,51 +191,42 @@ default. Every command invocation is formatted as a JSON array, where
 the first element is the command name and subsequent elements can be any
 JSON object. The commands it responds to are as follows:
 
-### `create [CONFIG]`
+### `create [BIND_MOUNTS] [--grace_time TIME] [--handle NAME] [--rootfs ROOTFS] [--network IP]`
 
 Creates a new container.
 
 Returns the handle of the container which is used to identify it.
 
-The optional `CONFIG` parameter is a hash that specifies configuration
-options used during container creation. The supported options are:
+#### `--bind_mounts[]`
 
-#### `bind_mounts`
+If supplied, this is an array of hashes specifying a set of paths to be
+bind mounted inside the container. The notation is as follows:
 
-If supplied, this specifies a set of paths to be bind mounted inside the
-container. The value must be an array. The elements in this array
-specify the bind mounts to execute, and are executed in order. Every
-element must be of the form:
+    --bind_mounts[0].field1=val1 --bind_mounts[0].field2=val2 ...
 
-```
-[
-  # Path in the host filesystem
-  "/host/path",
+The three fields must be specified for each element of the array:
 
-  # Path in the container
-  "/path/in/container",
+* `src_path`: Path in the host filesystem
+* `dst_path`: Path in the container
+* `mode`: Mount in read-only (`RO`) or read-write (`RW`).
 
-  # Optional hash with options. The `mode` key specifies whether the bind
-  # mount should be remounted as `ro` (read-only) or `rw` (read-write).
-  {
-    "mode" => "ro|rw"
-  }
-]
-```
-
-#### `grace_time`
+#### `--grace_time`
 
 If specified, this setting overrides the default time of a container not
 being referenced by any client until it is destroyed. The value can
 either be the number of seconds as floating point number or integer, or
 the `null` value to completely disable the grace time.
 
-#### `disk_size_mb`
+#### `--handle NAME`
 
-If specified, this setting overrides the default size of the container's
-scratch filesystem. The value is expected to be an integer number.
+If specified, this setting overrides the name of the container, instead
+of randomly generating one.
 
-### `spawn HANDLE SCRIPT [OPTS]`
+#### `--network IP`
+
+If specified, this setting specifies the external IP address of the container.
+
+### `spawn --handle HANDLE --script SCRIPT [OPTS]`
 
 Run the script `SCRIPT` in the container identified by `HANDLE`.
 
@@ -250,7 +241,7 @@ command being run. The supported options are:
 
 If true, this specifies that the script should be run as root.
 
-### `link HANDLE JOB_ID`
+### `link --handle HANDLE --job_id JOB_ID`
 
 Reap the script identified by `JOB_ID`, running in the container
 identified by `HANDLE`.
@@ -260,7 +251,7 @@ containing its `STDOUT` and a string containing its `STDERR`. These
 elements may be `null` when they cannot be determined (e.g. the
 script couldn't be executed, was killed, etc.).
 
-### `stream HANDLE JOB_ID`
+### `stream --handle HANDLE --job_id JOB_ID`
 
 Stream `STDOUT` and `STDERR` of scripts identified by `JOB_ID`, running
 in the container identified by `HANDLE`.
@@ -270,19 +261,24 @@ or `STDERR` as the first element, and a chunk of the stream as the
 second element. Returns an empty tuple when no more data is available
 in the stream.
 
-### `limit HANDLE (mem) [VALUE]`
+### `limit_memory --handle HANDLE [--limit_in_bytes BYTES]`
 
-Set or get resource limits for the container identified by `HANDLE`.
+Set or get memory limits for the container identified by `HANDLE`.
 
-The following resources can be limited:
+The memory limit is specified in number of bytes. It is enforced using
+the control group associated with the container. When a container
+exceeds this limit, one or more of its processes will be killed by the
+kernel. Additionally, the Warden will be notified that an OOM happened
+and it subsequently tears down the container.
 
-* The memory limit is specified in number of bytes. It is enforced using
-  the control group associated with the container. When a container
-  exceeds this limit, one or more of its processes will be killed by the
-  kernel. Additionally, the Warden will be notified that an OOM happened
-  and it subsequently tears down the container.
+### `limit_disk --handle HANDLE`
 
-### `net HANDLE in`
+Set or get disk limits for the container identified by `HANDLE`.
+
+There are several ways to specify disk limits. See `limit_disk --help`
+for options.
+
+### `net_in --handle HANDLE [--host_port PORT] [--container_port PORT]`
 
 Forward a port on the external interface of the host to the container
 identified by `HANDLE`.
@@ -290,7 +286,7 @@ identified by `HANDLE`.
 Returns the port number that is mapped to the container. This port
 number is the same on the inside of the container.
 
-### `net HANDLE out ADDRESS[/MASK][:PORT]`
+### `net_out --handle HANDLE [--network ADDRESS[/MASK]] [--port PORT]`
 
 Allow traffic from the container identified by `HANDLE` to the network
 address specified by `ADDRESS`. Additionally, the address may be masked
@@ -299,7 +295,7 @@ specific port.
 
 Returns `ok`.
 
-### `copy HANDLE in SRC_PATH DST_PATH`
+### `copy_in --handle HANDLE --src_path SRC_PATH --dst_path DST_PATH`
 
 Copy the contents at `SRC_PATH` on the host to `DST_PATH` in the
 container identified by `HANDLE`.
@@ -312,7 +308,7 @@ contents of the directory will be copied. Otherwise, the outermost
 directory, along with its contents, will be copied. The unprivileged
 user will be the owner of the files in the container.
 
-### `copy HANDLE out SRC_PATH DST_PATH [OWNER]`
+### `copy_out --handle HANDLE --src_path SRC_PATH --dst_path DST_PATH [--owner OWNER]`
 
 Copy the contents at `SRC_PATH` in the container identified by `HANDLE`
 to `DST_PATH` on the host.
@@ -325,7 +321,7 @@ root. If the `OWNER` argument is supplied (in the form of `USER:GROUP`),
 files on the host will be chowned to this user/group after the copy has
 completed.
 
-### `stop HANDLE`
+### `stop --handle HANDLE [--background] [--kill]`
 
 Stop processes running inside the container identified by `HANDLE`.
 
@@ -334,7 +330,7 @@ Returns `ok`.
 Because all processes are taken down, unfinished scripts will likely
 terminate without an exit status being available.
 
-### `destroy HANDLE`
+### `destroy --handle HANDLE`
 
 Stop processes and destroy all resources associated with the container
 identified `HANDLE`.
