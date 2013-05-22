@@ -222,7 +222,7 @@ module Warden
                      raise "Unknown mode"
                    end
 
-            file.puts "mkdir -p #{dst_path}" % [dst_path]
+            file.puts "mkdir -p #{dst_path}"
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
           end
