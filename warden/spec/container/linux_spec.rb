@@ -18,12 +18,8 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { true }
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
-
-  def x(command)
-    `#{command}`.tap do
-      $?.should be_success
-    end
-  end
+  let(:allow_networks) { [] }
+  let(:deny_networks) { [] }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -33,50 +29,16 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     FileUtils.mkdir_p(container_depot_path)
-  end
 
-  before do
-    x("dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null")
+    execute("dd if=/dev/null of=#{container_depot_file} bs=1M seek=100 1> /dev/null 2> /dev/null")
 
-    features  = []
-    features << "^has_journal" # don't include a journal
-    features << "uninit_bg"    # skip initialization of block groups
+    execute("mkfs.ext4 -b 4096 -q -F -O ^has_journal,uninit_bg #{container_depot_file}")
+    execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1 | xargs --no-run-if-empty --max-args=1 losetup --detach")
+    execute("losetup --find #{container_depot_file}")
+    @loop_device = execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1").strip
 
-    x("mkfs.ext4 -b 4096 -q -F -O #{features.join(",")} #{container_depot_file}")
-    x("losetup -a | grep #{container_depot_file} | cut -d: -f1 | xargs -r -n1 losetup -d")
-    x("losetup -f #{container_depot_file}")
-    @loop_device = x("losetup -a | grep #{container_depot_file} | cut -d: -f1").strip
-  end
+    execute("mount #{@loop_device} #{container_depot_path}")
 
-  after do
-    x("losetup -a | grep #{container_depot_file} | cut -d: -f1 | xargs -r -n1 losetup -d")
-  end
-
-  before do
-    x("mount #{@loop_device} #{container_depot_path}")
-  end
-
-  after do
-    tries = 0
-
-    begin
-      out = x("umount #{container_depot_path} 2>&1")
-      raise "Failed unmounting #{container_depot_path}: #{out}" unless $?.success?
-    rescue
-      tries += 1
-      if tries >= 100
-        raise
-      else
-        sleep 0.01
-        retry
-      end
-    end
-
-    x("rmdir #{container_depot_path}")
-    x("rm #{container_depot_file}")
-  end
-
-  before do
     start_warden
   end
 
@@ -85,7 +47,33 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     # Destroy all artifacts
     Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
-      x("#{clear} #{container_depot_path} > /dev/null")
+      execute("#{clear} #{container_depot_path} > /dev/null")
+    end
+
+    unmount_depot
+
+    execute("rmdir #{container_depot_path}")
+    execute("rm #{container_depot_file}")
+
+    execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1 | xargs --no-run-if-empty --max-args=1 losetup --detach")
+  end
+
+  def execute(command)
+    `#{command}`.tap do
+      $?.should be_success
+    end
+  end
+
+  def unmount_depot(tries = 100)
+    out = execute("umount #{container_depot_path} 2>&1")
+    raise "Failed unmounting #{container_depot_path}: #{out}" unless $?.success?
+  rescue
+    tries -= 1
+    if tries > 0
+      raise
+    else
+      sleep 0.01
+      retry
     end
   end
 
@@ -94,9 +82,6 @@ describe "linux", :platform => "linux", :needs_root => true do
     client.connect
     client
   end
-
-  let(:allow_networks) { [] }
-  let(:deny_networks) { [] }
 
   def start_warden
     FileUtils.rm_f(unix_domain_path)
@@ -108,7 +93,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       Process.setsid
       Signal.trap("TERM") { exit }
 
-      Warden::Server.setup \
+      Warden::Server.setup(
         "server" => {
           "unix_domain_path" => unix_domain_path,
           "container_klass" => container_klass,
@@ -127,6 +112,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         "logging" => {
           "level" => "debug",
           "file" => File.join(work_path, "warden.log") }
+      )
 
       Warden::Server.run!
     end
@@ -135,10 +121,8 @@ describe "linux", :platform => "linux", :needs_root => true do
     loop do
       begin
         UNIXSocket.new(unix_domain_path)
-      rescue Errno::ENOENT
-      rescue Errno::ECONNREFUSED
-      else
         break
+      rescue Errno::ENOENT, Errno::ECONNREFUSED
       end
 
       if Process.waitpid(@pid, Process::WNOHANG)
@@ -370,7 +354,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-  describe "net_out", :netfilter => true do
+  describe "net_out" do
     def net_out(options = {})
       response = client.net_out(options)
       response.should be_ok
@@ -392,9 +376,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     context "reachability" do
       # Allow traffic to the first two subnets
       let(:allow_networks) do
-        [0, 4].map do |i|
-          "#{(next_class_c + i).to_human}/30"
-        end
+        ["4.2.2.1/32"]
       end
 
       # Deny traffic to everywhere else
@@ -403,10 +385,9 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       before do
-        @containers = 3.times.inject([]) do |a, _|
+        @containers = 3.times.map do
           handle = client.create.handle
-          a << { :handle => handle, :ip => client.info(:handle => handle).container_ip }
-          a
+          { :handle => handle, :ip => client.info(:handle => handle).container_ip }
         end
       end
 
@@ -418,18 +399,21 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       it "allows traffic to networks configured in allowed networks" do
-        reachable?(@containers[0][:handle], @containers[1][:ip]).should be_true
-        reachable?(@containers[1][:handle], @containers[0][:ip]).should be_true
+        reachable?(@containers[0][:handle], "4.2.2.1").should be_true
+        reachable?(@containers[1][:handle], "4.2.2.1").should be_true
+        reachable?(@containers[2][:handle], "4.2.2.1").should be_true
       end
 
       it "does not allow traffic to networks not configured in allowed networks" do
-        reachable?(@containers[0][:handle], @containers[2][:ip]).should be_false
-        reachable?(@containers[2][:handle], @containers[0][:ip]).should be_false
+        [0, 1, 2].permutation(2) do |first, second|
+          reachable?(@containers[first][:handle], @containers[second][:ip]).should be_false
+        end
       end
 
       it "allows traffic to networks after net_out" do
         net_out(:handle => @containers[0][:handle], :network => @containers[2][:ip])
         reachable?(@containers[0][:handle], @containers[2][:ip]).should be_true
+        net_out(:handle => @containers[2][:handle], :network => @containers[0][:ip])
         reachable?(@containers[2][:handle], @containers[0][:ip]).should be_true
       end
     end
@@ -457,7 +441,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-  describe "net_in", :netfilter => true do
+  describe "net_in" do
     attr_reader :handle
 
     def net_in(options = {})
