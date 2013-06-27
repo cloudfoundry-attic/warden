@@ -1,15 +1,15 @@
 source "http://rubygems.org"
 
 gem "rake"
-gem "steno", "~> 0.0.15", :git => 'https://github.com/cloudfoundry/steno.git'
-gem "membrane", :git => 'https://github.com/cloudfoundry/membrane.git'
+gem "steno", "~> 0.0.15"
+gem "membrane"
 gem "eventmachine", "~> 1.0.0"
-gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git'
+gem "em-posix-spawn"
 gem "sys-filesystem"
 gem "yajl-ruby"
 
-gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git"
-gem "warden-client", :git => "https://github.com/cloudfoundry/warden.git"
+gem "warden-protocol"
+gem "warden-client"
 
 group :spec do
   gem "rspec"
