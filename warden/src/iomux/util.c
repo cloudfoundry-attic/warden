@@ -135,6 +135,10 @@ int create_unix_domain_listener(const char *path, int backlog) {
     return -1;
   }
 
+  if (0 != chmod(path, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
+    return -1;
+  }
+
   return fd;
 }
 
