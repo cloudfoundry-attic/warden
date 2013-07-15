@@ -102,23 +102,6 @@ locale-gen en_US.UTF-8
 #update-locale LANG="en_US.UTF-8"
 EOS
 
-# Disable initctl so that apt cannot start any daemons
-# mv $target/sbin/initctl $target/sbin/initctl.real
-# ln -s /bin/true $target/sbin/initctl
-# trap "mv $target/sbin/initctl.real $target/sbin/initctl" EXIT
-
-# Upgrade upstart
-#chroot <<-EOS
-#apt-get install -y upstart
-#EOS
-
-# If upstart was upgraded, make sure to disable it again
-# if [ ! -h $target/sbin/initctl ]
-# then
-#   mv $target/sbin/initctl $target/sbin/initctl.real
-#   ln -s /bin/true $target/sbin/initctl
-# fi
-
 # Upgrade everything
 chroot <<-EOS
 apt-get upgrade -y
