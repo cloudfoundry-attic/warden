@@ -79,7 +79,6 @@ module Warden
 
           # Default MTU 1500
           @container_iface_mtu = config.network["mtu"]
-          @container_iface_mtu ||= 1500
 
           @container_rootfs_path   = config.server["container_rootfs_path"]
           @container_rootfs_path ||= File.join(@root_path, "base", "rootfs")
@@ -193,7 +192,7 @@ module Warden
       end
 
       def container_iface_mtu
-        @container_iface_mtu ||= 1500
+        self.class.container_iface_mtu.nil? ? 1500 : self.class.container_iface_mtu
       end
 
       def cancel_grace_timer
