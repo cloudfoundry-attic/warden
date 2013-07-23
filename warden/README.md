@@ -14,54 +14,8 @@ network access. As of writing, the only supported OS is Linux.
 
 ## Getting Started
 
-This short guide assumes Ruby 1.9 and Bundler are already available. Ensure that
-Ruby 1.9 has GNU readline library support through the package: 'libreadline-dev'
-and zlib support through the 'zlib1g-dev' package.
-
-#### Install the right kernel
-
-If you are running Ubuntu 10.04 (Lucid), make sure the backported Natty
-kernel is installed. After installing, reboot the system before
-continuing.
-
-```
-sudo apt-get install -y linux-image-generic-lts-backport-natty
-```
-
-#### Install dependencies
-
-```
-sudo apt-get install -y build-essential debootstrap quota
-```
-
-#### Setup Warden
-
-Run the setup routine, which compiles the C code bundled with Warden and
-sets up the base file system for Linux containers.
-
-```
-sudo bundle exec rake setup[config/linux.yml]
-```
-
-**NOTE**:
-If `sudo` complains that `bundle` cannot be found, try `sudo
-env PATH=$PATH` to pass your current `PATH` to the `sudo` environment.
-
-The setup routine sets up the file system for the containers at the directory
-path specified under the key: server -> container_rootfs_path in the
-config file: config/linux.yml.
-
-#### Run Warden
-
-```
-sudo bundle exec rake warden:start[config/linux.yml]
-```
-
-#### Interact with Warden
-
-```
-bundle exec bin/warden
-```
+* [On Ubuntu Lucid (10.04)](doc/getting\_started.ubuntu.md)
+* [On CentOS 6](doc/getting\_started.centos.md)
 
 ## Implementation for Linux
 
@@ -191,42 +145,51 @@ default. Every command invocation is formatted as a JSON array, where
 the first element is the command name and subsequent elements can be any
 JSON object. The commands it responds to are as follows:
 
-`create [BIND_MOUNTS] [--grace_time TIME] [--handle NAME] [--rootfs ROOTFS] [--network IP]`
+### `create [CONFIG]`
 
 Creates a new container.
 
 Returns the handle of the container which is used to identify it.
 
-`--bind_mounts[]`
+The optional `CONFIG` parameter is a hash that specifies configuration
+options used during container creation. The supported options are:
 
-If supplied, this is an array of hashes specifying a set of paths to be
-bind mounted inside the container. The notation is as follows:
+#### `bind_mounts`
 
-`--bind_mounts[0].field1=val1 --bind_mounts[0].field2=val2 ...`
+If supplied, this specifies a set of paths to be bind mounted inside the
+container. The value must be an array. The elements in this array
+specify the bind mounts to execute, and are executed in order. Every
+element must be of the form:
 
-The three fields must be specified for each element of the array:
+```
+[
+  # Path in the host filesystem
+  "/host/path",
 
-* `src_path`: Path in the host filesystem
-* `dst_path`: Path in the container
-* `mode`: Mount in read-only (`RO`) or read-write (`RW`).
+  # Path in the container
+  "/path/in/container",
 
-`--grace_time`
+  # Optional hash with options. The `mode` key specifies whether the bind
+  # mount should be remounted as `ro` (read-only) or `rw` (read-write).
+  {
+    "mode" => "ro|rw"
+  }
+]
+```
+
+#### `grace_time`
 
 If specified, this setting overrides the default time of a container not
 being referenced by any client until it is destroyed. The value can
 either be the number of seconds as floating point number or integer, or
 the `null` value to completely disable the grace time.
 
-`--handle NAME`
+#### `disk_size_mb`
 
-If specified, this setting overrides the name of the container, instead
-of randomly generating one.
+If specified, this setting overrides the default size of the container's
+scratch filesystem. The value is expected to be an integer number.
 
-`--network IP`
-
-If specified, this setting specifies the external IP address of the container.
-
-`spawn --handle HANDLE --script SCRIPT [OPTS]`
+### `spawn HANDLE SCRIPT [OPTS]`
 
 Run the script `SCRIPT` in the container identified by `HANDLE`.
 
@@ -237,11 +200,11 @@ may go away and reconnect later while still being able to reap the job.
 The optional `OPTS` parameter is a hash that specifies options modifying the
 command being run. The supported options are:
 
-`privileged`
+#### `privileged`
 
 If true, this specifies that the script should be run as root.
 
-`link --handle HANDLE --job_id JOB_ID`
+### `link HANDLE JOB_ID`
 
 Reap the script identified by `JOB_ID`, running in the container
 identified by `HANDLE`.
@@ -251,7 +214,7 @@ containing its `STDOUT` and a string containing its `STDERR`. These
 elements may be `null` when they cannot be determined (e.g. the
 script couldn't be executed, was killed, etc.).
 
-`stream --handle HANDLE --job_id JOB_ID`
+### `stream HANDLE JOB_ID`
 
 Stream `STDOUT` and `STDERR` of scripts identified by `JOB_ID`, running
 in the container identified by `HANDLE`.
@@ -261,24 +224,19 @@ or `STDERR` as the first element, and a chunk of the stream as the
 second element. Returns an empty tuple when no more data is available
 in the stream.
 
-`limit_memory --handle HANDLE [--limit_in_bytes BYTES]`
+### `limit HANDLE (mem) [VALUE]`
 
-Set or get memory limits for the container identified by `HANDLE`.
+Set or get resource limits for the container identified by `HANDLE`.
 
-The memory limit is specified in number of bytes. It is enforced using
-the control group associated with the container. When a container
-exceeds this limit, one or more of its processes will be killed by the
-kernel. Additionally, the Warden will be notified that an OOM happened
-and it subsequently tears down the container.
+The following resources can be limited:
 
-`limit_disk --handle HANDLE`
+* The memory limit is specified in number of bytes. It is enforced using
+  the control group associated with the container. When a container
+  exceeds this limit, one or more of its processes will be killed by the
+  kernel. Additionally, the Warden will be notified that an OOM happened
+  and it subsequently tears down the container.
 
-Set or get disk limits for the container identified by `HANDLE`.
-
-There are several ways to specify disk limits. See `limit_disk --help`
-for options.
-
-`net_in --handle HANDLE [--host_port PORT] [--container_port PORT]`
+### `net HANDLE in`
 
 Forward a port on the external interface of the host to the container
 identified by `HANDLE`.
@@ -286,7 +244,7 @@ identified by `HANDLE`.
 Returns the port number that is mapped to the container. This port
 number is the same on the inside of the container.
 
-`net_out --handle HANDLE [--network ADDRESS[/MASK]] [--port PORT]`
+### `net HANDLE out ADDRESS[/MASK][:PORT]`
 
 Allow traffic from the container identified by `HANDLE` to the network
 address specified by `ADDRESS`. Additionally, the address may be masked
@@ -295,7 +253,7 @@ specific port.
 
 Returns `ok`.
 
-`copy_in --handle HANDLE --src_path SRC_PATH --dst_path DST_PATH`
+### `copy HANDLE in SRC_PATH DST_PATH`
 
 Copy the contents at `SRC_PATH` on the host to `DST_PATH` in the
 container identified by `HANDLE`.
@@ -308,7 +266,7 @@ contents of the directory will be copied. Otherwise, the outermost
 directory, along with its contents, will be copied. The unprivileged
 user will be the owner of the files in the container.
 
-`copy_out --handle HANDLE --src_path SRC_PATH --dst_path DST_PATH [--owner OWNER]`
+### `copy HANDLE out SRC_PATH DST_PATH [OWNER]`
 
 Copy the contents at `SRC_PATH` in the container identified by `HANDLE`
 to `DST_PATH` on the host.
@@ -321,7 +279,7 @@ root. If the `OWNER` argument is supplied (in the form of `USER:GROUP`),
 files on the host will be chowned to this user/group after the copy has
 completed.
 
-`stop --handle HANDLE [--background] [--kill]`
+### `stop HANDLE`
 
 Stop processes running inside the container identified by `HANDLE`.
 
@@ -330,7 +288,7 @@ Returns `ok`.
 Because all processes are taken down, unfinished scripts will likely
 terminate without an exit status being available.
 
-`destroy --handle HANDLE`
+### `destroy HANDLE`
 
 Stop processes and destroy all resources associated with the container
 identified `HANDLE`.
@@ -362,17 +320,6 @@ Other dependencies are:
 * quota (for managing file system quotas)
 
 Further bootstrapping of Warden can be done by running `rake setup`.
-
-## Logs
-
-Warden uses [steno](https://github.com/cloudfoundry/steno) for its logging. Here are some examples for each log level:
-
-* `error` - a command has timed out or printed too much output
-* `warn` - a shell command sent to a container has failed
-* `info` - a container is being destroyed due to a timeout, warden displays how long a command
-took
-* `debug2` - a shell command sent to a container has succeeded, a timer has been set or stopped
-* `debug` - a snapshot has been taken, a container was created or destroyed normally
 
 ## Hacking
 
