@@ -104,7 +104,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,
-          "mtu" => 1454,
+          "mtu" => 1500,
           "allow_networks" => allow_networks,
           "deny_networks" => deny_networks },
         "port" => {

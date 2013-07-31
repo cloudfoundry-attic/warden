@@ -192,7 +192,7 @@ module Warden
       end
 
       def container_iface_mtu
-        self.class.container_iface_mtu.nil? ? 1500 : self.class.container_iface_mtu
+        self.class.container_iface_mtu
       end
 
       def cancel_grace_timer
