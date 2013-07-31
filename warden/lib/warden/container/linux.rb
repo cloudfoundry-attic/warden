@@ -82,6 +82,7 @@ module Warden
           "network_netmask" => self.class.network_pool.pooled_netmask.to_human,
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
+          "container_iface_mtu" => container_iface_mtu,
         }
         env
       end

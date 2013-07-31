@@ -84,6 +84,7 @@ module Warden
         "pool_network"   => "10.254.0.0/24",
         "deny_networks"  => [],
         "allow_networks" => [],
+        "mtu"		 => 1500,
       }
     end
 
@@ -96,6 +97,7 @@ module Warden
           # Present for Backwards compatibility
           optional("pool_start_address") => String,
           optional("pool_size")          => Integer,
+	      optional("mtu")		         => Integer,
 
           "deny_networks"      => [String],
           "allow_networks"     => [String],
