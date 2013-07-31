@@ -20,6 +20,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
   let(:allow_networks) { [] }
   let(:deny_networks) { [] }
+  let(:mtu) { 1500 }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -104,7 +105,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,
-          "mtu" => 1500,
+          "mtu" => mtu,
           "allow_networks" => allow_networks,
           "deny_networks" => deny_networks },
         "port" => {
@@ -685,6 +686,22 @@ describe "linux", :platform => "linux", :needs_root => true do
       expect {
         response = client.call(create_request)
       }.to raise_error Warden::Client::ServerError
+    end
+  end
+
+  describe "create with MTU" do
+    let(:mtu) { 1454 }
+
+    it "should set MTU" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = @start_address
+
+      response = client.call(create_request)
+      response.should be_ok
+
+      script = "/sbin/ifconfig w-#{response.handle}-1 | grep -Eo 'MTU:[0-9]+'"
+      mtu_response = client.run(:handle => response.handle, :script => script)
+      mtu_response.stdout.should == "MTU:1454\n"
     end
   end
 

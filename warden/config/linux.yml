@@ -50,9 +50,8 @@ network:
   # Pool this many /30 networks.
   pool_size: 256
 
-  # Interface MTU size (default: 1500)
-  # With MTU 1500 you will get problems with rubygems and GRE tunneling by OpenStack
-  # You will need for Gre tunneling 1454
+  # Interface MTU size
+  # (for OpenStack use 1454 to avoid problems with rubygems with GRE tunneling)
   mtu: 1500
 
 user:
