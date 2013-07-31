@@ -53,6 +53,7 @@ module Warden
         attr_reader :root_path
         attr_reader :container_rootfs_path
         attr_reader :container_depot_path
+        attr_reader :container_iface_mtu
 
         # Stores a map of handles to their respective container objects. Only
         # live containers are reachable through this map. Containers are only
@@ -75,6 +76,9 @@ module Warden
         def setup(config)
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
+
+          # Default MTU 1500
+          @container_iface_mtu = config.network["mtu"]
 
           @container_rootfs_path   = config.server["container_rootfs_path"]
           @container_rootfs_path ||= File.join(@root_path, "base", "rootfs")
@@ -185,6 +189,10 @@ module Warden
 
       def uid
         @uid ||= resources["uid"]
+      end
+
+      def container_iface_mtu
+        self.class.container_iface_mtu
       end
 
       def cancel_grace_timer
