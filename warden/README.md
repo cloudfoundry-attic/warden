@@ -26,12 +26,14 @@ others presence. This means that these containers are given (among
 others) their own PID (Process ID) namespace, network namespace, and
 mount namespace.
 
-Resource control is done by using [Control Groups][cgroups]. Every
+Resource control is done by using [Control Groups (cgroups)][cgroups]. Every
 container is placed in its own control group, where it is configured
-to use an equal slice of CPU compared to other containers, and the
-maximum amount of memory it may use.
+to use [an equal slice of CPU][fairshare] compared to other containers, and the
+maximum amount of [memory it may use][memory].
 
 [cgroups]: http://kernel.org/doc/Documentation/cgroups/cgroups.txt
+[fairshare]: https://www.kernel.org/doc/Documentation/scheduler/sched-design-CFS.txt
+[memory]: https://www.kernel.org/doc/Documentation/cgroups/memory.txt
 
 The following sections give a brief summary of the techniques used to
 implement the Linux backend for Warden. A more detailed description can
