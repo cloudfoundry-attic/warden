@@ -45,3 +45,7 @@ The project is licensed under the Apache 2.0 license (see the
 [`LICENSE`][license] file).
 
 [license]: /LICENSE
+
+## Contributing
+
+Please read the [contributors' guide](https://github.com/cloudfoundry/warden/blob/master/CONTRIBUTING.md)
