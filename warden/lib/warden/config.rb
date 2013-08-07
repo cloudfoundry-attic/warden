@@ -99,6 +99,7 @@ module Warden
           # Present for Backwards compatibility
           optional("pool_start_address") => String,
           optional("pool_size")          => Integer,
+          optional("release_delay")          => Integer,
 
           "deny_networks"      => [String],
           "allow_networks"     => [String],

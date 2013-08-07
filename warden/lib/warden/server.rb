@@ -189,7 +189,7 @@ module Warden
     end
 
     def self.setup_network
-      network_pool = Pool::Network.new(config.network["pool_network"])
+      network_pool = Pool::Network.new(config.network["pool_network"], :release_delay => config.network["release_delay"])
       container_klass.network_pool = network_pool
     end
 
