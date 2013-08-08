@@ -108,7 +108,12 @@ module Warden
     end
 
     def self.ip_local_port_range
-      File.read("/proc/sys/net/ipv4/ip_local_port_range").split.map(&:to_i)
+      # if no ip_local_port_range found, make some guess"
+      if File.exist?("/proc/sys/net/ipv4/ip_local_port_range")
+        File.read("/proc/sys/net/ipv4/ip_local_port_range").split.map(&:to_i)
+      else
+        return 32768, 61000
+      end
     end
 
     def self.port_defaults
