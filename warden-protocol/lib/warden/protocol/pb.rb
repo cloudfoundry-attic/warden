@@ -295,6 +295,7 @@ module Warden
       optional :exit_status, :uint32, 1
       optional :stdout, :string, 2
       optional :stderr, :string, 3
+      optional :info, InfoResponse, 4
 
     end
 
@@ -433,6 +434,7 @@ module Warden
       optional :exit_status, :uint32, 1
       optional :stdout, :string, 2
       optional :stderr, :string, 3
+      optional :info, InfoResponse, 4
 
     end
 
@@ -488,6 +490,7 @@ module Warden
       optional :name, :string, 1
       optional :data, :string, 2
       optional :exit_status, :uint32, 3
+      optional :info, InfoResponse, 4
 
     end
   end

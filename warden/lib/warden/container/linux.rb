@@ -83,6 +83,7 @@ module Warden
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
 	  "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
+          "container_iface_mtu" => container_iface_mtu,
         }
         env
       end
@@ -202,7 +203,7 @@ module Warden
           add_bind_mount = lambda do |src_path, dst_path, mode|
             dst_path = File.join(container_path, "mnt", dst_path[1..-1])
 
-            file.puts "mkdir -p #{dst_path}" % [dst_path]
+            file.puts "mkdir -p #{dst_path}"
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
           end

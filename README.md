@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/cloudfoundry/warden.png)](https://travis-ci.org/cloudfoundry/warden)
+[![Code Climate](https://codeclimate.com/github/cloudfoundry/warden.png)](https://codeclimate.com/github/cloudfoundry/warden)
 
 # warden
 
@@ -23,9 +23,29 @@ This repository contains the following components:
 For information on how to run the warden server and interact with it
 at the command line, see the [warden server README](warden/README.md).
 
+## Testing
+
+[warden-test-infrastructure](https://github.com/cloudfoundry/warden-test-infrastructure) provides a way to create a vagrant box and run warden tests.
+
+```
+# Checkout the repos
+git clone https://github.com/cloudfoundry/warden
+git clone https://github.com/cloudfoundry/warden-test-infrastructure
+
+# Create a vagrant box
+pushd warden-test-infrastructure && ./create_vagrant_box.sh && popd
+
+# Run warden tests
+pushd warden && ../warden-test-infrastructure/ci-build
+```
+
 ## License
 
 The project is licensed under the Apache 2.0 license (see the
 [`LICENSE`][license] file).
 
 [license]: /LICENSE
+
+## Contributing
+
+Please read the [contributors' guide](https://github.com/cloudfoundry/warden/blob/master/CONTRIBUTING.md)

@@ -82,6 +82,9 @@ function setup_filter() {
   # Create or flush default chain
   iptables -N ${filter_default_chain} 2> /dev/null || iptables -F ${filter_default_chain}
 
+  # Always allow established connections to warden containers
+  iptables -A ${filter_default_chain} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
   for n in ${ALLOW_NETWORKS}; do
     if [ "$n" == "" ]
     then

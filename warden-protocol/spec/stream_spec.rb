@@ -54,4 +54,12 @@ describe Warden::Protocol::StreamResponse do
     it_should_be_optional
     it_should_be_typed_as_uint
   end
+
+  field :info do
+    it_should_be_optional
+
+    it "should be a InfoResponse" do
+      field.type.should == Warden::Protocol::InfoResponse
+    end
+  end
 end

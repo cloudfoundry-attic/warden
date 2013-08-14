@@ -93,7 +93,7 @@ describe "insecure" do
   it_should_behave_like "drain"
   it_should_behave_like "snapshotting_common"
 
-  describe "net_in", :netfilter => true do
+  describe "net_in" do
     attr_reader :handle
 
     def net_in(options = {})

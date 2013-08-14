@@ -53,6 +53,7 @@ module Warden
         attr_reader :root_path
         attr_reader :container_rootfs_path
         attr_reader :container_depot_path
+        attr_reader :container_iface_mtu
 
         # Stores a map of handles to their respective container objects. Only
         # live containers are reachable through this map. Containers are only
@@ -75,6 +76,9 @@ module Warden
         def setup(config)
           @root_path = File.join(Warden::Util.path("root"),
                                  self.name.split("::").last.downcase)
+
+          # Default MTU 1500
+          @container_iface_mtu = config.network["mtu"]
 
           @container_rootfs_path   = config.server["container_rootfs_path"]
           @container_rootfs_path ||= File.join(@root_path, "base", "rootfs")
@@ -147,6 +151,7 @@ module Warden
       attr_reader :events
       attr_reader :limits
       attr_reader :state
+      attr_reader :obituary
       attr_accessor :grace_time
 
       def initialize(snapshot = {}, jobs = {})
@@ -184,6 +189,10 @@ module Warden
 
       def uid
         @uid ||= resources["uid"]
+      end
+
+      def container_iface_mtu
+        self.class.container_iface_mtu
       end
 
       def cancel_grace_timer
@@ -320,14 +329,6 @@ module Warden
                     :response => response.to_hash)
 
         response
-      end
-
-      def method_missing(sym, *args, &blk)
-        if args.first.kind_of?(Protocol::BaseRequest)
-          dispatch(args.first, &blk)
-        else
-          super
-        end
       end
 
       def delete_snapshot
@@ -524,16 +525,24 @@ module Warden
       def before_destroy
         check_state_in(State::Born, State::Active, State::Stopped)
 
+        begin
+          @obituary = dispatch(Protocol::InfoRequest.new(:handle => handle))
+        rescue WardenError => e
+          # Ignore, getting info before destroy is a best effort
+          #
+          # It's also likely that the creation of the container is what failed,
+          # so there's no info to get anyway.
+        end
+
         delete_snapshot
 
-        # Clients should no longer be able to look this container up
         self.class.registry.delete(handle)
 
         unless self.state == State::Stopped
+          # Ignore, stopping before destroy is a best effort
           begin
-            self.stop(Protocol::StopRequest.new)
-          rescue WardenError
-            # Ignore, stopping before destroy is a best effort
+            dispatch(Protocol::StopRequest.new)
+          rescue WardenError => e
           end
         end
 
@@ -577,6 +586,7 @@ module Warden
 
         job.cleanup(@jobs)
 
+        response.info = container_info
         response.exit_status = exit_status
         response.stdout = stdout
         response.stderr = stderr
@@ -589,6 +599,7 @@ module Warden
           raise WardenError.new("no such job")
         end
 
+        response.info = container_info
         response.exit_status = job.stream(&blk)
 
         job.cleanup(@jobs)
@@ -611,6 +622,7 @@ module Warden
 
         link_response = dispatch(link_request)
 
+        response.info = container_info
         response.exit_status = link_response.exit_status
         response.stdout = link_response.stdout
         response.stderr = link_response.stderr
@@ -725,6 +737,10 @@ module Warden
       end
 
       protected
+
+      def container_info
+        obituary || dispatch(Warden::Protocol::InfoRequest.new(:handle => handle))
+      end
 
       def state
         @state

@@ -53,6 +53,7 @@ describe Warden::Container::Base do
     container.stub(:do_create)
     container.stub(:do_stop)
     container.stub(:do_destroy)
+    container.stub(:do_info)
     container.stub(:delete_snapshot)
     container.stub(:write_snapshot)
     container.acquire
@@ -192,6 +193,30 @@ describe Warden::Container::Base do
     it "should call #do_destroy" do
       @container.should_receive(:do_destroy)
       @container.dispatch(Warden::Protocol::DestroyRequest.new)
+    end
+
+    describe "saving the container info" do
+      it "saves the container info as #obituary" do
+        info_response = Warden::Protocol::InfoResponse.new
+
+        @container.should_receive(:do_stop)
+        @container.should_receive(:do_info).and_return(info_response)
+
+        expect do
+          @container.dispatch(Warden::Protocol::DestroyRequest.new)
+        end.to change { @container.obituary }.from(nil).to(info_response)
+      end
+
+      context "when getting the info fails" do
+        it "ignores the failure" do
+          @container.should_receive(:do_info).and_raise(
+            Warden::WardenError.new("failure"))
+
+          expect do
+            @container.dispatch(Warden::Protocol::DestroyRequest.new)
+          end.to_not raise_error
+        end
+      end
     end
 
     context "when stopped" do
@@ -519,7 +544,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.net_in(Warden::Protocol::NetInRequest.new)
+        container.dispatch(Warden::Protocol::NetInRequest.new)
       }
     end
 
@@ -529,7 +554,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.net_out(Warden::Protocol::NetOutRequest.new)
+        container.dispatch(Warden::Protocol::NetOutRequest.new)
       }
     end
 
@@ -539,7 +564,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active", Proc.new {
-        container.copy_in(Warden::Protocol::CopyInRequest.new)
+        container.dispatch(Warden::Protocol::CopyInRequest.new)
       }
     end
 
@@ -549,7 +574,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
-        container.copy_out(Warden::Protocol::CopyOutRequest.new)
+        container.dispatch(Warden::Protocol::CopyOutRequest.new)
       }
     end
 
@@ -559,7 +584,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
-        container.limit_memory(Warden::Protocol::LimitMemoryRequest.new)
+        container.dispatch(Warden::Protocol::LimitMemoryRequest.new)
       }
     end
 
@@ -569,7 +594,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
-        container.limit_memory(Warden::Protocol::LimitDiskRequest.new)
+        container.dispatch(Warden::Protocol::LimitDiskRequest.new)
       }
     end
 
@@ -579,7 +604,7 @@ describe Warden::Container::Base do
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
-        container.limit_bandwidth(Warden::Protocol::LimitBandwidthRequest.new)
+        container.dispatch(Warden::Protocol::LimitBandwidthRequest.new)
       }
     end
   end
