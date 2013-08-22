@@ -36,6 +36,7 @@ git clone https://github.com/cloudfoundry/warden-test-infrastructure
 pushd warden-test-infrastructure && ./create_vagrant_box.sh && popd
 
 # Run warden tests
+export FOLDER_NAME=
 pushd warden && ../warden-test-infrastructure/ci-build
 ```
 
