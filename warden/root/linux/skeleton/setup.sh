@@ -93,6 +93,6 @@ fi
 $(which chroot) mnt env -i /bin/bash -l <<-EOS
 if ! id vcap > /dev/null 2>&1
 then
-  useradd -mU -u $user_uid -s /bin/bash vcap
+  useradd -m -u $user_uid -s /bin/bash vcap
 fi
 EOS
