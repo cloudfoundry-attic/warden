@@ -5,7 +5,6 @@ gem "steno", "~> 0.0.15", :git => 'https://github.com/cloudfoundry/steno.git'
 gem "membrane", :git => 'https://github.com/cloudfoundry/membrane.git'
 gem "eventmachine", "~> 1.0.0"
 gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git'
-gem "sys-filesystem"
 gem "yajl-ruby"
 
 gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git"

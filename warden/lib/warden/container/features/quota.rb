@@ -2,8 +2,7 @@
 
 require "warden/container/spawn"
 require "warden/errors"
-
-require "sys/filesystem"
+require "warden/mount_point"
 
 module Warden
 
@@ -145,7 +144,7 @@ module Warden
 
           def container_depot_mount_point_path
             @container_depot_mount_point_path ||=
-              Sys::Filesystem.mount_point(container_depot_path)
+              Warden::MountPoint.new.for_path(container_depot_path)
           end
 
           # We're interested in the quota blocksize, which is hardcoded by the
