@@ -36,18 +36,17 @@ function overlay_directory_in_rootfs() {
 function setup_fs_other() {
   mkdir -p tmp/rootfs mnt
   mkdir -p $rootfs_path/proc
-
+  mkdir -p $rootfs_path/app
   mount -n --bind $rootfs_path mnt
   mount -n --bind -o remount,ro $rootfs_path mnt
-
   overlay_directory_in_rootfs /dev rw
   overlay_directory_in_rootfs /etc rw
   overlay_directory_in_rootfs /home rw
   overlay_directory_in_rootfs /sbin rw
-
   mkdir -p tmp/rootfs/tmp
-  chmod 777 tmp/rootfs/tmp
+  chmod 1777 tmp/rootfs/tmp
   overlay_directory_in_rootfs /tmp rw
+  overlay_directory_in_rootfs /app rw
 }
 
 function setup_fs_ubuntu() {
