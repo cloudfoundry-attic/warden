@@ -47,7 +47,7 @@ ms_end=$(($ms_start + ($WAIT * 1000)))
 # Send SIGTERM
 if [[ $(ms) -lt $ms_end ]]
 then
-  bin/wsh pkill -TERM -v -P 0 || true
+  timeout $WAIT bin/wsh pkill -TERM -v -P 0 || true
 fi
 
 # Wait for processes to quit
