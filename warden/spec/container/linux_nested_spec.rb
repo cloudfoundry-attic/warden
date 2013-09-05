@@ -67,26 +67,13 @@ describe "linux", :platform => "linux", :needs_root => true do
       execute("#{clear} #{container_depot_path} > /dev/null")
     end
 
-    #execute("rmdir #{container_depot_path}")
+    execute("rm -rf #{container_depot_path}")
 
   end
 
   def execute(command)
     `#{command}`.tap do
       $?.should be_success
-    end
-  end
-
-  def unmount_depot(tries = 100)
-    out = execute("umount #{container_depot_path} 2>&1")
-    raise "Failed unmounting #{container_depot_path}: #{out}" unless $?.success?
-  rescue
-    tries -= 1
-    if tries > 0
-      raise
-    else
-      sleep 0.01
-      retry
     end
   end
 
@@ -154,7 +141,6 @@ describe "linux", :platform => "linux", :needs_root => true do
       response = client.run(:handle => handle, :script => script, :privileged => true)
       puts response.stdout, response.stderr unless response.exit_status == 0
       response.exit_status.should == 0
-
     end
 
     def create
@@ -168,13 +154,14 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       warden_repo = File.expand_path('../../../..' ,__FILE__)
 
+      # whiteout rootfs/dev beforehand to avoid 'overlayfs: operation not permitted' error
+      `rm -rf /tmp/warden/rootfs/dev/*`
+
       @bind_mount_warden = Warden::Protocol::CreateRequest::BindMount.new
       @bind_mount_warden.src_path = File.join(warden_repo, 'warden')
       @bind_mount_warden.dst_path = "/warden"
       @bind_mount_warden.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
 
-      # whiteout rootfs/dev beforehand to avoid 'overlayfs: operation not permitted'
-      `rm -rf /tmp/warden/rootfs/dev/*`
       @bind_mount_rootfs = Warden::Protocol::CreateRequest::BindMount.new
       @bind_mount_rootfs.src_path = "/tmp/warden/rootfs"
       @bind_mount_rootfs.dst_path = "/tmp/warden/rootfs"
@@ -194,37 +181,40 @@ describe "linux", :platform => "linux", :needs_root => true do
       run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && bundle install --quiet'
       run_as_root 'rm /tmp/warden.sock || true'
       run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && bundle exec rake warden:start[spec/assets/config/child-linux.yml] &'
-      puts "GGGG warden server should be running, please check"
-      sleep 5 #wait ward server start up
+
+      sleep 5 #wait warden server to start up
 
       run_as_root 'ls /tmp/warden.sock'
     end
 
     after :all do
 
+      #destroy nested containers if there is any
+      run_as_root '/warden/root/linux/clear.sh /tmp/warden/containers > /dev/null'
+
+      #stop child warden server
       run_as_root "ps -ef|grep [r]ake |awk '{print $2}'|xargs kill"
     end
 
     it 'should run nested containers' do
 
       run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create'
-      sleep 10 # wait containers to die
 
     end
 
     it 'should setup nested cgroup' do
 
       run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create'
-      puts `/tmp/warden/cgroup/cpu/instance-#{handle}/instance-*`
       Dir.glob("/tmp/warden/cgroup/cpu/instance-#{handle}/instance-*").should_not be_empty
-      sleep 10 # wait containers to die
-      sleep 60*10
-
-      puts
 
     end
 
-    xit 'should allow inbond traffic to nested container' do
+    it 'should allow inbound traffic to nested containers' do
+
+      execute "route add -net 10.254.0.0/22 gw 10.244.0.2"
+      run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create --network 10.254.0.126'
+      execute 'ping -c3 10.254.0.126'
+      execute "route del -net 10.254.0.0/22 gw 10.244.0.2"
     end
 
   end

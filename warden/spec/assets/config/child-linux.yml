@@ -13,7 +13,7 @@ server:
   # The grace time can be disabled by setting it to nil:
   #   container_grace_time: ~
   #
-  container_grace_time: 5
+  container_grace_time: 30
 
   unix_domain_permissions: 0777
 
