@@ -21,6 +21,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:allow_networks) { [] }
   let(:deny_networks) { [] }
   let(:mtu) { 1500 }
+  let(:job_output_limit) { 100 * 1024 }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -101,7 +102,7 @@ describe "linux", :platform => "linux", :needs_root => true do
           "container_rootfs_path" => container_rootfs_path,
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5,
-          "job_output_limit" => 100 * 1024 },
+          "job_output_limit" => job_output_limit },
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,
@@ -316,6 +317,28 @@ describe "linux", :platform => "linux", :needs_root => true do
         response = run("dd if=/dev/zero of=/tmp/test bs=1M count=4")
         response.exit_status.should == 1
         response.stderr.should =~ /quota exceeded/i
+      end
+    end
+  end
+
+  describe "limit output" do
+    attr_reader :handle
+    before do
+      @handle = client.create.handle
+    end
+
+    def run(script)
+      response = client.run(:handle => handle, :script => script)
+      response.should be_ok
+      response
+    end
+
+    context "when job exceeds output limit" do
+      let(:job_output_limit) { 10 }
+
+      it "should save event" do
+        response = run("echo BLABLABLABLABLABLA")
+        response.info.events.should include("command exceeded maximum output")
       end
     end
   end

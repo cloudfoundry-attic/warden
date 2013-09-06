@@ -538,6 +538,29 @@ describe Warden::Container::Base do
       }
     end
 
+    describe "run" do
+      let(:job) { double("job", :job_id => 1, :err => nil, :yield => [0, "", ""], :cleanup => nil) }
+      before(:each) do
+        container.stub(:create_job).and_return(job)
+      end
+
+      include_examples "succeeds when active", Proc.new {
+        container.dispatch(Warden::Protocol::RunRequest.new)
+      }
+
+      context "when job yielded with error" do
+        before do
+          job.stub(:err) { WardenError.new("failed to do the job") }
+
+          it "saves the error message in response events" do
+            container.dispatch(Warden::Protocol::CreateRequest.new)
+            response = container.dispatch(Warden::Protocol::RunRequest.new)
+            response.info.events.should include("failed to do the job")
+          end
+        end
+      end
+    end
+
     describe "net_in" do
       before(:each) do
         @container.stub(:do_net_in)
