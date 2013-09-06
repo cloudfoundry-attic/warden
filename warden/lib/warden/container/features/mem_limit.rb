@@ -67,7 +67,7 @@ module Warden
         def oomed
           logger.warn("OOM happened for #{handle}")
 
-          events << 'oom'
+          events << "out of memory"
           if state == State::Active
             dispatch(Protocol::StopRequest.new)
           end

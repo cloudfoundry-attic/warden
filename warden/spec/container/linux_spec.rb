@@ -237,7 +237,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         response = client.info(:handle => handle)
         response.state.should == "stopped"
-        response.events.should include("oom")
+        response.events.should include("out of memory")
       end
     end
 
