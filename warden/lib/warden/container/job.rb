@@ -36,11 +36,14 @@ module Warden
           @snapshot.has_key?("status")
         end
 
-        def run
+        def run(discard_output = false)
           if !terminated?
             argv = [File.join(container.bin_path, "iomux-link"), "-w", cursors_path, job_root_path]
 
-            @child = DeferredChild.new(*argv, :max => Server.config.server["job_output_limit"])
+            @child = DeferredChild.new(*argv,
+              :max => Server.config.server["job_output_limit"],
+              :discard_output => discard_output)
+
             @child.logger = logger
             @child.run
 

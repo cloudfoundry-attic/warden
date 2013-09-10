@@ -122,17 +122,35 @@ module Warden::Protocol
       end
 
       describe "buffer limits" do
-        [[:stdout, 1], [:stderr, 2]].each do |(io, fd)|
-          it "should kill a job exceeding #{io} buffer limit" do
-            script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
+        let(:discard_output) { false }
 
-            response = client.run(:handle => handle, :script => script)
-            response.exit_status.should == 255
-            response.send(io).size.should > 1024 * 100
-            response.send(io).size.should <= 1024 * 100 + 1024 * 64
+        context "when the output is not discarded" do
+          [[:stdout, 1], [:stderr, 2]].each do |(io, fd)|
+            it "should kill a job exceeding #{io} buffer limit" do
+              script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
+              response = client.run(:handle => handle, :script => script, :discard_output => discard_output)
 
-            # Test that iomux-spawn was killed
-            `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
+              response.exit_status.should == 255
+              response.send(io).size.should > 1024 * 100
+              response.send(io).size.should <= 1024 * 100 + 1024 * 64
+
+              # Test that iomux-spawn was killed
+              `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
+            end
+          end
+        end
+
+        context "when output is discarded" do
+          let(:discard_output) { true }
+
+          [[:stdout, 1], [:stderr, 2]].each do |(io, fd)|
+            it "should clear the buffer after reading" do
+              script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
+              response = client.run(:handle => handle, :script => script, :discard_output => discard_output)
+
+              response.exit_status.should == 0
+              response.send(io).size.should == 0
+            end
           end
         end
       end

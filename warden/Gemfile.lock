@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/cloudfoundry/common.git
-  revision: 72575ef1e830e6a7376f3f532b5190d04eb67210
+  revision: 6554ce1c83b73a945855bcbb18fbb3b1602a1a5a
   specs:
     em-posix-spawn (0.1.10)
       eventmachine
@@ -22,7 +22,7 @@ GIT
 
 GIT
   remote: https://github.com/cloudfoundry/warden.git
-  revision: 6d46e3ab019cd8f2eb294c1078550e78482477eb
+  revision: 65877e4378eeb6e10512749ae63ac3c2993cac4f
   specs:
     warden-client (0.1.0)
       warden-protocol (~> 0.1.0)

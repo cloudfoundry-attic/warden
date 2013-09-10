@@ -149,7 +149,7 @@ module Warden
         }
         args << options
 
-        spawn_job(*args)
+        spawn_job(request.discard_output, *args)
       end
 
       def do_copy_in(request, response)

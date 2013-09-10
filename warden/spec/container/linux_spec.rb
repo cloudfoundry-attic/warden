@@ -323,12 +323,15 @@ describe "linux", :platform => "linux", :needs_root => true do
 
   describe "limit output" do
     attr_reader :handle
+
     before do
       @handle = client.create.handle
     end
 
-    def run(script)
-      response = client.run(:handle => handle, :script => script)
+    let(:options) { { :handle => handle, :script => script } }
+
+    def run
+      response = client.run(options)
       response.should be_ok
       response
     end
@@ -336,9 +339,20 @@ describe "linux", :platform => "linux", :needs_root => true do
     context "when job exceeds output limit" do
       let(:job_output_limit) { 10 }
 
+      let(:script) { "echo BLABLABLABLABLABLA" }
+
       it "should save event" do
-        response = run("echo BLABLABLABLABLABLA")
+        response = run
         response.info.events.should include("command exceeded maximum output")
+      end
+
+      context "when output is discarded" do
+        before { options[:discard_output] = true }
+
+        it "does not save an event as the job is not killed" do
+          response = run
+          response.info.events.should be_nil
+        end
       end
     end
   end
