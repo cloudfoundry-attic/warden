@@ -30,6 +30,8 @@ message SpawnRequest {
   required string script = 2;
   optional bool privileged = 3 [default = false];
   optional ResourceLimits rlimits = 4;
+
+  optional bool discard_output = 5 [default = false];
 }
 
 message SpawnResponse {

@@ -25,6 +25,11 @@ describe Warden::Protocol::SpawnRequest do
     it_should_default_to false
   end
 
+  field :discard_output do
+    it_should_be_optional
+    it_should_default_to false
+  end
+
   it "should be populated with ResourceLimits object" do
     request.rlimits = Warden::Protocol::ResourceLimits.new
     request.should be_valid

@@ -424,6 +424,7 @@ module Warden
       required :script, :string, 2
       optional :privileged, :bool, 3, :default => false
       optional :rlimits, ResourceLimits, 4
+      optional :discard_output, :bool, 5, :default => false
 
     end
 
@@ -446,6 +447,7 @@ module Warden
       required :script, :string, 2
       optional :privileged, :bool, 3, :default => false
       optional :rlimits, ResourceLimits, 4
+      optional :discard_output, :bool, 5, :default => false
 
     end
 
