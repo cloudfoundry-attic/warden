@@ -103,7 +103,12 @@ function setup_filter() {
     iptables -A ${filter_default_chain} --destination "$n" --jump DROP
   done
 
+  # Forward outbound traffic via ${filter_forward_chain}
   iptables -A FORWARD -i w-+ --jump ${filter_forward_chain}
+
+  # Forward inbound traffic immediately
+  default_interface=$(ip route show | grep default | cut -d' ' -f5 | head -1)
+  iptables -I ${filter_forward_chain} -i $default_interface --jump ACCEPT
 }
 
 function teardown_nat() {

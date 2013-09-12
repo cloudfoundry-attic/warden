@@ -14,6 +14,7 @@ module Warden
         "quota" => {
           "disk_quota_enabled" => true,
         },
+        "allow_nested_warden" => false,
       }
     end
 
@@ -59,6 +60,8 @@ module Warden
           "quota" => {
             optional("disk_quota_enabled") => bool,
           },
+
+          "allow_nested_warden" => bool,
         }
       end
     end
@@ -97,6 +100,7 @@ module Warden
           # Present for Backwards compatibility
           optional("pool_start_address") => String,
           optional("pool_size")          => Integer,
+          optional("release_delay")          => Integer,
           optional("mtu")                => Integer,
 
           "deny_networks"      => [String],
@@ -106,7 +110,12 @@ module Warden
     end
 
     def self.ip_local_port_range
-      File.read("/proc/sys/net/ipv4/ip_local_port_range").split.map(&:to_i)
+      # if no ip_local_port_range found, make some guess"
+      if File.exist?("/proc/sys/net/ipv4/ip_local_port_range")
+        File.read("/proc/sys/net/ipv4/ip_local_port_range").split.map(&:to_i)
+      else
+        return 32768, 61000
+      end
     end
 
     def self.port_defaults
@@ -203,6 +212,10 @@ module Warden
 
     def rlimits
       @server["container_rlimits"] || {}
+    end
+
+    def allow_nested_warden?
+      !!@server["allow_nested_warden"]
     end
 
     def to_hash

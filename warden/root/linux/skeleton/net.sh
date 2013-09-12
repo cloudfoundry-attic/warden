@@ -38,7 +38,7 @@ function setup_filter() {
     --goto ${filter_default_chain}
 
   # Bind instance chain to forward chain
-  iptables -I ${filter_forward_chain} \
+  iptables -I ${filter_forward_chain} 2 \
     --in-interface ${network_host_iface} \
     --goto ${filter_instance_chain}
 }
