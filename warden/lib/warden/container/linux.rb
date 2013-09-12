@@ -213,6 +213,10 @@ module Warden
               src_path = bind_mount.src_path
               dst_path = bind_mount.dst_path
 
+              # Check that the source path exists
+              stat = File.stat(src_path) rescue nil
+              raise WardenError.new("Source path for bind mount does not exist: #{src_path}") if stat.nil?
+
               mode = case bind_mount.mode
                      when Protocol::CreateRequest::BindMount::Mode::RO
                        "ro"
