@@ -1,5 +1,10 @@
 # coding: UTF-8
 
+# this file has the tests for nested warden feature.
+# These tests don't fit into linux_spec.rb because in linux_spec.rb all before/after hooks are :each,
+# but we need :all since setting up nested warden container is very expensive.
+# TODO: This file has some duplication with linux_spec.rb. Refactoring is needed later.
+
 require "spec_helper"
 
 require "warden/server"
@@ -211,11 +216,19 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it 'should allow inbound traffic to nested containers' do
 
+      #ping the nested container from host
       execute "route add -net 10.254.0.0/22 gw 10.244.0.2"
       run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create --network 10.254.0.126'
       execute 'ping -c3 10.254.0.126'
       execute "route del -net 10.254.0.0/22 gw 10.244.0.2"
     end
 
+    it 'should allow outbound traffic from nested containers' do
+
+      #create a nested container and have it download something
+      run_as_root 'source /etc/profile.d/rvm.sh; handle=`/warden/bin/warden -- create | cut -d' ' -f3`;
+        /warden/bin/warden -- run --handle $handle --script "curl http://rvm.io" '
+
+    end
   end
 end
