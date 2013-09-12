@@ -82,6 +82,7 @@ module Warden
           "network_netmask" => self.class.network_pool.pooled_netmask.to_human,
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
+	  "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
           "container_iface_mtu" => container_iface_mtu,
         }
         env
@@ -194,38 +195,53 @@ module Warden
         sh *args
       end
 
-      def write_bind_mount_commands(request)
-        return if request.bind_mounts.nil? || request.bind_mounts.empty?
-
-        File.open(File.join(container_path, "lib", "hook-parent-before-clone.sh"), "a") do |file|
-          file.puts
-          file.puts
-
-          request.bind_mounts.each do |bind_mount|
-            src_path = bind_mount.src_path
-            dst_path = bind_mount.dst_path
-
-            # Check that the source path exists
-            stat = File.stat(src_path) rescue nil
-            if stat.nil?
-              raise WardenError.new("Source path for bind mount does not exist: #{src_path}")
-            end
-
-            # Fix up destination path to be an absolute path inside the union
+      def add_bind_mount(file, src_path, dst_path, mode)
             dst_path = File.join(container_path, "mnt", dst_path[1..-1])
-
-            mode = case bind_mount.mode
-                   when Protocol::CreateRequest::BindMount::Mode::RO
-                     "ro"
-                   when Protocol::CreateRequest::BindMount::Mode::RW
-                     "rw"
-                   else
-                     raise "Unknown mode"
-                   end
 
             file.puts "mkdir -p #{dst_path}"
             file.puts "mount -n --bind #{src_path} #{dst_path}"
             file.puts "mount -n --bind -o remount,#{mode} #{src_path} #{dst_path}"
+      end
+
+      def write_bind_mount_commands(request)
+        File.open(File.join(container_path, "lib", "hook-child-before-pivot.sh"), "a") do |file|
+          file.puts
+          file.puts
+
+          if request.bind_mounts.respond_to?(:each)
+            request.bind_mounts.each do |bind_mount|
+              src_path = bind_mount.src_path
+              dst_path = bind_mount.dst_path
+
+              # Check that the source path exists
+              stat = File.stat(src_path) rescue nil
+              raise WardenError.new("Source path for bind mount does not exist: #{src_path}") if stat.nil?
+
+              mode = case bind_mount.mode
+                     when Protocol::CreateRequest::BindMount::Mode::RO
+                       "ro"
+                     when Protocol::CreateRequest::BindMount::Mode::RW
+                       "rw"
+                     else
+                       raise "Unknown mode"
+                     end
+
+              add_bind_mount(file, src_path, dst_path, mode)
+            end
+          end
+
+          # for nested warden, we share the host's cgroup fs to contrainers using bind mount
+          if Server.config.allow_nested_warden?
+            tmp_warden_cgroup = File.join(container_path, "tmp", "warden", "cgroup")
+            FileUtils.mkdir_p(tmp_warden_cgroup)
+
+            # Bind-mount cgroups
+            add_bind_mount(file, tmp_warden_cgroup, "/tmp/warden/cgroup", "rw")
+
+            # for each subsystems, only pass the group of the current container instead of all groups, so that nested warder server will setup groups directly under parent container's hierarchy
+            %w(cpu cpuacct devices memory).each do |subsystem|
+              add_bind_mount(file, cgroup_path(subsystem), "/tmp/warden/cgroup/#{subsystem}", "rw")
+            end
           end
         end
       end
