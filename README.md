@@ -33,7 +33,7 @@ git clone https://github.com/cloudfoundry/warden
 git clone https://github.com/cloudfoundry/warden-test-infrastructure
 
 # Create a vagrant box
-pushd warden-test-infrastructure && ./create_vagrant_box.sh && popd
+pushd warden-test-infrastructure && git submodule update --init && ./create_vagrant_box.sh && popd
 
 # Run warden tests
 export FOLDER_NAME=
