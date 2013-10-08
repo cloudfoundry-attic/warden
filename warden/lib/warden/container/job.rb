@@ -37,6 +37,10 @@ module Warden
         end
 
         def run(discard_output = false)
+          discard_output = @snapshot.fetch("discard_output", discard_output)
+
+          @snapshot["discard_output"] = discard_output
+
           if !terminated?
             argv = [File.join(container.bin_path, "iomux-link"), "-w", cursors_path, job_root_path]
 

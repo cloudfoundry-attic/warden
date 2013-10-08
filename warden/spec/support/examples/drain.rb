@@ -129,12 +129,13 @@ shared_examples "drain" do
   describe "jobs that stay alive over a restart" do
     let(:exp_status) { 2 }
     let(:exp_stdout) { "0123456789" }
+    let(:discard_output) { false }
     let(:script) { "for x in {0..9}; do sleep 0.2; echo -n $x; done; exit #{exp_status}" }
 
     before do
       c = create_client
       @handle = c.create.handle
-      @job_id = client.spawn(:handle => @handle, :script => script).job_id
+      @job_id = client.spawn(:handle => @handle, :script => script, :discard_output => discard_output).job_id
 
       drain_and_restart
     end
@@ -161,6 +162,22 @@ shared_examples "drain" do
 
       # Check command was still running
       elapsed.should be > 1
+    end
+
+    context "and their output is discarded" do
+      let(:discard_output) { true }
+
+      it "does not allow streaming when it's recovered" do
+        c = create_client
+        start = Time.now
+        streams = read_streams(c, @handle, @job_id)
+        elapsed = Time.now - start
+
+        streams.should be_empty
+
+        # Check command was still running
+        elapsed.should be > 1
+      end
     end
   end
 
