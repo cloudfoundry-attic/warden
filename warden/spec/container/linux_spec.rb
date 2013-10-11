@@ -22,6 +22,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:deny_networks) { [] }
   let(:mtu) { 1500 }
   let(:job_output_limit) { 100 * 1024 }
+  let(:server_pidfile) { nil }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -102,7 +103,8 @@ describe "linux", :platform => "linux", :needs_root => true do
           "container_rootfs_path" => container_rootfs_path,
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5,
-          "job_output_limit" => job_output_limit },
+          "job_output_limit" => job_output_limit,
+          "pidfile" => server_pidfile },
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,
@@ -162,6 +164,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   it_should_behave_like "drain"
   it_should_behave_like "snapshotting_common"
   it_should_behave_like "snapshotting_net_in"
+  it_should_behave_like "writing_pidfile"
 
   describe "limit_memory" do
     attr_reader :handle

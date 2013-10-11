@@ -62,6 +62,8 @@ module Warden
           },
 
           "allow_nested_warden" => bool,
+
+          optional("pidfile") => enum(nil, String)
         }
       end
     end

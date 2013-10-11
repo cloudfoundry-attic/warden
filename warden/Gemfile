@@ -6,6 +6,7 @@ gem "membrane", :git => 'https://github.com/cloudfoundry/membrane.git'
 gem "eventmachine", "~> 1.0.0"
 gem "em-posix-spawn", :git => 'https://github.com/cloudfoundry/common.git'
 gem "yajl-ruby"
+gem "pidfile"
 
 gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git"
 gem "warden-client", :git => "https://github.com/cloudfoundry/warden.git"

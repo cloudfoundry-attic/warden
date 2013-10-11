@@ -16,6 +16,7 @@ describe "insecure" do
   let(:container_depot_path) { File.join(work_path, "containers") }
   let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { false }
+  let(:server_pidfile) { nil }
 
   before do
     FileUtils.mkdir_p(container_depot_path)
@@ -26,8 +27,7 @@ describe "insecure" do
   end
 
   after do
-    Process.kill("KILL", -@pid) rescue Errno::ECHILD
-    Process.waitpid(@pid) rescue Errno::ECHILD
+    stop_warden
 
     # Destroy all artifacts
     Dir[File.join(Warden::Util.path("root"), "*", "clear.sh")].each do |clear|
@@ -51,7 +51,8 @@ describe "insecure" do
           "container_klass" => container_klass,
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5,
-          "job_output_limit" => 100 * 1024 },
+          "job_output_limit" => 100 * 1024,
+          "pidfile" => server_pidfile },
         "network" => {
           "pool_start_address" => start_address,
           "pool_size" => 64,
@@ -78,6 +79,11 @@ describe "insecure" do
     end
   end
 
+  def stop_warden(signal = "USR2")
+    Process.kill(signal, -@pid) rescue Errno::ECHILD
+    Process.waitpid(@pid) rescue Errno::ECHILD
+  end
+
   def create_client
     client = ::Warden::Client.new(unix_domain_path)
     client.connect
@@ -92,6 +98,7 @@ describe "insecure" do
   it_should_behave_like "file transfer"
   it_should_behave_like "drain"
   it_should_behave_like "snapshotting_common"
+  it_should_behave_like "writing_pidfile"
 
   describe "net_in" do
     attr_reader :handle

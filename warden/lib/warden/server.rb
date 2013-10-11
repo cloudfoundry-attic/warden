@@ -17,6 +17,7 @@ require "steno"
 require "steno/core_ext"
 require "warden/protocol"
 require "warden/protocol/buffer"
+require "pidfile"
 
 module Warden
 
@@ -301,6 +302,11 @@ module Warden
 
           # Let the world know Warden is ready for action.
           logger.info("Listening on #{unix_domain_path}")
+
+          if pidfile = config.server["pidfile"]
+            logger.info("Writing pid #{Process.pid} to #{pidfile}")
+            PidFile.new(piddir: File.dirname(pidfile), pidfile: File.basename(pidfile))
+          end
         end
 
         f.resume
