@@ -24,6 +24,8 @@
 
 package warden;
 
+import "resource_limits.proto";
+
 message SpawnRequest {
   required string handle = 1;
 
