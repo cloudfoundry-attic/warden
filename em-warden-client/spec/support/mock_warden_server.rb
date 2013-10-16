@@ -4,6 +4,7 @@ require "warden/protocol/buffer"
 require "em/warden/client"
 
 class MockWardenServer
+
   class Error < StandardError
   end
 
@@ -50,20 +51,19 @@ class MockWardenServer
   attr_reader :connections
   attr_reader :socket_path
 
-  def initialize(handler = nil)
+  def initialize(handler = nil, socket_path)
     @handler     = handler
     @connections = []
     @server_sig  = nil
-    @tmpdir      = Dir.mktmpdir
-    @socket_path = File.join(@tmpdir, "warden.sock")
+    @socket_path = socket_path
   end
 
   def start
-    @server_sig = ::EM.start_unix_domain_server(@socket_path, ClientConnection, self)
+    @server_sig = ::EM.start_server(*server_args)
   end
 
   def create_connection
-    ::EM.connect_unix_domain(@socket_path, EM::Warden::Client::Connection)
+    ::EM.connect(*connection_args)
   end
 
   def create_fiber_aware_client
@@ -73,6 +73,28 @@ class MockWardenServer
   def stop
     ::EM.stop_server(@server_sig)
     @server_sig = nil
+  end
+
+  private
+
+  def server_args
+    uri = URI.parse(@socket_path)
+
+    if uri.absolute?
+      [uri.host, uri.port, ClientConnection, self]
+    else
+      [uri.path, ClientConnection, self]
+    end
+  end
+
+  def connection_args
+    uri = URI.parse(@socket_path)
+
+    if uri.absolute?
+      [uri.host, uri.port, EM::Warden::Client::Connection]
+    else
+      [uri.path, EM::Warden::Client::Connection]
+    end
   end
 end
 
