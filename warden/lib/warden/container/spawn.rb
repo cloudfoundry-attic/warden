@@ -113,6 +113,7 @@ module Warden
           end
 
           @child.errback do |err|
+            logger.warn("child.errback", err: err.inspect)
             if err == MaximumOutputExceeded
               err = WardenError.new("command exceeded maximum output")
             elsif err == TimeoutExceeded
