@@ -46,16 +46,24 @@ shared_context :mock_warden_server do
 
   SERVER_PATH = File.expand_path("../../../tmp/mock_server.sock", __FILE__)
 
-  def new_client
-    Warden::Client.new(SERVER_PATH)
+  def new_client(use_network_socket = false)
+    if use_network_socket
+      Warden::Client.new('localhost', 4444)
+    else
+      Warden::Client.new(SERVER_PATH)
+    end
   end
 
-  def start_server(&blk)
+  def start_server(tcp_server = false, &blk)
     # Make sure the path to the unix socket is not used
     FileUtils.rm_rf(SERVER_PATH)
 
-    # Create unix socket server
-    server = UNIXServer.new(SERVER_PATH)
+    if tcp_server
+      server = TCPServer.new('localhost', 4444)
+    else
+      server = UNIXServer.new(SERVER_PATH)
+    end
+
 
     # Accept new connections from a thread
     @server = Thread.new do

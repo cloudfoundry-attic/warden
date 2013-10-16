@@ -26,7 +26,7 @@ module Warden
       if @port.nil?
         @sock = ::UNIXSocket.new(path)
       else
-        @sock = ::TCPSocket.new(@path, @port)
+        @sock = ::TCPSocket.new(path, @port)
       end
     end
 

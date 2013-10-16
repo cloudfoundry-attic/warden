@@ -17,14 +17,33 @@ describe Warden::Client do
     client.should_not be_connected
   end
 
-  it "should be able to connect with a server" do
-    start_server
+  describe "connecting" do
+    context "when there is a port supplied" do
+      let(:client) do
+        new_client(true) # makes tcp client
+      end
+      it "should be able to connect with a server" do
+        start_server(true) # makes tcp server
 
-    expect do
-      client.connect
-    end.to_not raise_error
+        expect do
+          client.connect
+        end.to_not raise_error
 
-    client.should be_connected
+        client.should be_connected
+      end
+    end
+
+    context "when there is no port supplied" do
+      it "should be able to connect with a server" do
+        start_server
+
+        expect do
+          client.connect
+        end.to_not raise_error
+
+        client.should be_connected
+      end
+    end
   end
 
   context "connection management" do
@@ -128,35 +147,35 @@ describe Warden::Client do
 
         if request.class == Warden::Protocol::EchoRequest
           case request.message
-          when "eof"
-            session.close
-          when "error"
-            args = { :message => "error" }
-            session.respond(Warden::Protocol::ErrorResponse.new(args))
-          else
-            args = { :message => request.message }
-            session.respond(request.create_response(args))
+            when "eof"
+              session.close
+            when "error"
+              args = {:message => "error"}
+              session.respond(Warden::Protocol::ErrorResponse.new(args))
+            else
+              args = {:message => request.message}
+              session.respond(request.create_response(args))
           end
         elsif request.class == Warden::Protocol::CreateRequest
           raise 'Cannot create more than one container' unless container.nil?
 
           container = "test"
-          args = { :handle => container }
+          args = {:handle => container}
           session.respond(Warden::Protocol::CreateResponse.new(args))
         elsif request.class == Warden::Protocol::SpawnRequest
           raise 'Unknown handle' unless request.handle == container
           raise 'Cannot spawn more than one job' unless job_id.nil?
 
           job_id = 1
-          args = { :job_id => job_id }
+          args = {:job_id => job_id}
           session.respond(Warden::Protocol::SpawnResponse.new(args))
         elsif request.class == Warden::Protocol::StreamRequest
           raise 'Unknown handle' unless request.handle == container
           raise 'Unknown job' unless request.job_id == job_id
 
-          args = { :name => "stream", :data => "test" }
+          args = {:name => "stream", :data => "test"}
           session.respond(Warden::Protocol::StreamResponse.new(args))
-          args = { :exit_status => 0 }
+          args = {:exit_status => 0}
           session.respond(Warden::Protocol::StreamResponse.new(args))
         else
           raise "Unknown request type: #{request.class}."
