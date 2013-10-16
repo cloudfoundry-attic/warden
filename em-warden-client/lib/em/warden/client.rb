@@ -1,5 +1,6 @@
 require 'eventmachine'
 require 'fiber'
+require 'uri'
 
 require 'em/warden/client/connection'
 require 'em/warden/client/error'
@@ -20,7 +21,9 @@ class EventMachine::Warden::FiberAwareClient
 
   def connect
     return if @connection
-    @connection = EM.connect_unix_domain(@socket_path, EM::Warden::Client::Connection)
+
+    @connection = EM.connect(*connection_args)
+
     f = Fiber.current
     @connection.on(:connected) { f.resume }
     Fiber.yield
@@ -49,5 +52,16 @@ class EventMachine::Warden::FiberAwareClient
     f = Fiber.current
     @connection.on(:disconnected) { f.resume }
     Fiber.yield
+  end
+
+  private
+  def connection_args
+    uri = URI.parse(socket_path)
+
+    if uri.absolute?
+      [uri.host, uri.port, EM::Warden::Client::Connection]
+    else
+      [uri.path, EM::Warden::Client::Connection]
+    end
   end
 end

@@ -11,8 +11,9 @@ module Warden
 
     attr_reader :path
 
-    def initialize(path)
+    def initialize(path, port = nil)
       @path = path
+      @port = port
       @v1mode = false
     end
 
@@ -22,7 +23,11 @@ module Warden
 
     def connect
       raise "already connected" if connected?
-      @sock = ::UNIXSocket.new(path)
+      if @port.nil?
+        @sock = ::UNIXSocket.new(path)
+      else
+        @sock = ::TCPSocket.new(@path, @port)
+      end
     end
 
     def disconnect
