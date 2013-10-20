@@ -27,9 +27,6 @@ module Warden
         args  = [File.join(container_path, "stop.sh")]
         args += ["-w", "0"] if request.kill
 
-        # Add option hash
-        args << { :timeout => nil }
-
         sh *args
 
         nil
@@ -113,9 +110,6 @@ module Warden
         args += ["-p"]      # Preserve permissions
         args += ["--links"] # Preserve symlinks
         args += [src_path, dst_path]
-
-        # Add option hash
-        args << { :timeout => nil }
 
         sh *args
       end
