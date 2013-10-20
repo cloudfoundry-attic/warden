@@ -35,7 +35,7 @@ module Warden
           env[k] = env[k].to_s
         end
 
-        options = { :env => env, :timeout => 5.0, :max => 1024 * 1024 }.merge(options)
+        options = { :env => env, :timeout => nil, :max => 1024 * 1024 }.merge(options)
 
         p = DeferredChild.new(*(args + [options]))
         p.logger = logger

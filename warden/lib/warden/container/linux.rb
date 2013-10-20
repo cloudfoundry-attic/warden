@@ -49,7 +49,6 @@ module Warden
               "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
               "DISK_QUOTA_ENABLED" => disk_quota_enabled.to_s,
             },
-            :timeout => nil
           }
 
           sh File.join(root_path, "setup.sh"), options
@@ -82,17 +81,14 @@ module Warden
           "network_netmask" => self.class.network_pool.pooled_netmask.to_human,
           "user_uid" => uid,
           "rootfs_path" => container_rootfs_path,
-	  "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
+          "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
           "container_iface_mtu" => container_iface_mtu,
         }
         env
       end
 
       def do_create(request, response)
-        options = {
-          :env => env.dup,
-          :timeout => nil
-        }
+        options = { :env => env.dup }
 
         if request.rootfs
           unless Dir.exist? request.rootfs
@@ -118,16 +114,13 @@ module Warden
         args  = [File.join(container_path, "stop.sh")]
         args += ["-w", "0"] if request.kill
 
-        # Add option hash
-        args << { :timeout => nil }
-
         sh *args
 
         nil
       end
 
       def do_destroy(request, response)
-        sh File.join(root_path, "destroy.sh"), container_path, :timeout => nil
+        sh File.join(root_path, "destroy.sh"), container_path
         logger.debug("Container destroyed")
 
         nil
@@ -188,9 +181,6 @@ module Warden
         args += ["-p"]      # Preserve permissions
         args += ["--links"] # Preserve symlinks
         args += [src_path, dst_path]
-
-        # Add option hash
-        args << { :timeout => nil }
 
         sh *args
       end
