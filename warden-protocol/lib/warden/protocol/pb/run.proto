@@ -13,6 +13,8 @@
 
 package warden;
 
+import "resource_limits.proto";
+
 message RunRequest {
   required string handle = 1;
 
