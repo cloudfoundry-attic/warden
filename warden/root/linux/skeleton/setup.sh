@@ -36,11 +36,6 @@ setup_fs
 # Strip /dev down to the bare minimum
 rm -rf mnt/dev/*
 
-# /dev/ptmx
-file=mnt/dev/ptmx
-mknod -m 666 $file c 5 2
-chown root:tty $file
-
 # /dev/tty
 file=mnt/dev/tty
 mknod -m 666 $file c 5 0

@@ -11,6 +11,7 @@ source ./lib/common.sh
 
 mkdir -p /dev/pts
 mount -t devpts -o newinstance,ptmxmode=0666 devpts /dev/pts
+ln -sf pts/ptmx /dev/ptmx
 
 mkdir -p /proc
 mount -t proc none /proc
