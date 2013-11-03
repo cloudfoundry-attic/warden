@@ -26,6 +26,8 @@
 
 package warden;
 
+import "info.proto";
+
 message LinkRequest {
   required string handle = 1;
 

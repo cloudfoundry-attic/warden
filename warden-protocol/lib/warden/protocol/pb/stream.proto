@@ -27,6 +27,8 @@
 
 package warden;
 
+import "info.proto";
+
 message StreamRequest {
   required string handle = 1;
 
