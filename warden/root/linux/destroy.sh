@@ -30,7 +30,7 @@ then
   count=0
   until `rm -rf $target` || [ $count -eq 4 ]; do
      ((count++))
-     sleep 0.1
+     sleep 0.3
   done
   if [ $count -eq 4 ]
   then
