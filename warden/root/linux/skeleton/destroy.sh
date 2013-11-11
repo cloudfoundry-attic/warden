@@ -43,6 +43,8 @@ then
 
     if [ -d $path ]
     then
+      # Remove nested cgroups for nested-warden
+      rmdir $path/instance* || true
       rmdir $path
     fi
   done
