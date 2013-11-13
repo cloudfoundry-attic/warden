@@ -44,7 +44,7 @@ then
     if [ -d $path ]
     then
       # Remove nested cgroups for nested-warden
-      rmdir $path/instance* || true
+      rmdir $path/instance* 2> /dev/null || true
       rmdir $path
     fi
   done

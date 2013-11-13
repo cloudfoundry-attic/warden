@@ -132,7 +132,7 @@ int mount_umount_pivoted_root(const char *path) {
 
     for (retry = 0; rv == -1 && retry < 4; retry++) {
       if (errno != EBUSY) {
-	 break;
+        break;
       }
       sleep(1);
       fprintf(stdout, "umount(%s):retry due to EBUSY\n", dst.mount_lines[i]);
