@@ -122,12 +122,22 @@ int mount_umount_pivoted_root(const char *path) {
   mount_lines_t dst;
   size_t i;
   int rv;
+  int retry;
 
   mount__umount_paths_for_pivoted_root(&dst, path);
 
   /* Iterate over paths to umount */
   for (i = 0; i < dst.mount_len; i++) {
     rv = umount(dst.mount_lines[i]);
+
+    for (retry = 0; rv == -1 && retry < 4; retry++) {
+      if (errno != EBUSY) {
+        break;
+      }
+      sleep(1);
+      fprintf(stdout, "umount(%s):retry due to EBUSY\n", dst.mount_lines[i]);
+      rv = umount(dst.mount_lines[i]);
+    }
 
     if (rv == -1) {
       fprintf(stderr, "umount(%s): %s\n", dst.mount_lines[i], strerror(errno));
