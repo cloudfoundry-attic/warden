@@ -560,7 +560,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     it "should not redirect requests to other servers' container_port" do
       net_in(:host_port => 80, :container_port => 8080)
 
-      script = "curl -s -w '%{http_code}' http://www.google.com/ -o /dev/null"
+      script = "curl -s -w '%{http_code}' http://www.example.com/ -o /dev/null"
       job_id = client.spawn(:handle => handle, :script => script).job_id
 
       response = client.link(:handle => handle, :job_id => job_id)
