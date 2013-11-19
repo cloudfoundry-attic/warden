@@ -17,6 +17,8 @@ nat_prerouting_chain="warden-prerouting"
 nat_instance_prefix="warden-instance-"
 nat_instance_chain="${filter_instance_prefix}${id}"
 
+external_ip=$(ip route get 8.8.8.8 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x')
+
 function teardown_filter() {
   # Prune forward chain
   iptables -S ${filter_forward_chain} 2> /dev/null |
@@ -97,6 +99,7 @@ case "${1}" in
 
     iptables -t nat -A ${nat_instance_chain} \
       --protocol tcp \
+      --destination "${external_ip}" \
       --destination-port "${HOST_PORT}" \
       --jump DNAT \
       --to-destination "${network_container_ip}:${CONTAINER_PORT}"
