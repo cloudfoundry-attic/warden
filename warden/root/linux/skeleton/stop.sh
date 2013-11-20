@@ -7,6 +7,10 @@ shopt -s nullglob
 
 cd $(dirname $0)
 
+source ./etc/config
+
+./net.sh teardown
+
 if [ ! -f ./run/wshd.pid ]
 then
   echo "wshd is not running..."
