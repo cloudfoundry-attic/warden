@@ -1,7 +1,6 @@
 language: ruby
 
 rvm:
-  - 1.8.7
   - 1.9.3-p484
   - 2.0.0
 
@@ -9,12 +8,6 @@ env:
   - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/warden-client/Gemfile"
   - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/warden-protocol/Gemfile"
   - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/em-warden-client/Gemfile"
-
-# exclude EM specs on 1.8.7 because of fiber dependency
-matrix:
-  exclude:
-    - rvm: 1.8.7
-      env: "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/em-warden-client/Gemfile"
 
 before_install: bundle install
 
