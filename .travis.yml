@@ -6,9 +6,9 @@ rvm:
   - 2.0.0
 
 env:
-  - "BUNDLE_GEMFILE=warden-client/Gemfile"
-  - "BUNDLE_GEMFILE=warden-protocol/Gemfile"
+  - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/warden-client/Gemfile"
+  - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/warden-protocol/Gemfile"
 
 script:
-  - if [ $BUNDLE_GEMFILE == 'warden-client/Gemfile' ]; then bundle exec rspec warden-client/spec; fi
-  - if [ $BUNDLE_GEMFILE == 'warden-protocol/Gemfile' ]; then bundle exec rspec warden-protocol/spec; fi
+  - if [ $BUNDLE_GEMFILE == 'warden-client/Gemfile' ]; then cd warden-client && bundle exec rspec spec; fi
+  - if [ $BUNDLE_GEMFILE == 'warden-protocol/Gemfile' ]; then cd warden-protocol bundle exec rspec spec; fi
