@@ -89,8 +89,7 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return the handle" do
-        response = to_response \
-          Warden::Protocol::CreateResponse.new(:handle => "handle")
+        response = to_response(Warden::Protocol::CreateResponse.new(:handle => "handle"))
         response.should == "handle"
       end
     end
@@ -106,8 +105,7 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should always be ok" do
-        response = to_response \
-          Warden::Protocol::StopResponse.new
+        response = to_response(Warden::Protocol::StopResponse.new)
         response.should == "ok"
       end
     end
@@ -123,8 +121,7 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should always be ok" do
-        response = to_response \
-          Warden::Protocol::DestroyResponse.new
+        response = to_response(Warden::Protocol::DestroyResponse.new)
         response.should == "ok"
       end
     end
@@ -140,7 +137,7 @@ describe Warden::Client::V1 do
 
     describe "response" do
       let(:response) do
-        to_response \
+        to_response(
           Warden::Protocol::InfoResponse.new({
             :state => "state",
             :memory_stat => Warden::Protocol::InfoResponse::MemoryStat.new({
@@ -148,6 +145,7 @@ describe Warden::Client::V1 do
               :rss => 2,
             })
           })
+        )
       end
 
       it "should return a hash" do
@@ -176,8 +174,7 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return job_id" do
-        response = to_response \
-          Warden::Protocol::SpawnResponse.new(:job_id => 3)
+        response = to_response(Warden::Protocol::SpawnResponse.new(:job_id => 3))
         response.should == 3
       end
     end
@@ -194,12 +191,13 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return a 3-element tuple" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::LinkResponse.new(
             :exit_status => 255,
             :stdout => "stdout",
             :stderr => "stderr"
           )
+        )
 
         response[0].should == 255
         response[1].should == "stdout"
@@ -219,12 +217,13 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return a 3-element tuple" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::StreamResponse.new(
             :name => "stdout",
             :data => "data",
-            :exit_status => 25,
+            :exit_status => 25
           )
+        )
 
         response[0].should == "stdout"
         response[1].should == "data"
@@ -244,12 +243,13 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return a 3-element tuple" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::RunResponse.new(
             :exit_status => 255,
             :stdout => "stdout",
             :stderr => "stderr"
           )
+        )
 
         response[0].should == 255
         response[1].should == "stdout"
@@ -277,11 +277,12 @@ describe Warden::Client::V1 do
 
     describe "response (in)" do
       it "should return a hash with both properties" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::NetInResponse.new(
             :host_port => 1234,
-            :container_port => 2345,
+            :container_port => 2345
           )
+        )
 
         response["host_port"].should == 1234
         response["container_port"].should == 2345
@@ -290,8 +291,7 @@ describe Warden::Client::V1 do
 
     describe "response (out)" do
       it "should always be ok" do
-        response = to_response \
-          Warden::Protocol::NetOutResponse.new
+        response = to_response(Warden::Protocol::NetOutResponse.new)
         response.should == "ok"
       end
     end
@@ -319,16 +319,14 @@ describe Warden::Client::V1 do
 
     describe "response (in)" do
       it "should always be ok" do
-        response = to_response \
-          Warden::Protocol::CopyInResponse.new
+        response = to_response(Warden::Protocol::CopyInResponse.new)
         response.should == "ok"
       end
     end
 
     describe "response (out)" do
       it "should always be ok" do
-        response = to_response \
-          Warden::Protocol::CopyOutResponse.new
+        response = to_response(Warden::Protocol::CopyOutResponse.new)
         response.should == "ok"
       end
     end
@@ -355,10 +353,11 @@ describe Warden::Client::V1 do
 
     describe "response (mem)" do
       it "should return #limit_in_bytes" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::LimitMemoryResponse.new({
             :limit_in_bytes => 1234
           })
+        )
         response.should == 1234
       end
     end
@@ -383,10 +382,11 @@ describe Warden::Client::V1 do
 
     describe "response (disk)" do
       it "should return #byte" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::LimitDiskResponse.new({
             :byte => 1234
           })
+        )
         response.should == 1234
       end
     end
@@ -401,8 +401,7 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return pong" do
-        response = to_response \
-          Warden::Protocol::PingResponse.new
+        response = to_response(Warden::Protocol::PingResponse.new)
         response.should == "pong"
       end
     end
@@ -417,10 +416,11 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return an array with handles" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::ListResponse.new({
             :handles => ["h1", "h2"]
           })
+        )
         response.should == ["h1", "h2"]
       end
     end
@@ -436,10 +436,11 @@ describe Warden::Client::V1 do
 
     describe "response" do
       it "should return #message" do
-        response = to_response \
+        response = to_response(
           Warden::Protocol::EchoResponse.new({
             :message => "hello world"
           })
+        )
         response.should == "hello world"
       end
     end

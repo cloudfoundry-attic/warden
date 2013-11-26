@@ -7,6 +7,8 @@ describe Warden::Protocol::Buffer do
   let(:request) { Warden::Protocol::EchoRequest.new(:message => "request") }
   let(:response) { Warden::Protocol::EchoResponse.new(:message => "response") }
 
+  subject { described_class.new }
+
   it "should support iterating over requests" do
     subject << Warden::Protocol::Buffer.request_to_wire(request)
     subject.each_request do |request|
@@ -28,7 +30,7 @@ describe Warden::Protocol::Buffer do
       data = Warden::Protocol::Buffer.request_to_wire(request)
 
       loop do
-        chunk = data.slice!(0)
+        chunk = data.slice!(0).chr
         subject << chunk
         break if data.empty?
 
@@ -47,7 +49,7 @@ describe Warden::Protocol::Buffer do
       data = Warden::Protocol::Buffer.response_to_wire(response)
 
       loop do
-        chunk = data.slice!(0)
+        chunk = data.slice!(0).chr
         subject << chunk
         break if data.empty?
 

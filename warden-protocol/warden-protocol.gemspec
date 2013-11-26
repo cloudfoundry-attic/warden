@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Warden::Protocol::VERSION
 
-  gem.add_dependency "beefcake"
+  gem.add_dependency "beefcake", "~> 0.3.0"
 
   gem.add_development_dependency "rspec", "~> 2.11"
 end

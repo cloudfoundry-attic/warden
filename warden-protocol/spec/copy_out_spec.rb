@@ -7,7 +7,7 @@ describe Warden::Protocol::CopyOutRequest do
     described_class.new(
       :handle => "handle",
       :src_path => "/src",
-      :dst_path => "/dst",
+      :dst_path => "/dst"
     )
   end
 

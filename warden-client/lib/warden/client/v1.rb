@@ -17,7 +17,7 @@ module Warden
       def self.response_to_v1(response)
         klass_name = response.class.name.split("::").last
         klass_name = klass_name.gsub(/Response$/, "")
-        klass_name = klass_name.gsub(/(.)([A-Z])/) { |m| "#{m[0]}_#{m[1]}" }
+        klass_name = klass_name.gsub(/(.)([A-Z])/) { |m| "#{m[0].chr}_#{m[1].chr}" }
         klass_name = klass_name.downcase
 
         m = "convert_#{klass_name}_response".downcase
