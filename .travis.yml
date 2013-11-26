@@ -5,10 +5,10 @@ rvm:
   - 1.9.3
   - 2.0.0
 
-gemfile:
-  - warden-client/Gemfile
-  - warden-protocol/Gemfile
+env:
+  - "BUNDLE_GEMFILE=warden-client/Gemfile"
+  - "BUNDLE_GEMFILE=warden-protocol/Gemfile"
 
 script:
-  - cd warden-client && bundle exec rspec
-  - cd warden-protocol && bundle exec rspec
+  - if [ $BUNDLE_GEMFILE == 'warden-client/Gemfile' ]; then cd warden-client && bundle exec rspec; fi
+  - if [ $BUNDLE_GEMFILE == 'warden-protocol/Gemfile' ]; then cd warden-protocol && bundle exec rspec; fi
