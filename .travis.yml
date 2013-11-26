@@ -10,5 +10,5 @@ env:
   - "BUNDLE_GEMFILE=warden-protocol/Gemfile"
 
 script:
-  - if [ $BUNDLE_GEMFILE == 'warden-client/Gemfile' ]; then cd warden-client && bundle exec rspec; fi
-  - if [ $BUNDLE_GEMFILE == 'warden-protocol/Gemfile' ]; then cd warden-protocol && bundle exec rspec; fi
+  - if [ $BUNDLE_GEMFILE == 'warden-client/Gemfile' ]; then bundle exec rspec warden-client/spec; fi
+  - if [ $BUNDLE_GEMFILE == 'warden-protocol/Gemfile' ]; then bundle exec rspec warden-protocol/spec; fi
