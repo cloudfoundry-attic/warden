@@ -89,8 +89,8 @@ end
 describe Warden::Protocol do
   before :all do
     module Test
-      A = 1
       B = 2
+      A = 1
     end
   end
 

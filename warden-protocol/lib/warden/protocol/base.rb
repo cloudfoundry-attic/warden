@@ -54,7 +54,7 @@ module Warden
 
     def self.protocol_type_to_str(protocol_type)
       if protocol_type.class == Module
-        return "#{protocol_type.constants.join(", ")}"
+        return "#{protocol_type.constants.sort.join(", ")}"
       elsif protocol_type.is_a?(Symbol)
         return "#{protocol_type.to_s}"
       end
