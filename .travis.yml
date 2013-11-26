@@ -9,6 +9,8 @@ env:
   - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/warden-client/Gemfile"
   - "BUNDLE_GEMFILE=$TRAVIS_BUILD_DIR/warden-protocol/Gemfile"
 
+before_install: bundle install
+
 script:
   - if [[ "$BUNDLE_GEMFILE" == *warden-client* ]]; then cd $TRAVIS_BUILD_DIR/warden-client && bundle exec rspec spec; fi
   - if [[ "$BUNDLE_GEMFILE" == *warden-protocol* ]]; then cd $TRAVIS_BUILD_DIR/warden-protocol && bundle exec rspec spec; fi
