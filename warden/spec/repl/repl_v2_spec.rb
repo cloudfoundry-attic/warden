@@ -11,7 +11,7 @@ describe Warden::Repl::Repl do
       Readline.should_receive(:completion_append_character=).once
       Readline.should_receive(:completion_proc=).once
 
-      @client = mock("warden client")
+      @client = double("warden client")
     end
 
     context "connect to the server" do
@@ -143,7 +143,7 @@ describe Warden::Repl::Repl do
         Readline.should_receive(:readline).once.with('warden> ', true)
           .and_return("simple_test --field field", nil)
 
-        history = mock("history")
+        history = double("history")
         Readline::HISTORY.should_receive(:to_a).and_return(history)
         history.should_receive(:to_json).once.and_return('"["test"]"')
 
@@ -152,7 +152,7 @@ describe Warden::Repl::Repl do
           .and_return({:result => "result"})
         @repl.should_receive(:restore_history).and_return(nil)
 
-        file = mock("history file")
+        file = double("history file")
         file.should_receive(:write).once.with('"["test"]"')
 
         @repl.should_receive(:open).once.with("history_path", "w+")
@@ -183,7 +183,7 @@ describe Warden::Repl::Repl do
         Readline::HISTORY.should_receive(:push).once.with("test")
           .and_return(nil)
 
-        file = mock("history file")
+        file = double("history file")
         file.should_receive(:read).once.and_return('["test"]')
 
         @repl.should_receive(:open).once.with("history_path", "r")
@@ -195,7 +195,7 @@ describe Warden::Repl::Repl do
 
   describe "#process_line" do
     before :each do
-      @client = mock("warden client")
+      @client = double("warden client")
       Warden::Client.should_receive(:new).once.with("/tmp/warden.sock")
           .and_return(@client)
     end

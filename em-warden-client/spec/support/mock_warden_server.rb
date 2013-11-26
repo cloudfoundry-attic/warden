@@ -99,7 +99,7 @@ class MockWardenServer
 end
 
 def create_mock_handler(request, response = nil)
-  handler = mock()
+  handler = double()
   mock_cont = handler.should_receive(request.class.type_underscored)
   mock_cont = mock_cont.with(request)
 

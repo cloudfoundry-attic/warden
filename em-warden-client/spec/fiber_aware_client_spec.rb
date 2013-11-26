@@ -66,7 +66,7 @@ describe EventMachine::Warden::FiberAwareClient do
         request = Warden::Protocol::EchoRequest.new(:message => "hello")
         expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
 
-        handler = mock()
+        handler = double()
         handler.should_receive(request.class.type_underscored).and_return(expected_response)
         server = MockWardenServer.new(handler, socket_path)
         actual_response = nil
@@ -88,7 +88,7 @@ describe EventMachine::Warden::FiberAwareClient do
         request = Warden::Protocol::EchoRequest.new(:message => "hello world")
         expected_response = MockWardenServer::Error.new("test error")
 
-        handler = mock()
+        handler = double()
         handler.should_receive(request.class.type_underscored).and_raise(expected_response)
         server = MockWardenServer.new(handler, socket_path)
 
@@ -123,7 +123,7 @@ describe EventMachine::Warden::FiberAwareClient do
         request = Warden::Protocol::EchoRequest.new(:message => "hello")
         response = Warden::Protocol::EchoResponse.new(:message => "world")
 
-        handler = mock()
+        handler = double()
         handler.should_receive(request.class.type_underscored).and_return(response)
         server = MockWardenServer.new(handler, socket_path)
         actual_response = nil
@@ -145,7 +145,7 @@ describe EventMachine::Warden::FiberAwareClient do
         request = Warden::Protocol::EchoRequest.new(:message => "hello")
         response = MockWardenServer::Error.new("test error")
 
-        handler = mock()
+        handler = double()
         handler.should_receive(request.class.type_underscored).and_raise(response)
         server = MockWardenServer.new(handler, socket_path)
 
