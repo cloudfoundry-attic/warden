@@ -134,7 +134,7 @@ module Warden
       def create_job(request)
         wsh_path = File.join(bin_path, "wsh")
         socket_path = File.join(container_path, "run", "wshd.sock")
-        user = request.privileged ? "root" : "vcap"
+        user = request.privileged ? "root" : "work"
 
         # Build arguments
         args  = [wsh_path]
@@ -155,7 +155,7 @@ module Warden
         src_path = request.src_path
         dst_path = request.dst_path
 
-        perform_rsync(src_path, "vcap@container:#{dst_path}")
+        perform_rsync(src_path, "work@container:#{dst_path}")
 
         nil
       end
@@ -164,7 +164,7 @@ module Warden
         src_path = request.src_path
         dst_path = request.dst_path
 
-        perform_rsync("vcap@container:#{src_path}", dst_path)
+        perform_rsync("work@container:#{src_path}", dst_path)
 
         if request.owner
           sh "chown", "-R", request.owner, dst_path
