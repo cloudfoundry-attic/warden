@@ -143,7 +143,13 @@ module Warden
         }
         args << options
 
-        spawn_job(request.discard_output, *args)
+        run_options = {
+          discard_output: request.discard_output,
+          syslog_socket: Server.config.server["syslog_socket"],
+          log_tag: request.log_tag,
+        }
+
+        spawn_job(run_options, *args)
       end
 
       def do_copy_in(request, response)

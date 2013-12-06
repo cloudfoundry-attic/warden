@@ -22,6 +22,91 @@ module Warden::Protocol
       response.stderr.should == "hi\n"
     end
 
+    context "when log_tag is given" do
+      let(:message_queue) { EventMachine::Queue.new }
+      let(:socket_dir) { Dir.mktmpdir }
+      let(:syslog_socket) { File.join(socket_dir, "log.sock") }
+
+      class ClientConnection < EM::Connection
+        def initialize(messages)
+          @messages = messages
+        end
+
+        def receive_data(data)
+          @messages.push data
+        end
+      end
+
+      before do
+        # for some reason warden has to be started after our
+        # EM loop with the syslog server running, so stop the
+        # existing one so we can start it manually
+        stop_warden
+        @client = nil
+      end
+
+      after { FileUtils.rm_rf(socket_dir) }
+
+      def receive_logs(&blk)
+        logs = []
+
+        message_queue.pop do |log|
+          logs << log
+
+          message_queue.pop do |log|
+            logs << log
+
+            blk.call(logs)
+
+            EM.stop
+          end
+        end
+      end
+
+      it "logs syslog to the configured socket file with the given tag via run" do
+        em(timeout: 5) do
+          EM.start_unix_domain_server(syslog_socket, ClientConnection, message_queue)
+
+          start_warden
+
+          request = Warden::Protocol::RunRequest.new
+          request.handle = handle
+          request.script = "echo hi out; echo hi err 1>&2"
+          request.log_tag = "some_log_tag"
+
+          run_response = client.call(request)
+
+          expect(run_response.stdout).to eq("hi out\n")
+          expect(run_response.stderr).to eq("hi err\n")
+
+          receive_logs do |logs|
+            expect(logs.join).to include("warden.out.some_log_tag: hi out")
+            expect(logs.join).to include("warden.err.some_log_tag: hi err")
+          end
+        end
+      end
+
+      it "logs syslog to the configured socket file with the given tag via spawn" do
+        em(timeout: 5) do
+          EM.start_unix_domain_server(syslog_socket, ClientConnection, message_queue)
+
+          start_warden
+
+          request = Warden::Protocol::SpawnRequest.new
+          request.handle = handle
+          request.script = "echo hi out; echo hi err 1>&2"
+          request.log_tag = "some_log_tag"
+
+          client.call(request)
+
+          receive_logs do |logs|
+            expect(logs.join).to include("warden.out.some_log_tag: hi out")
+            expect(logs.join).to include("warden.err.some_log_tag: hi err")
+          end
+        end
+      end
+    end
+
     it "should propagate exit status" do
       response = client.run(:handle => handle, :script => "exit 123")
       response.exit_status.should == 123

@@ -1,6 +1,6 @@
 shared_examples "writing_pidfile" do
   context "when a pidfile is configured" do
-    let(:piddir) { Dir.mktmpdir }
+    let!(:piddir) { Dir.mktmpdir }
     let(:server_pidfile) { File.join(piddir, "warden.pid") }
 
     before { stop_warden }

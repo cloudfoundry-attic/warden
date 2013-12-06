@@ -38,10 +38,15 @@ module Warden
       end
 
       def create_job(request)
-        spawn_job(request.discard_output,
-                  File.join(container_path, "run.sh"),
-                  :input => request.script,
-                  :env => resource_limits(request))
+        spawn_job(
+          { discard_output: request.discard_output,
+            syslog_socket: Server.config.server["syslog_socket"],
+            log_tag: request.log_tag,
+          },
+          File.join(container_path, "run.sh"),
+          input: request.script,
+          env: resource_limits(request),
+        )
       end
 
       def do_net_in(request, response)

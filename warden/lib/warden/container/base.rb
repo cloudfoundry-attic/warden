@@ -587,6 +587,7 @@ module Warden
           :privileged => request.privileged,
           :rlimits => request.rlimits,
           :discard_output => request.discard_output,
+          :log_tag => request.log_tag,
         })
 
         spawn_response = dispatch(spawn_request)
@@ -756,7 +757,7 @@ module Warden
         rlimits_env
       end
 
-      def spawn_job(discard_output, *args)
+      def spawn_job(run_options, *args)
         job_id = self.class.generate_job_id
 
         job_root = job_path(job_id)
@@ -816,10 +817,10 @@ module Warden
         # Wait for the spawned child to be continued
         job = Job.new(self, job_id, "iomux_spawn_pid" => spawner.pid)
         job.logger = logger
-        job.run(discard_output)
+        job.run(run_options)
 
         spawner_alive = Fiber.yield
-        raise WardenError.new("iomux-spawn failed")  if spawner_alive == :no
+        raise WardenError.new("iomux-spawn failed") if spawner_alive == :no
 
         job
       ensure

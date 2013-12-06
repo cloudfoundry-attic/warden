@@ -36,22 +36,44 @@ module Warden
           @snapshot.has_key?("status")
         end
 
-        def run(discard_output = false)
-          discard_output = @snapshot.fetch("discard_output", discard_output)
+        def run(options = {})
+          discard_output = @snapshot.fetch("discard_output", options[:discard_output])
+          syslog_socket = options[:syslog_socket]
+          syslog_tag = options[:log_tag]
 
           @snapshot["discard_output"] = discard_output
 
           if !terminated?
-            argv = [File.join(container.bin_path, "iomux-link"), "-w", cursors_path, job_root_path]
+            iomux_link = File.join(container.bin_path, "iomux-link")
+
+            argv =
+              if syslog_tag
+                logger_command = "logger -t warden.%s.%s"
+                logger_command << " -u %s" if syslog_socket
+
+                out_logger_command = sprintf(logger_command, "out", syslog_tag, syslog_socket)
+                err_logger_command = sprintf(logger_command, "err", syslog_tag, syslog_socket)
+
+                [ "/bin/bash",
+                  "-c",
+                  # tee to logger and back to stdout/stderr
+                  "#{iomux_link} -w #{cursors_path} #{job_root_path}" \
+                    " 1> >(tee -a >(#{out_logger_command}) >&1)" \
+                    " 2> >(tee -a >(#{err_logger_command}) >&2)",
+                ]
+              else
+                [iomux_link, "-w", cursors_path, job_root_path]
+              end
 
             @child = DeferredChild.new(*argv,
               :max => Server.config.server["job_output_limit"],
               :discard_output => discard_output)
 
             @child.logger = logger
-            @child.run
 
             setup_child_handlers
+
+            @child.run
           end
         end
 

@@ -23,6 +23,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:mtu) { 1500 }
   let(:job_output_limit) { 100 * 1024 }
   let(:server_pidfile) { nil }
+  let(:syslog_socket) { nil }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -104,7 +105,8 @@ describe "linux", :platform => "linux", :needs_root => true do
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5,
           "job_output_limit" => job_output_limit,
-          "pidfile" => server_pidfile },
+          "pidfile" => server_pidfile,
+          "syslog_socket" => syslog_socket },
         "network" => {
           "pool_start_address" => @start_address,
           "pool_size" => 64,

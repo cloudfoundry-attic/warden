@@ -17,6 +17,7 @@ describe "insecure" do
   let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { false }
   let(:server_pidfile) { nil }
+  let(:syslog_socket) { nil }
 
   before do
     FileUtils.mkdir_p(container_depot_path)
@@ -52,7 +53,8 @@ describe "insecure" do
           "container_depot_path" => container_depot_path,
           "container_grace_time" => 5,
           "job_output_limit" => 100 * 1024,
-          "pidfile" => server_pidfile },
+          "pidfile" => server_pidfile,
+          "syslog_socket" => syslog_socket },
         "network" => {
           "pool_start_address" => start_address,
           "pool_size" => 64,
@@ -90,7 +92,9 @@ describe "insecure" do
     client
   end
 
-  let(:client) { create_client }
+  def client
+    @client ||= create_client
+  end
 
   it_should_behave_like "lifecycle"
   it_should_behave_like "running commands"

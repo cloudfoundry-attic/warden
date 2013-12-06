@@ -210,10 +210,12 @@ describe Warden::Repl::Repl do
         run_request = Warden::Protocol::RunRequest.new
         run_request.handle = "handle"
         run_request.script = "script"
+        run_request.log_tag = "some_log_tag"
 
         spawn_request = Warden::Protocol::SpawnRequest.new
         spawn_request.handle = run_request.handle
         spawn_request.script = run_request.script
+        spawn_request.log_tag = run_request.log_tag
 
         spawn_response = Warden::Protocol::SpawnResponse.new
         spawn_response.job_id = 10
@@ -238,7 +240,7 @@ describe Warden::Repl::Repl do
         STDOUT.should_receive(:write).once.with("stdout")
 
         repl = described_class.new
-        command_info = repl.process_line("run --handle handle --script script")
+        command_info = repl.process_line("run --handle handle --script script --log_tag some_log_tag")
       end
 
       it "should generate right description for run command in global help" do
