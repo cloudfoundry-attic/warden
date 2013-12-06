@@ -839,7 +839,7 @@ module Warden
           end
 
           job.logger = logger
-          job.run
+          job.run(:syslog_socket => Server.config.server["syslog_socket"])
 
           jobs[job.job_id] = job
         end

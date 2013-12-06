@@ -38,10 +38,12 @@ module Warden
 
         def run(options = {})
           discard_output = @snapshot.fetch("discard_output", options[:discard_output])
+          syslog_tag = @snapshot.fetch("log_tag", options[:log_tag])
+
           syslog_socket = options[:syslog_socket]
-          syslog_tag = options[:log_tag]
 
           @snapshot["discard_output"] = discard_output
+          @snapshot["log_tag"] = syslog_tag
 
           if !terminated?
             iomux_link = File.join(container.bin_path, "iomux-link")

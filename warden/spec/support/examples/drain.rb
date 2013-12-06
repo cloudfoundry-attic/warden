@@ -206,6 +206,76 @@ shared_examples "drain" do
         elapsed.should be > 1
       end
     end
+
+    context "and their output is directed to syslog" do
+      let(:log_tag) { "some_log_tag" }
+      let(:script) { "for x in {0..30}; do sleep 1; echo $x; done; exit #{exp_status}" }
+
+      let(:message_queue) { EventMachine::Queue.new }
+      let(:socket_dir) { Dir.mktmpdir }
+      let(:syslog_socket) { File.join(socket_dir, "log.sock") }
+
+      class ClientConnection < EM::Connection
+        def initialize(messages)
+          @messages = messages
+        end
+
+        def receive_data(data)
+          @messages.push data
+        end
+      end
+
+      before do
+        # for some reason warden has to be started after our
+        # EM loop with the syslog server running, so stop the
+        # existing one so we can start it manually
+        stop_warden
+        @client = nil
+      end
+
+      after { FileUtils.rm_rf(socket_dir) }
+
+      def receive_logs(&blk)
+        logs = []
+
+        message_queue.pop do |log|
+          logs << log
+
+          message_queue.pop do |log|
+            logs << log
+
+            blk.call(logs)
+          end
+        end
+      end
+
+      it "continues redirecting to syslog when it's recovered" do
+        em(timeout: 60) do
+          EM.start_unix_domain_server(syslog_socket, ClientConnection, message_queue)
+
+          start_warden
+
+          job_id = spawn_job
+
+          receive_logs do |logs|
+            expect(logs.join).to include("warden.out.some_log_tag: 0")
+            expect(logs.join).to include("warden.out.some_log_tag: 1")
+
+            drain_and_restart
+
+            receive_logs do |logs|
+              expect(logs.join).to include("warden.out.some_log_tag: 2")
+              expect(logs.join).to include("warden.out.some_log_tag: 3")
+
+              system "pgrep iomux-link"
+
+
+              EM.stop
+            end
+          end
+        end
+      end
+    end
   end
 
   describe "jobs that exit before a restart" do
