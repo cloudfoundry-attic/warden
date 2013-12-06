@@ -24,6 +24,8 @@ message RunRequest {
   optional ResourceLimits rlimits = 4;
 
   optional bool discard_output = 5 [default = false];
+
+  optional string log_tag = 6;
 }
 
 message RunResponse {

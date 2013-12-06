@@ -31,6 +31,11 @@ module Warden::Protocol
       it_should_default_to false
     end
 
+    field :log_tag do
+      it_should_be_optional
+      it_should_default_to nil
+    end
+
     field :rlimits do
       it_should_be_optional
 

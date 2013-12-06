@@ -1,4 +1,4 @@
-## Generated from bundle for protocol
+## Generated from copy_in.proto for warden
 require "beefcake"
 
 module Warden
@@ -20,6 +20,13 @@ module Warden
 
 
     end
+  end
+end
+## Generated from copy_out.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class CopyOutRequest
       include Warden::Protocol::BaseMessage
@@ -38,6 +45,13 @@ module Warden
 
 
     end
+  end
+end
+## Generated from create.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class CreateRequest
       include Warden::Protocol::BaseMessage
@@ -72,6 +86,13 @@ module Warden
       required :handle, :string, 1
 
     end
+  end
+end
+## Generated from destroy.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class DestroyRequest
       include Warden::Protocol::BaseMessage
@@ -87,6 +108,13 @@ module Warden
 
 
     end
+  end
+end
+## Generated from echo.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class EchoRequest
       include Warden::Protocol::BaseMessage
@@ -103,6 +131,13 @@ module Warden
       required :message, :string, 1
 
     end
+  end
+end
+## Generated from error.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class ErrorResponse
       include Warden::Protocol::BaseMessage
@@ -113,6 +148,13 @@ module Warden
       repeated :backtrace, :string, 3
 
     end
+  end
+end
+## Generated from info.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class InfoRequest
       include Warden::Protocol::BaseMessage
@@ -203,6 +245,13 @@ module Warden
       repeated :job_ids, :uint64, 44
 
     end
+  end
+end
+## Generated from limit_bandwidth.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class LimitBandwidthRequest
       include Warden::Protocol::BaseMessage
@@ -222,6 +271,13 @@ module Warden
       required :burst, :uint64, 2
 
     end
+  end
+end
+## Generated from limit_disk.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class LimitDiskRequest
       include Warden::Protocol::BaseMessage
@@ -261,6 +317,13 @@ module Warden
       optional :byte_hard, :uint64, 33
 
     end
+  end
+end
+## Generated from limit_memory.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class LimitMemoryRequest
       include Warden::Protocol::BaseMessage
@@ -278,6 +341,13 @@ module Warden
       optional :limit_in_bytes, :uint64, 1
 
     end
+  end
+end
+## Generated from link.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class LinkRequest
       include Warden::Protocol::BaseMessage
@@ -298,6 +368,13 @@ module Warden
       optional :info, InfoResponse, 4
 
     end
+  end
+end
+## Generated from list.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class ListRequest
       include Warden::Protocol::BaseMessage
@@ -313,6 +390,13 @@ module Warden
       repeated :handles, :string, 1
 
     end
+  end
+end
+## Generated from message.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class Message
       include Warden::Protocol::BaseMessage
@@ -343,6 +427,13 @@ module Warden
       required :payload, :bytes, 2
 
     end
+  end
+end
+## Generated from net_in.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class NetInRequest
       include Warden::Protocol::BaseMessage
@@ -362,6 +453,13 @@ module Warden
       required :container_port, :uint32, 2
 
     end
+  end
+end
+## Generated from net_out.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class NetOutRequest
       include Warden::Protocol::BaseMessage
@@ -379,6 +477,13 @@ module Warden
 
 
     end
+  end
+end
+## Generated from ping.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class PingRequest
       include Warden::Protocol::BaseMessage
@@ -393,6 +498,13 @@ module Warden
 
 
     end
+  end
+end
+## Generated from resource_limits.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class ResourceLimits
       include Warden::Protocol::BaseMessage
@@ -415,6 +527,13 @@ module Warden
       optional :stack, :uint64, 15
 
     end
+  end
+end
+## Generated from run.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class RunRequest
       include Warden::Protocol::BaseMessage
@@ -425,6 +544,7 @@ module Warden
       optional :privileged, :bool, 3, :default => false
       optional :rlimits, ResourceLimits, 4
       optional :discard_output, :bool, 5, :default => false
+      optional :log_tag, :string, 6
 
     end
 
@@ -438,6 +558,13 @@ module Warden
       optional :info, InfoResponse, 4
 
     end
+  end
+end
+## Generated from spawn.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class SpawnRequest
       include Warden::Protocol::BaseMessage
@@ -448,6 +575,7 @@ module Warden
       optional :privileged, :bool, 3, :default => false
       optional :rlimits, ResourceLimits, 4
       optional :discard_output, :bool, 5, :default => false
+      optional :log_tag, :string, 6
 
     end
 
@@ -458,6 +586,13 @@ module Warden
       required :job_id, :uint32, 1
 
     end
+  end
+end
+## Generated from stop.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class StopRequest
       include Warden::Protocol::BaseMessage
@@ -475,6 +610,13 @@ module Warden
 
 
     end
+  end
+end
+## Generated from stream.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
 
     class StreamRequest
       include Warden::Protocol::BaseMessage
