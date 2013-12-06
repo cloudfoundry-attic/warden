@@ -57,7 +57,7 @@ module Warden
                 [ "/bin/bash",
                   "-c",
                   # tee to logger and back to stdout/stderr
-                  "#{iomux_link} -w #{cursors_path} #{job_root_path}" \
+                  "exec #{iomux_link} -w #{cursors_path} #{job_root_path}" \
                     " 1> >(tee -a >(#{out_logger_command}) >&1)" \
                     " 2> >(tee -a >(#{err_logger_command}) >&2)",
                 ]
@@ -84,6 +84,11 @@ module Warden
           else
             @snapshot["status"]
           end
+        end
+
+        def kill
+          @child.kill("TERM") if @child
+        rescue Errno::ESRCH
         end
 
         def resume(status)

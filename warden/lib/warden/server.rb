@@ -289,11 +289,13 @@ module Warden
           @drainer.on_complete do
             Fiber.new do
               logger.info("Drain complete")
+
               # Serialize container state
               container_klass.registry.each { |_, c| c.write_snapshot }
+              container_klass.registry.each { |_, c| c.jobs.each_value(&:kill) }
 
               EM.stop
-            end.resume
+            end.resume(nil)
           end
 
           # This is intentionally blocking. We do not want to start accepting

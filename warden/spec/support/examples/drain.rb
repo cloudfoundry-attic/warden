@@ -130,20 +130,41 @@ shared_examples "drain" do
     let(:exp_status) { 2 }
     let(:exp_stdout) { "0123456789" }
     let(:discard_output) { false }
+    let(:log_tag) { nil }
     let(:script) { "for x in {0..9}; do sleep 0.2; echo -n $x; done; exit #{exp_status}" }
 
     before do
       c = create_client
       @handle = c.create.handle
-      @job_id = client.spawn(:handle => @handle, :script => script, :discard_output => discard_output).job_id
+    end
 
+    def spawn_job
+      client.spawn(
+        handle: @handle,
+        script: script,
+        discard_output: discard_output,
+        log_tag: log_tag,
+      ).job_id
+    end
+
+    it "should have one iomux-link when it's recovered" do
+      job_id = spawn_job
+      links_before_recover = `pgrep iomux-link | wc -l`
       drain_and_restart
+      c = create_client
+      links_after_recover = `pgrep iomux-link | wc -l`
+
+      expect(links_before_recover).to eq(links_after_recover)
     end
 
     it "should allow linking" do
+      job_id = spawn_job
+
+      drain_and_restart
+
       c = create_client
       start = Time.now
-      link_resp = c.link(:handle => @handle, :job_id => @job_id)
+      link_resp = c.link(:handle => @handle, :job_id => job_id)
       elapsed = Time.now - start
       link_resp.exit_status.should == exp_status
       link_resp.stdout.should == exp_stdout
@@ -153,9 +174,13 @@ shared_examples "drain" do
     end
 
     it "should allow streaming" do
+      job_id = spawn_job
+
+      drain_and_restart
+
       c = create_client
       start = Time.now
-      streams = read_streams(c, @handle, @job_id)
+      streams = read_streams(c, @handle, job_id)
       elapsed = Time.now - start
       streams.size.should == 1
       streams["stdout"].should == exp_stdout
@@ -168,9 +193,11 @@ shared_examples "drain" do
       let(:discard_output) { true }
 
       it "does not allow streaming when it's recovered" do
+        job_id = spawn_job
+
         c = create_client
         start = Time.now
-        streams = read_streams(c, @handle, @job_id)
+        streams = read_streams(c, @handle, job_id)
         elapsed = Time.now - start
 
         streams.should be_empty
