@@ -23,87 +23,65 @@ module Warden::Protocol
     end
 
     context "when log_tag is given" do
-      let(:message_queue) { EventMachine::Queue.new }
       let(:socket_dir) { Dir.mktmpdir }
       let(:syslog_socket) { File.join(socket_dir, "log.sock") }
 
-      class ClientConnection < EM::Connection
-        def initialize(messages)
-          @messages = messages
+      class SocketServer
+        def initialize(socket_path)
+          @socket_server = Socket.new(Socket::AF_UNIX, Socket::SOCK_DGRAM, 0)
+          @socket_server.bind(Socket.pack_sockaddr_un(socket_path))
         end
 
-        def receive_data(data)
-          @messages.push data
+        def received_messages(num)
+          messages = []
+          num.times do
+            messages << @socket_server.recvfrom(10*1024*1024)
+          end
+          messages.flatten
         end
       end
 
       before do
-        # for some reason warden has to be started after our
-        # EM loop with the syslog server running, so stop the
-        # existing one so we can start it manually
+        # we need to start socket server before we start warden
         stop_warden
         @client = nil
+
+        @socket_server = SocketServer.new(syslog_socket)
+        start_warden
       end
 
       after { FileUtils.rm_rf(socket_dir) }
 
-      def receive_logs(&blk)
-        logs = []
-
-        message_queue.pop do |log|
-          logs << log
-
-          message_queue.pop do |log|
-            logs << log
-
-            blk.call(logs)
-
-            EM.stop
-          end
-        end
-      end
-
       it "logs syslog to the configured socket file with the given tag via run" do
         em(timeout: 5) do
-          EM.start_unix_domain_server(syslog_socket, ClientConnection, message_queue)
-
-          start_warden
-
           request = Warden::Protocol::RunRequest.new
           request.handle = handle
           request.script = "echo hi out; echo hi err 1>&2"
           request.log_tag = "some_log_tag"
-
-          run_response = client.call(request)
-
-          expect(run_response.stdout).to eq("hi out\n")
-          expect(run_response.stderr).to eq("hi err\n")
-
-          receive_logs do |logs|
-            expect(logs.join).to include("warden.out.some_log_tag: hi out")
-            expect(logs.join).to include("warden.err.some_log_tag: hi err")
-          end
+          client.call(request)
+          EM.stop
         end
+
+        messages_received = @socket_server.received_messages(2).to_s
+
+        expect(messages_received).to match /<14>.*warden.some_log_tag: hi out/
+        expect(messages_received).to match /<11>.*warden.some_log_tag: hi err/
       end
 
       it "logs syslog to the configured socket file with the given tag via spawn" do
         em(timeout: 5) do
-          EM.start_unix_domain_server(syslog_socket, ClientConnection, message_queue)
-
-          start_warden
-
           request = Warden::Protocol::SpawnRequest.new
           request.handle = handle
           request.script = "echo hi out; echo hi err 1>&2"
           request.log_tag = "some_log_tag"
-
           client.call(request)
-
-          receive_logs do |logs|
-            expect(logs.join).to include("warden.out.some_log_tag: hi out")
-            expect(logs.join).to include("warden.err.some_log_tag: hi err")
-          end
+          EM.stop
         end
+
+        messages_received = @socket_server.received_messages(2).to_s
+
+        expect(messages_received).to match /<14>.*warden.some_log_tag: hi out/
+        expect(messages_received).to match /<11>.*warden.some_log_tag: hi err/
       end
     end
 

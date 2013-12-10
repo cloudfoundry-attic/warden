@@ -211,69 +211,49 @@ shared_examples "drain" do
       let(:log_tag) { "some_log_tag" }
       let(:script) { "for x in {0..30}; do sleep 1; echo $x; done; exit #{exp_status}" }
 
-      let(:message_queue) { EventMachine::Queue.new }
       let(:socket_dir) { Dir.mktmpdir }
       let(:syslog_socket) { File.join(socket_dir, "log.sock") }
 
-      class ClientConnection < EM::Connection
-        def initialize(messages)
-          @messages = messages
+      class SocketServer
+        def initialize(socket_path)
+          @socket_server = Socket.new(Socket::AF_UNIX, Socket::SOCK_DGRAM, 0)
+          @socket_server.bind(Socket.pack_sockaddr_un(socket_path))
         end
 
-        def receive_data(data)
-          @messages.push data
+        def received_messages(num)
+          messages = []
+          num.times do
+            messages << @socket_server.recvfrom(10*1024*1024)
+          end
+          messages.flatten
         end
       end
 
       before do
-        # for some reason warden has to be started after our
-        # EM loop with the syslog server running, so stop the
-        # existing one so we can start it manually
+        # we need to start socket server before we start warden
         stop_warden
         @client = nil
+
+        @socket_server = SocketServer.new(syslog_socket)
+        start_warden
       end
 
       after { FileUtils.rm_rf(socket_dir) }
 
-      def receive_logs(&blk)
-        logs = []
-
-        message_queue.pop do |log|
-          logs << log
-
-          message_queue.pop do |log|
-            logs << log
-
-            blk.call(logs)
-          end
-        end
-      end
-
       it "continues redirecting to syslog when it's recovered" do
-        em(timeout: 60) do
-          EM.start_unix_domain_server(syslog_socket, ClientConnection, message_queue)
+        spawn_job
 
-          start_warden
+        messages_received = @socket_server.received_messages(2).to_s
 
-          job_id = spawn_job
+        expect(messages_received).to match /<14>.*warden.some_log_tag: 0/
+        expect(messages_received).to match /<14>.*warden.some_log_tag: 1/
 
-          receive_logs do |logs|
-            expect(logs.join).to include("warden.out.some_log_tag: 0")
-            expect(logs.join).to include("warden.out.some_log_tag: 1")
+        drain_and_restart
 
-            drain_and_restart
+        messages_received = @socket_server.received_messages(2).to_s
 
-            receive_logs do |logs|
-              expect(logs.join).to include("warden.out.some_log_tag: 2")
-              expect(logs.join).to include("warden.out.some_log_tag: 3")
-
-              system "pgrep iomux-link"
-
-
-              EM.stop
-            end
-          end
-        end
+        expect(messages_received).to match /<14>.*warden.some_log_tag: 2/
+        expect(messages_received).to match /<14>.*warden.some_log_tag: 3/
       end
     end
   end

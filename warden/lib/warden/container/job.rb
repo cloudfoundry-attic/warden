@@ -50,11 +50,11 @@ module Warden
 
             argv =
               if syslog_tag
-                logger_command = "logger -t warden.%s.%s"
+                logger_command = "logger -t warden.%s -d -p %s"
                 logger_command << " -u %s" if syslog_socket
 
-                out_logger_command = sprintf(logger_command, "out", syslog_tag, syslog_socket)
-                err_logger_command = sprintf(logger_command, "err", syslog_tag, syslog_socket)
+                out_logger_command = sprintf(logger_command, syslog_tag, "info", syslog_socket)
+                err_logger_command = sprintf(logger_command, syslog_tag, "error", syslog_socket)
 
                 [ "/bin/bash",
                   "-c",
