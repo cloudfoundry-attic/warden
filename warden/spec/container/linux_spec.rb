@@ -872,21 +872,6 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-  describe "set niceness" do
-    attr_reader :handle
-
-    before do
-      @handle = client.create.handle
-    end
-
-    it "should set niceness of container process increased by 10" do
-      current_niceness = `nice`.chomp.to_i
-      expected_niceness = current_niceness + 10
-      response = client.run(:handle => handle, :script => "nice")
-      response.stdout.chomp.should eq expected_niceness.to_s
-    end
-  end
-
   describe "recovery" do
     before do
       @h1 = client.create.handle
