@@ -1,0 +1,32 @@
+// Limits the cpu shares for a container.
+//
+// ### Request
+//
+// The field `limit_in_shares` is optional.
+// When it is not specified, the cpu limit will not be changed.
+//
+// * `handle`: Container handle.
+// * `limit_in_shares`: New cpu limit in shares.
+//
+// ### Response
+//
+// * `limit_in_shares`: CPU limit in shares.
+//
+// ### Errors
+//
+// > **TODO**
+//
+// ### Definition
+//
+
+package warden;
+
+message LimitCpuRequest {
+  required string handle = 1;
+
+  optional uint64 limit_in_shares = 2;
+}
+
+message LimitCpuResponse {
+  optional uint64 limit_in_shares = 1;
+}

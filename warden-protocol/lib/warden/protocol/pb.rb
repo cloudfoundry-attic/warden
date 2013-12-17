@@ -273,6 +273,30 @@ module Warden
     end
   end
 end
+## Generated from limit_cpu.proto for warden
+require "beefcake"
+
+module Warden
+  module Protocol
+
+    class LimitCpuRequest
+      include Warden::Protocol::BaseMessage
+
+
+      required :handle, :string, 1
+      optional :limit_in_shares, :uint64, 2
+
+    end
+
+    class LimitCpuResponse
+      include Warden::Protocol::BaseMessage
+
+
+      optional :limit_in_shares, :uint64, 1
+
+    end
+  end
+end
 ## Generated from limit_disk.proto for warden
 require "beefcake"
 
@@ -418,6 +442,7 @@ module Warden
         LimitMemory = 51
         LimitDisk = 52
         LimitBandwidth = 53
+        LimitCpu = 54
         Ping = 91
         List = 92
         Echo = 93
