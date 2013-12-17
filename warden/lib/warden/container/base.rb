@@ -696,6 +696,21 @@ module Warden
         raise WardenError.new("not implemented")
       end
 
+      def around_limit_cpu
+        check_state_in(State::Active, State::Stopped)
+
+        begin
+          delete_snapshot
+          yield
+        ensure
+          write_snapshot
+        end
+      end
+
+      def do_limit_cpu(request, response)
+        raise WardenError.new("not implemented")
+      end
+
       def before_info
         check_state_in(State::Active, State::Stopped)
       end

@@ -14,6 +14,14 @@ module Warden
           File.join("/tmp/warden/cgroup", subsystem.to_s, "instance-#{self.container_id}")
         end
 
+        def restore
+          super
+
+          if @resources.has_key?("limit_cpu")
+            limit_cpu(@resources["limit_cpu"])
+          end
+        end
+
         def do_info(request, response)
           super(request, response)
 
@@ -30,6 +38,31 @@ module Warden
           rescue => e
             raise WardenError.new("Failed getting cpu stats: #{e}")
           end
+
+          nil
+        end
+
+        def limit_cpu(limit_in_shares)
+          File.open(File.join(cgroup_path(:cpu), "cpu.shares"), 'w') do |f|
+            f.write(limit_in_shares.to_s)
+          end
+        end
+
+        private :limit_cpu
+
+        def do_limit_cpu(request, response)
+          if request.limit_in_shares
+            begin
+              limit_cpu(request.limit_in_shares)
+            rescue => e
+              raise WardenError.new("Failed setting cpu shares: #{e}")
+            else
+              @resources["limit_cpu"] = request.limit_in_shares
+            end
+          end
+
+          limit_in_shares = File.read(File.join(cgroup_path(:cpu), "cpu.shares"))
+          response.limit_in_shares = limit_in_shares.to_i
 
           nil
         end

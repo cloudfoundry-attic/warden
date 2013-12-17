@@ -121,6 +121,7 @@ module Warden::Repl
         "destroy" => "Shutdown a container.",
         "echo" => "Echo a message.",
         "info" => "Show metadata for a container.",
+        "limit_cpu" => "Set or get the CPU limit in shares for the container.",
         "limit_disk" => "set or get the disk limit for the container.",
         "limit_memory" => "Set or get the memory limit for the container.",
         "link" => "Do blocking read on results from a job.",

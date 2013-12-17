@@ -10,6 +10,8 @@ require "warden/util"
 require "warden/container/linux"
 
 describe "linux", :platform => "linux", :needs_root => true do
+  include Helpers::Drain
+
   let(:work_path) { File.join(Dir.tmpdir, "warden", "spec") }
   let(:unix_domain_path) { File.join(work_path, "warden.sock") }
   let(:container_klass) { "Warden::Container::Linux" }
@@ -397,6 +399,57 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
     end
   end
+
+  describe "limit_cpu" do
+    attr_reader :handle
+
+    def integer_from_cgroup_cpu_shares
+      File.read(File.join("/tmp/warden/cgroup/cpu", "instance-#{@handle}", "cpu.shares")).to_i
+    end
+
+    def limit_cpu(options = {})
+      response = client.limit_cpu(options.merge(:handle => handle))
+      response.should be_ok
+      response
+    end
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should return the current shares if no share value specified" do
+      current_cpu_shares = integer_from_cgroup_cpu_shares
+      response = limit_cpu
+      expect(response.limit_in_shares).to be current_cpu_shares
+    end
+
+    it "should set the cpu shares" do
+      response = limit_cpu(:limit_in_shares => 100)
+      expect(response.limit_in_shares).to be 100
+
+      expect(integer_from_cgroup_cpu_shares).to be 100
+    end
+
+    it "should update the cpu shares" do
+      response = limit_cpu(:limit_in_shares => 100)
+      expect(response.limit_in_shares).to be 100
+
+      expect(integer_from_cgroup_cpu_shares).to be 100
+
+      response = limit_cpu(:limit_in_shares => 200)
+      expect(response.limit_in_shares).to be 200
+
+      expect(integer_from_cgroup_cpu_shares).to be 200
+    end
+
+    it "should not set the cpu shares below 2" do
+      response = limit_cpu(:limit_in_shares => 1)
+      expect(response.limit_in_shares).to be 2
+
+      expect(integer_from_cgroup_cpu_shares).to be 2
+    end
+  end
+
 
   describe "net_out" do
     def net_out(options = {})
@@ -866,6 +919,20 @@ describe "linux", :platform => "linux", :needs_root => true do
       wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
       File.exist?(wshd_pid_path).should be_true
       Process.kill("KILL", File.read(wshd_pid_path).to_i)
+    end
+  end
+
+  describe "restoring from snapshot" do
+    it "should reset cpu shares for restored containers" do
+      handle = client.create.handle
+      client.limit_cpu(:handle => handle, :limit_in_shares => 100)
+
+      drain_and_restart
+
+      new_client = create_client
+
+      response = new_client.limit_cpu(:handle => handle)
+      expect(response.limit_in_shares).to be 100
     end
   end
 end

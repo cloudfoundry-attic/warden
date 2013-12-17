@@ -630,5 +630,15 @@ describe Warden::Container::Base do
         container.dispatch(Warden::Protocol::LimitBandwidthRequest.new)
       }
     end
+
+    describe "limit_cpu" do
+      before(:each) do
+        @container.stub(:do_limit_cpu)
+      end
+
+      include_examples "succeeds when active or stopped", Proc.new {
+        container.dispatch(Warden::Protocol::LimitCpuRequest.new)
+      }
+    end
   end
 end
