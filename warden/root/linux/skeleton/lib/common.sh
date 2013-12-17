@@ -60,7 +60,7 @@ function setup_fs_ubuntu() {
   lucid|natty|oneiric)
     mount -n -t aufs -o br:tmp/rootfs=rw:$rootfs_path=ro+wh none mnt
     ;;
-  precise)
+  precise|trusty)
     mount -n -t overlayfs -o rw,upperdir=tmp/rootfs,lowerdir=$rootfs_path none mnt
     ;;
   *)
