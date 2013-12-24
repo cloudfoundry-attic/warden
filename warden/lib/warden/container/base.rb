@@ -181,10 +181,14 @@ module Warden
       def setup_grace_timer
         return if grace_time.nil?
 
-        logger.debug2("Grace timer: setup (fires in %.3fs)" % grace_time)
+        # Setup grace timer when this was the last connection to reference
+        # this container, and it hasn't already been destroyed
+        if connections.empty? && !has_state?(State::Destroyed)
+          logger.debug2("Grace timer: setup (fires in %.3fs)" % grace_time)
 
-        @destroy_timer = ::EM.add_timer(grace_time) do
-          fire_grace_timer
+          @destroy_timer = ::EM.add_timer(grace_time) do
+            fire_grace_timer
+          end
         end
       end
 
@@ -209,12 +213,7 @@ module Warden
         if connections.add?(conn)
           conn.on(:close) do
             connections.delete(conn)
-
-            # Setup grace timer when this was the last connection to reference
-            # this container, and it hasn't already been destroyed
-            if connections.empty? && !has_state?(State::Destroyed)
-              setup_grace_timer
-            end
+            setup_grace_timer
           end
         end
       end
