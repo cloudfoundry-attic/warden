@@ -237,6 +237,7 @@ module Warden
 
         begin
           c = container_klass.from_snapshot(path)
+          c.setup_grace_timer
 
           logger.info("Recovered container at: #{path}", :resources => c.resources)
 
