@@ -341,6 +341,9 @@ module Warden
         @bound = true
 
         Server.drainer.register_connection(self)
+        Server.container_klass.registry.each do |_, container|
+          container.register_connection(self)
+        end
       end
 
       def bound?
