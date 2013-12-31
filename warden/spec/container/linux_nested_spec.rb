@@ -183,7 +183,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       ruby_version = File.read(File.join(warden_repo, '.ruby-version')).chomp
       run_as_root "source /etc/profile.d/rvm.sh; rvm install #{ruby_version}"
       run_as_root 'source /etc/profile.d/rvm.sh; gem install bundler --no-rdoc --no-ri'
-      run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && bundle install --quiet'
+      run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && BUNDLE_APP_CONFIG=/tmp/.bundle bundle install --quiet'
       run_as_root 'rm /tmp/warden.sock || true'
       run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && bundle exec rake warden:start[spec/assets/config/child-linux.yml] &'
 
