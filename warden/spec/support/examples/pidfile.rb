@@ -9,6 +9,9 @@ shared_examples "writing_pidfile" do
     it "writes to it on startup and removes it on shutdown" do
       expect {
         start_warden
+
+        # give warden EM thread time to write out the pidfile
+        sleep(0.1)
       }.to change { File.exists?(server_pidfile) }.from(false).to(true)
 
       expect(File.read(server_pidfile).to_i).to eq(@pid)
