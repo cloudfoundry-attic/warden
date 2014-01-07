@@ -1,4 +1,4 @@
-              Apache License
+				Apache License
            Version 2.0, January 2004
         http://www.apache.org/licenses/
 
@@ -203,59 +203,40 @@
 
 =======================================================================   
 
+cf-warden:
 
-Warden:
-
-Warden: includes a number of subcomponents with separate copyright 
+cf-warden: includes a number of subcomponents with separate copyright 
 notices and license terms.  The product that includes this file
 does not necessarily use all the open source subcomponents referred 
 to below. Your use of the source code for the these subcomponents 
 is subject to the terms and conditions of the following licenses.
 
 
-
 SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
 
    >>> beefcake-0.3.7
    >>> diff-lcs-1.1.3
-   >>> em-posix-spawn-0.1.10
    >>> grape-0.2.1
    >>> hashie-1.2.0
    >>> multi_json-1.3.6
    >>> multi_xml-0.5.1
+   >>> pidfile-0.3.0
    >>> posix-spawn-0.3.6
+   >>> rack-1.0.0
    >>> rack-1.4.1
    >>> rack-mount-0.8.3
+   >>> rake-0.9.2.2
    >>> rspec-2.11.0
    >>> rspec-core-2.11.0
+   >>> rspec-expectations-2.11.0
    >>> rspec-expectations-2.11.1
+   >>> rspec-mocks-2.11.0
    >>> rspec-mocks-2.11.1
    >>> yajl-ruby-1.1.0
 
 
 
-SECTION 2: Apache License, V2.0
-
-   >>> membrane-0.0.3
-   >>> steno-0.0.15
-   >>> warden-client-0.1.0
-   >>> warden-protocol-0.1.3
-
-
-
-SECTION 3: Artistic License, V2.0
-
-   >>> sys-filesystem-1.0.0
-
-
-
-SECTION 4: GNU Lesser General Public License, V3.0
-
-   >>> ffi-1.0.11
-
-
-
-SECTION 5: Ruby Clause-6
+SECTION 2: Ruby Clause-6
 
    >>> eventmachine-1.0.0
 
@@ -263,12 +244,8 @@ SECTION 5: Ruby Clause-6
 
 APPENDIX. Standard License Files
 
-   >>> GNU Lesser General Public License, V3.0
-
-   >>> Artistic License, V2.0
-
    >>> Ruby Clause-6
-
+   >>> GNU Lesser General Public License, V3.0
 
 
 
@@ -305,7 +282,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 >>> diff-lcs-1.1.3
 
-[PLEASE NOTE:  GOPIVOTAL, INC. ELECTS TO USE AND DISTRIBUTE THIS COMPONENT UNDER THE TERMS OF THE MIT LICENSE.  PLEASE SEE BELOW FOR THE FULL TEXT OF THE MIT LICENSE.  THE ORIGINAL LICENSE TERMS ARE REPRODUCED BELOW ONLY AS A REFERENCE.] 
+[PLEASE NOTE:  PIVOTAL SOFTWARE, INC. ELECTS TO USE AND DISTRIBUTE THIS COMPONENT UNDER THE TERMS OF THE MIT LICENSE. THE ORIGINAL LICENSE TERMS ARE REPRODUCED BELOW ONLY AS A REFERENCE.] 
 
 
 == License
@@ -346,17 +323,6 @@ See the file docs/artistic.txt in the main distribution.
 
 === GNU GPL version 2
 See the file docs/COPYING.txt in the main distribution.
-
-
->>> em-posix-spawn-0.1.10
-
-Copyright (C) 2011 Ken Robertson
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 >>> grape-0.2.1
@@ -455,6 +421,31 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+>>> pidfile-0.3.0
+
+MIT License
+Copyright (c) 2010 Samuel Mullen
+ 
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+ 
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+ 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
 >>> posix-spawn-0.3.6
 
 Copyright (c) 2011 by Ryan Tomayko <r@tomayko.com>
@@ -485,6 +476,42 @@ was taken from glibc <http://www.gnu.org/s/libc/> and is maybe
 Copyright (c) 2011 by The Free Software Foundation or maybe
 by others mentioned in the glibc LICENSES file. glibc is
 distributed under the terms of the LGPL license.
+
+
+>>> rack-1.0.0
+
+Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012 Christian Neukirchen <purl.org/net/chneukirchen>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+ADDITIONAL LICENSE INFORMATION:
+
+> MIT STYLE
+
+Copyright (C) 2007, 2008, 2009, 2010 Christian Neukirchen <purl.org/net/chneukirchen>
+
+ Rack is freely distributable under the terms of an MIT-style license.
+ See COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+ The Rack main module, serving as a namespace for all core Rack
+ modules and classes.
+ All modules meant for use in your application are <tt>autoload</tt>ed here,
+ so it should be enough just to <tt>require rack.rb</tt> in your code.
 
 
 >>> rack-1.4.1
@@ -520,6 +547,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 >>> rack-mount-0.8.3
 
 Copyright (c) 2009 Joshua Peek
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+>>> rake-0.9.2.2
+
+Copyright (c) 2003, 2004 Jim Weirich
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -593,7 +644,62 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+>>> rspec-expectations-2.11.0
+
+(The MIT License)
+
+Copyright (c) 2012 David Chelimsky, Myron Marston
+Copyright (c) 2006 David Chelimsky, The RSpec Development Team
+Copyright (c) 2005 Steven Baker
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
 >>> rspec-expectations-2.11.1
+
+Copyright (c) 2006 David Chelimsky, The RSpec Development Team
+Copyright (c) 2005 Steven Baker
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+>>> rspec-mocks-2.11.0
+
+(The MIT License)
 
 Copyright (c) 2006 David Chelimsky, The RSpec Development Team
 Copyright (c) 2005 Steven Baker
@@ -706,140 +812,14 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 
---------------- SECTION 2: Apache License, V2.0 ----------
-
-Apache License, V2.0 is applicable to the following component(s).
-
-
->>> membrane-0.0.3
-
-License: Apache 2.0
-
-
->>> steno-0.0.15
-
-Apache 2.0
-
-
->>> warden-client-0.1.0
-
-License
-
-The project is licensed under the Apache 2.0 license (see the
-[`LICENSE`][license] file in the root directory of the repository).
-
-
->>> warden-protocol-0.1.3
-
-License
-
-The project is licensed under the Apache 2.0 license (see the
-[`LICENSE`][license] file in the root directory of the repository).
-
-
---------------- SECTION 3: Artistic License, V2.0 ----------
-
-Artistic License, V2.0 is applicable to the following component(s).
-
-
->>> sys-filesystem-1.0.0
-
-License
-  Artistic 2.0
-
-Copyright
-  (C) 2003-2010 Daniel J. Berger
-  All Rights Reserved
-
-Warranty
-  This library is provided "as is" and without any express or
-  implied warranties, including, without limitation, the implied
-  warranties of merchantability and fitness for a particular purpose.
-
-Author
-  Daniel J. Berger
-
-
---------------- SECTION 4: GNU Lesser General Public License, V3.0 ----------
-
-GNU Lesser General Public License, V3.0 is applicable to the following component(s).
-
-
->>> ffi-1.0.11
-
-Copyright (c) 2008-2010 Ruby-FFI contributors
-
-All rights reserved.
-
-This code is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License version 3 only, as published by the Free Software Foundation.
-
-This code is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License version 3 for more details.
-
-You should have received a copy of the GNU Lesser General Public License version 3 along with this work.  If not, see <http://www.gnu.org/licenses/>.
-
-
-ADDITIONAL LICENSE INFORMATION:
-
-
-> MIT
-
-ffi-1.0.11.gem\data.tar.gz\data.tar\ext\ffi_c\libffi\include\ffi.h.in
-
-libffi @VERSION@ - Copyright (c) 1996-2003, 2007, 2008  Red Hat, Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ``Software''), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-> GPL 2.0
-
-ffi-1.0.11.gem\data.tar.gz\data.tar\ext\ffi_c\libffi\m4\libtool.m4
-
-Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
-
-Written by Gordon Matzigkeit, 1996
-
-This file is part of GNU Libtool.
-
-GNU Libtool is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
-
-As a special exception to the GNU General Public License, if you distribute this file as part of a program or library that is built using GNU Libtool, you may include this file under the same distribution terms that you use for the rest of that program.
-
-GNU Libtool is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with GNU Libtool; see the file COPYING.  If not, a copy can be downloaded from http://www.gnu.org/licenses/gpl.html, or obtained by writing to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
-
-> BSD
-
-ffi-1.0.11.gem\data.tar.gz\data.tar\ext\ffi_c\StructByReference.h
-
-
-Copyright (c) 2009, Wayne Meissner
-
-All rights reserved.
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-Redistributions in binary form must reproduce the above copyright notice this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-The name of the author or authors may not be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
---------------- SECTION 5: Ruby Clause-6 ----------
+--------------- SECTION 2: Ruby Clause-6 ----------
 
 Ruby Clause-6 is applicable to the following component(s).
 
 
 >>> eventmachine-1.0.0
 
-[PLEASE NOTE:  GOPIVOTAL, INC. ELECTS TO USE AND DISTRIBUTE THIS COMPONENT UNDER THE TERMS OF THE RUBY CLAUSE 6.  PLEASE SEE THE ORIGINAL LICENSE TERMS ARE REPRODUCED BELOW ONLY AS A REFERENCE.] 
+[PLEASE NOTE:  PIVOTAL SOFTWARE, INC. ELECTS TO USE AND DISTRIBUTE THIS COMPONENT UNDER THE TERMS OF THE RUBY CLAUSE 6.  PLEASE SEE THE ORIGINAL LICENSE TERMS ARE REPRODUCED BELOW ONLY AS A REFERENCE.] 
 
 
 EventMachine is copyrighted free software owned by Francis Cianfrocca
@@ -903,11 +883,76 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 PURPOSE.
 
 
-
 =============== APPENDIX. Standard License Files ============== 
 
 
---------------- SECTION 1: GNU Lesser General Public License, V3.0 -----------
+
+--------------- SECTION 1: Ruby Clause-6 -----------
+
+Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.co.jp>.
+You can redistribute it and/or modify it under either the terms of the GPL
+(see COPYING.txt file), or the conditions below:
+
+   1. You may make and give away verbatim copies of the source form of the
+     software without restriction, provided that you duplicate all of the
+     original copyright notices and associated disclaimers.
+
+ 
+  2. You may modify your copy of the software in any way, provided that
+     you do at least ONE of the following:
+
+       a) place your modifications in the Public Domain or otherwise
+          make them Freely Available, such as by posting said
+          modifications to Usenet or an equivalent medium, or by allowing
+          the author to include your modifications in the software.
+
+        b) use the modified software only within your corporation or
+          organization.
+
+       c) rename any non-standard executables so the names do not conflict
+          with standard executables, which must also be provided.
+
+       d) make other distribution arrangements with the author.
+
+ 
+  3. You may distribute the software in object code or executable
+     form, provided that you do at least ONE of the following:
+
+       a) distribute the executables and library files of the software,
+          together with instructions (in the manual page or equivalent)
+          on where to get the original distribution.
+
+       b) accompany the distribution with the machine-readable source of
+          the software.
+
+       c) give non-standard executables non-standard names, with
+          instructions on where to get the original software distribution.
+
+       d) make other distribution arrangements with the author.
+
+ 
+  4. You may modify and include the part of the software into any other
+     software (possibly commercial).  But some files in the distribution
+     are not written by the author, so that they are not under this terms.
+
+     They are gc.c(partly), utils.c(partly), regex.[ch], st.[ch] and some
+     files under the ./missing directory.  See each file for the copying
+     condition.
+
+ 
+  5. The scripts and library files supplied as input to or produced as
+     output from the software do not automatically fall under the
+     copyright of the software, but belong to whomever generated them,
+     and may be sold commercially, and may be aggregated with this
+     software.
+
+
+  6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     PURPOSE.
+
+--------------- SECTION 2: GNU Lesser General Public License, V3.0 -----------
 
 		   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
@@ -1075,175 +1120,7 @@ apply, that proxy's public statement of acceptance of any version is
 permanent authorization for you to choose that version for the
 Library.
 
-
---------------- SECTION 2: Artistic License, V2.0 -----------
-
-Artistic License 2.0
-
-Copyright (c) 2000-2006, The Perl Foundation.
-
-Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
-
-Preamble
-This license establishes the terms under which a given free software Package may be copied, modified, distributed, and/or redistributed. The intent is that the Copyright Holder maintains some artistic control over the development of that Package while still keeping the Package available as open source and free software.
-
-You are always permitted to make arrangements wholly outside of this license directly with the Copyright Holder of a given Package. If the terms of this license do not permit the full use that you propose to make of the Package, you should contact the Copyright Holder and seek a different licensing arrangement.
-
-Definitions
-
-"Copyright Holder" means the individual(s) or organization(s) named in the copyright notice for the entire Package.
-
-"Contributor" means any party that has contributed code or other material to the Package, in accordance with the Copyright Holder's procedures.
-
-"You" and "your" means any person who would like to copy, distribute, or modify the Package.
-
-"Package" means the collection of files distributed by the Copyright Holder, and derivatives of that collection and/or of those files. A given Package may consist of either the Standard Version, or a Modified Version.
-
-"Distribute" means providing a copy of the Package or making it accessible to anyone else, or in the case of a company or organization, to others outside of your company or organization.
-
-"Distributor Fee" means any fee that you charge for Distributing this Package or providing support for this Package to another party. It does not mean licensing fees.
-
-"Standard Version" refers to the Package if it has not been modified, or has been modified only in ways explicitly requested by the Copyright Holder.
-
-"Modified Version" means the Package, if it has been changed, and such changes were not explicitly requested by the Copyright Holder.
-
-"Original License" means this Artistic License as Distributed with the Standard Version of the Package, in its current version or as it may be modified by The Perl Foundation in the future.
-
-"Source" form means the source code, documentation source, and configuration files for the Package.
-
-"Compiled" form means the compiled bytecode, object code, binary, or any other form resulting from mechanical transformation or translation of the Source form.
-Permission for Use and Modification Without Distribution
-
-(1) You are permitted to use the Standard Version and create and use Modified Versions for any purpose without restriction, provided that you do not Distribute the Modified Version.
-
-Permissions for Redistribution of the Standard Version
-
-(2) You may Distribute verbatim copies of the Source form of the Standard Version of this Package in any medium without restriction, either gratis or for a Distributor Fee, provided that you duplicate all of the original copyright notices and associated disclaimers. At your discretion, such verbatim copies may or may not include a Compiled form of the Package.
-
-(3) You may apply any bug fixes, portability changes, and other modifications made available from the Copyright Holder. The resulting Package will still be considered the Standard Version, and as such will be subject to the Original License.
-
-Distribution of Modified Versions of the Package as Source
-
-(4) You may Distribute your Modified Version as Source (either gratis or for a Distributor Fee, and with or without a Compiled form of the Modified Version) provided that you clearly document how it differs from the Standard Version, including, but not limited to, documenting any non-standard features, executables, or modules, and provided that you do at least ONE of 
-the following:
-
-(a) make the Modified Version available to the Copyright Holder of the Standard Version, under the Original License, so that the Copyright Holder may include your modifications in the Standard Version. 
-
-(b) ensure that installation of your Modified Version does not prevent the user installing or running the Standard Version. In addition, the Modified Version must bear a name that is different from the name of the Standard Version. 
-
-(c) allow anyone who receives a copy of the Modified Version to make the Source form of the Modified Version available to others under 
-
-(i) the Original License or 
-(ii) a license that permits the licensee to freely copy, modify and redistribute the Modified Version using the same licensing terms that apply to the copy that the licensee received, and requires that the Source form of the Modified Version, and of any works derived from it, be made freely available in that license fees are prohibited but Distributor Fees are allowed.
-
-Distribution of Compiled Forms of the Standard Version or Modified Versions 
-without the Source
-
-(5) You may Distribute Compiled forms of the Standard Version without the Source, provided that you include complete instructions on how to get the Source of the Standard Version. Such instructions must be valid at the time of your distribution. If these instructions, at any time while you are carrying out such distribution, become invalid, you must provide new instructions on demand or cease further distribution. If you provide valid instructions or cease distribution within thirty days after you become aware that the instructions are invalid, then you do not forfeit any of your rights under this license.
-
-(6) You may Distribute a Modified Version in Compiled form without the Source, provided that you comply with Section 4 with respect to the Source of the Modified Version.
-
-Aggregating or Linking the Package
-
-(7) You may aggregate the Package (either the Standard Version or Modified Version) with other packages and Distribute the resulting aggregation provided that you do not charge a licensing fee for the Package. Distributor Fees are permitted, and licensing fees for other components in the aggregation are permitted. The terms of this license apply to the use and Distribution of the Standard or Modified Versions as included in the aggregation.
-
-(8) You are permitted to link Modified and Standard Versions with other works, to embed the Package in a larger work of your own, or to build stand-alone binary or bytecode versions of applications that include the Package, and Distribute the result without restriction, provided the result does not expose a direct interface to the Package.
-
-Items That are Not Considered Part of a Modified Version
-
-(9) Works (including, but not limited to, modules and scripts) that merely extend or make use of the Package, do not, by themselves, cause the Package to be a Modified Version. In addition, such works are not considered parts of the Package itself, and are not subject to the terms of this license.
-
-General Provisions
-
-(10) Any use, modification, and distribution of the Standard or Modified Versions is governed by this Artistic License. By using, modifying or distributing the Package, you accept this license. Do not use, modify, or distribute the Package, if you do not accept this license.
-
-(11) If your Modified Version has been derived from a Modified Version made by someone other than you, you are nevertheless required to ensure that your Modified Version complies with the requirements of this license.
-
-(12) This license does not grant you the right to use any trademark, service mark, tradename, or logo of the Copyright Holder.
-
-(13) This license includes the non-exclusive, worldwide, free-of-charge patent license to make, have made, use, offer to sell, sell, import and otherwise transfer the Package with respect to any patent claims licensable by the Copyright Holder that are necessarily infringed by the Package. 
-
-If you institute patent litigation (including a cross-claim or counterclaim) against any party alleging that the Package constitutes direct or contributory patent infringement, then this Artistic License to you shall terminate on the date that such litigation is filed.
-
-(14) Disclaimer of Warranty: THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER 
-AND CONTRIBUTORS "AS IS' AND WITHOUT ANY EXPRESS OR IMPLIED 
-WARRANTIES. THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-PARTICULAR PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT 
-PERMITTED BY YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT 
-HOLDER OR CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE 
-USE OF THE PACKAGE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-
---------------- SECTION 3: Ruby Clause-6 -----------
-
-Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.co.jp>.
-You can redistribute it and/or modify it under either the terms of the GPL
-(see COPYING.txt file), or the conditions below:
-
-   1. You may make and give away verbatim copies of the source form of the
-     software without restriction, provided that you duplicate all of the
-     original copyright notices and associated disclaimers.
-
- 
-  2. You may modify your copy of the software in any way, provided that
-     you do at least ONE of the following:
-
-       a) place your modifications in the Public Domain or otherwise
-          make them Freely Available, such as by posting said
-          modifications to Usenet or an equivalent medium, or by allowing
-          the author to include your modifications in the software.
-
-        b) use the modified software only within your corporation or
-          organization.
-
-       c) rename any non-standard executables so the names do not conflict
-          with standard executables, which must also be provided.
-
-       d) make other distribution arrangements with the author.
-
- 
-  3. You may distribute the software in object code or executable
-     form, provided that you do at least ONE of the following:
-
-       a) distribute the executables and library files of the software,
-          together with instructions (in the manual page or equivalent)
-          on where to get the original distribution.
-
-       b) accompany the distribution with the machine-readable source of
-          the software.
-
-       c) give non-standard executables non-standard names, with
-          instructions on where to get the original software distribution.
-
-       d) make other distribution arrangements with the author.
-
- 
-  4. You may modify and include the part of the software into any other
-     software (possibly commercial).  But some files in the distribution
-     are not written by the author, so that they are not under this terms.
-
-     They are gc.c(partly), utils.c(partly), regex.[ch], st.[ch] and some
-     files under the ./missing directory.  See each file for the copying
-     condition.
-
- 
-  5. The scripts and library files supplied as input to or produced as
-     output from the software do not automatically fall under the
-     copyright of the software, but belong to whomever generated them,
-     and may be sold commercially, and may be aggregated with this
-     software.
-
-
-  6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
-     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-     PURPOSE.
-
- 
- 
-===========================================================================
+================================================
 
 To the extent any open source components are licensed under the
 GPL and/or LGPL, or other similar licenses that require the
@@ -1251,15 +1128,15 @@ source code and/or modifications to source code to be made
 available (as would be noted above), you may obtain a copy of
 the source code corresponding to the binaries for such open
 source components and modifications thereto, if any, (the
-"Source Files"), by downloading the Source Files from VMware's website at
-http://www.vmware.com/download/open_source.html, or by sending a request, 
-with your name and address to: GoPivotal, Inc., 1900 S. Norfolk Street #125, 
-San Mateo, CA 94403, Attention: General Counsel. 
-All such requests should clearly specify: OPEN SOURCE FILES REQUEST,
-Attention General Counsel. GoPivotal shall mail a copy of the
+"Source Files"), by downloading the Source Files from Pivotal抯 website at
+http://www.gopivotal.com/open-source, or by sending a request, with your name
+and address to: Pivotal Software, Inc., 1900 S. Norfolk Street #125, San Mateo, 
+CA 94403, Attention: General Counsel. All such requests should clearly specify: 
+OPEN SOURCE FILES REQUEST,Attention General Counsel. Pivotal shall mail a copy of the
 Source Files to you on a CD or equivalent physical medium. This
 offer to obtain a copy of the Source Files is valid for three
-years from the date you acquired this Software product. Alternatively, 
-the Source Files may accompany the GoPivotal product.
+years from the date you acquired this Software product. 
+Alternatively, the Source Files may accompany the Pivotal product.
 
-[CFWARDEN8152013SC082313]
+[CFWARDEN11152013VN122013]
+
