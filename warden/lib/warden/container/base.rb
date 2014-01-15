@@ -297,7 +297,7 @@ module Warden
 
         t2 = Time.now
 
-        logger.info("%s (took %.6f)" % [klass_name, t2 - t1],
+        logger.debug("%s (took %.6f)" % [klass_name, t2 - t1],
                     :request => request.to_hash,
                     :response => response.to_hash)
 
