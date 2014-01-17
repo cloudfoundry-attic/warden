@@ -12,6 +12,8 @@ describe Warden::Repl::ReplRunner do
         expected_options = {
           :trace => true,
           :socket_path => "/foo/bar",
+          :address => "127.0.0.1",
+          :port => 1234,
           :exit_on_error => true,
         }
         Warden::Repl::Repl.should_receive(:new).once.with(expected_options).
@@ -19,6 +21,8 @@ describe Warden::Repl::ReplRunner do
 
         expect do
           described_class.run(["--trace", "--exit_on_error",
+                               "--address", "127.0.0.1",
+                               "--port", "1234",
                                "--socket", "/foo/bar"])
         end.to raise_error(SystemExit) do |error|
           error.status.should == 0

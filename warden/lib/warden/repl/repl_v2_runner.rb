@@ -26,6 +26,14 @@ EOT
           options[:socket_path] = socket_path
         end
 
+        op.on("--address address", "Warden server address.") do |address|
+          options[:address] = address
+        end
+
+        op.on("--port port", "Warden server port.") do |port|
+          options[:port] = port.to_i
+        end
+
         op.on("--trace", "Writes each command preceded by a '+' to stdout before" \
               + " executing.") do |trace|
           options[:trace] = true

@@ -32,8 +32,9 @@ module Warden::Repl
       @exit_on_error = opts[:exit_on_error]
       @exit_on_error = false unless @exit_on_error
       @trace = opts[:trace] == true
-      @socket_path = opts[:socket_path] || "/tmp/warden.sock"
-      @client = Warden::Client.new(@socket_path)
+      address = opts[:socket_path] || opts[:address] || "/tmp/warden.sock"
+      port = opts[:port]
+      @client = Warden::Client.new(address, port)
       @history_path = opts[:history_path] || File.join(ENV['HOME'],
                                                        '.warden-history')
       @commands = command_descriptions.keys # for Readline's keyword completion
