@@ -17,21 +17,6 @@ function get_distrib_codename() {
   fi
 }
 
-declare -ar supported_union_fs=(aufs overlayfs);
-
-function get_union_fs() {
-  for i in "${supported_union_fs[@]}"
-  do
-    modprobe -q $i || true
-
-    if grep -q -i $i /proc/filesystems
-    then
-      echo $i
-      return 0
-    fi
-  done
-}
-
 function overlay_directory_in_rootfs() {
   # Skip if exists
   if [ ! -d tmp/rootfs/$1 ]
@@ -69,17 +54,17 @@ function setup_fs_other() {
 function setup_fs_ubuntu() {
   mkdir -p tmp/rootfs mnt
 
-  union_fs=$(get_union_fs)
+  distrib_codename=$(get_distrib_codename)
 
-  case "$union_fs" in
-  aufs)
+  case "$distrib_codename" in
+  lucid|natty|oneiric)
     mount -n -t aufs -o br:tmp/rootfs=rw:$rootfs_path=ro+wh none mnt
     ;;
-  overlayfs)
+  precise|trusty)
     mount -n -t overlayfs -o rw,upperdir=tmp/rootfs,lowerdir=$rootfs_path none mnt
     ;;
   *)
-    echo "Unsupported: ${supported_union_fs[@]} not supported by kernel"
+    echo "Unsupported: $distrib_codename"
     exit 1
     ;;
   esac
