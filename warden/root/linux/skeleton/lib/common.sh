@@ -2,20 +2,6 @@
 
 [ -f etc/config ] && source etc/config
 
-function get_distrib_codename() {
-  if [ -r /etc/lsb-release ]
-  then
-    source /etc/lsb-release
-
-    if [ -n "$DISTRIB_CODENAME" ]
-    then
-      echo $DISTRIB_CODENAME
-      return 0
-    fi
-  else
-    lsb_release -cs
-  fi
-}
 
 function overlay_directory_in_rootfs() {
   # Skip if exists
@@ -34,7 +20,6 @@ function overlay_directory_in_rootfs() {
 }
 
 function setup_fs_other() {
-  mkdir -p tmp/rootfs mnt
   mkdir -p $rootfs_path/proc
 
   mount -n --bind $rootfs_path mnt
@@ -51,29 +36,48 @@ function setup_fs_other() {
   overlay_directory_in_rootfs /tmp rw
 }
 
-function setup_fs_ubuntu() {
-  mkdir -p tmp/rootfs mnt
+function get_mountpoint() {
+  df -P $1 | tail -1 | awk '{print $NF}'
+}
 
-  distrib_codename=$(get_distrib_codename)
+function current_fs() {
+  mountpoint=$(get_mountpoint $1)
 
-  case "$distrib_codename" in
-  lucid|natty|oneiric)
-    mount -n -t aufs -o br:tmp/rootfs=rw:$rootfs_path=ro+wh none mnt
-    ;;
-  precise|trusty)
-    mount -n -t overlayfs -o rw,upperdir=tmp/rootfs,lowerdir=$rootfs_path none mnt
-    ;;
-  *)
-    echo "Unsupported: $distrib_codename"
-    exit 1
-    ;;
-  esac
+  local mp
+  local fs
+
+  while read _ mp fs _; do
+    if [ "$fs" = "rootfs" ]; then
+      continue
+    fi
+
+    if [ "$mp" = "$mountpoint" ]; then
+      echo $fs
+    fi
+  done < /proc/mounts
+}
+
+function should_use_overlayfs() {
+  modprobe -q overlayfs >/dev/null 2>&1 || true
+
+  [ "$(current_fs $rootfs_path)" != "aufs" ] && \
+    grep -q overlayfs /proc/filesystems
+}
+
+function should_use_aufs() {
+  modprobe -q aufs >/dev/null 2>&1 || true
+
+  [ "$(current_fs $rootfs_path)" != "aufs" ] && \
+    grep -q aufs /proc/filesystems
 }
 
 function setup_fs() {
-  if grep -q -i ubuntu /etc/issue
-  then
-    setup_fs_ubuntu
+  mkdir -p tmp/rootfs mnt
+
+  if should_use_aufs; then
+    mount -n -t aufs -o br:tmp/rootfs=rw:$rootfs_path=ro+wh none mnt
+  elif should_use_overlayfs; then
+    mount -n -t overlayfs -o rw,upperdir=tmp/rootfs,lowerdir=$rootfs_path none mnt
   else
     setup_fs_other
   fi
