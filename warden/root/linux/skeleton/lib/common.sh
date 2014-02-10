@@ -58,17 +58,35 @@ function current_fs() {
 }
 
 function should_use_overlayfs() {
+  # load it so it's in /proc/filesystems
   modprobe -q overlayfs >/dev/null 2>&1 || true
 
-  [ "$(current_fs $rootfs_path)" != "aufs" ] && \
-    grep -q overlayfs /proc/filesystems
+  # cannot mount overlayfs in aufs
+  if [ "$(current_fs $rootfs_path)" == "aufs" ]; then
+    return 1
+  fi
+
+  # check if it's a known filesystem
+  grep -q overlayfs /proc/filesystems
 }
 
 function should_use_aufs() {
+  # load it so it's in /proc/filesystems
   modprobe -q aufs >/dev/null 2>&1 || true
 
-  [ "$(current_fs $rootfs_path)" != "aufs" ] && \
-    grep -q aufs /proc/filesystems
+  # don't use aufs for nested warden as neither overlayfs nor aufs can mount
+  # on it
+  if [ "$allow_nested_warden" == "true" ]; then
+    return 1
+  fi
+
+  # cannot mount aufs in aufs
+  if [ "$(current_fs $rootfs_path)" == "aufs" ]; then
+    return 1
+  fi
+
+  # check if it's a known filesystem
+  grep -q aufs /proc/filesystems
 }
 
 function setup_fs() {
