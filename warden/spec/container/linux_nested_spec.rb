@@ -162,7 +162,7 @@ describe "linux", :platform => "linux", :needs_root => true do
             print stream.data if debug?
           end.exit_status
 
-        puts "---------------------------- exit status: #{exit_status}"
+        puts "---------------------------- exit status: #{exit_status}" if debug?
 
         exit_status.should == 0
       end
