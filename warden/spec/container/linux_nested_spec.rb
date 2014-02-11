@@ -64,7 +64,6 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   after :all do
-
     stop_warden
 
     # Destroy all artifacts
@@ -137,15 +136,36 @@ describe "linux", :platform => "linux", :needs_root => true do
     @client = nil
   end
 
+  def debug?
+    ENV["DEBUG"]
+  end
 
   describe "nested" do
-
     attr_reader :handle
 
-    def run_as_root(script)
-      response = client.run(:handle => handle, :script => script, :privileged => true)
-      puts response.stdout, response.stderr unless response.exit_status == 0
-      response.exit_status.should == 0
+    def run_as_root(script, background = false)
+      puts "---------------------------- running #{script}" if debug?
+
+      spawned = client.spawn(
+        :handle => handle,
+        :script => script,
+        :privileged => true,
+      )
+
+      if !background
+        stream_request = Warden::Protocol::StreamRequest.new
+        stream_request.handle = handle
+        stream_request.job_id = spawned.job_id
+
+        exit_status =
+          client.stream(stream_request) do |stream|
+            print stream.data if debug?
+          end.exit_status
+
+        puts "---------------------------- exit status: #{exit_status}"
+
+        exit_status.should == 0
+      end
     end
 
     def create
@@ -156,79 +176,67 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     before :all do
-
       warden_repo = File.expand_path('../../../..' ,__FILE__)
 
-      # whiteout rootfs/dev beforehand to avoid 'overlayfs: operation not permitted' error
-      `rm -rf /tmp/warden/rootfs/dev/*`
+      bind_mount_warden = Warden::Protocol::CreateRequest::BindMount.new
+      bind_mount_warden.src_path = File.join(warden_repo, "warden")
+      bind_mount_warden.dst_path = "/warden"
+      bind_mount_warden.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RW
 
-      @bind_mount_warden = Warden::Protocol::CreateRequest::BindMount.new
-      @bind_mount_warden.src_path = File.join(warden_repo, 'warden')
-      @bind_mount_warden.dst_path = "/warden"
-      @bind_mount_warden.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
-
-      @bind_mount_rootfs = Warden::Protocol::CreateRequest::BindMount.new
-      @bind_mount_rootfs.src_path = "/tmp/warden/rootfs"
-      @bind_mount_rootfs.dst_path = "/tmp/warden/rootfs"
-      @bind_mount_rootfs.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
+      bind_mount_rootfs = Warden::Protocol::CreateRequest::BindMount.new
+      bind_mount_rootfs.src_path = "/tmp/warden/rootfs"
+      bind_mount_rootfs.dst_path = "/tmp/warden/rootfs"
+      bind_mount_rootfs.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RO
 
       @create_request = Warden::Protocol::CreateRequest.new
-      @create_request.bind_mounts = [@bind_mount_warden, @bind_mount_rootfs]
+      @create_request.bind_mounts = [bind_mount_warden, bind_mount_rootfs]
 
       create
 
       run_as_root 'apt-get -qq -y install iptables'
-      run_as_root 'sed -i s/lucid/precise/ /etc/lsb-release'
-      run_as_root 'curl -L https://get.rvm.io | bash -s stable'
-      ruby_version = File.read(File.join(warden_repo, '.ruby-version')).chomp
-      run_as_root "source /etc/profile.d/rvm.sh; rvm install #{ruby_version}"
-      run_as_root 'source /etc/profile.d/rvm.sh; gem install bundler --no-rdoc --no-ri'
-      run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && BUNDLE_APP_CONFIG=/tmp/.bundle bundle install --quiet'
-      run_as_root 'rm /tmp/warden.sock || true'
-      run_as_root 'source /etc/profile.d/rvm.sh; cd /warden && bundle exec rake warden:start[spec/assets/config/child-linux.yml] &'
+      run_as_root 'sudo gem install bundler --no-rdoc --no-ri'
+      run_as_root 'cd /warden && BUNDLE_APP_CONFIG=/tmp/.bundle sudo bundle install'
+      run_as_root 'cd /warden && sudo bundle exec rake warden:start[spec/assets/config/child-linux.yml]', :background
 
-      sleep 5 #wait warden server to start up
+      sleep 5 # wait warden server to start up
 
       run_as_root 'ls /tmp/warden.sock'
     end
 
     after :all do
+      if @handle
+        run_as_root 'cat /tmp/warden.log'
+        run_as_root 'ls /var/log/'
+        run_as_root 'cat /var/log/syslog || true'
+        run_as_root 'cat /var/log/dmesg || true'
 
-      #destroy nested containers if there is any
-      run_as_root '/warden/root/linux/clear.sh /tmp/warden/containers > /dev/null'
-
-      #stop child warden server
-      run_as_root "ps -ef|grep [r]ake |awk '{print $2}'|xargs kill"
+        destroy = Warden::Protocol::DestroyRequest.new
+        destroy.handle = @handle
+        client.call(destroy).should be_ok
+      end
     end
 
     it 'should run nested containers' do
-
-      run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create'
-
+      run_as_root '/warden/bin/warden -- create'
     end
 
     it 'should setup nested cgroup' do
-
-      run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create'
+      run_as_root '/warden/bin/warden -- create'
       Dir.glob("/tmp/warden/cgroup/cpu/instance-#{handle}/instance-*").should_not be_empty
-
     end
 
     it 'should allow inbound traffic to nested containers' do
-
       #ping the nested container from host
       execute "route add -net 10.254.0.0/22 gw 10.244.0.2"
-      run_as_root 'source /etc/profile.d/rvm.sh; /warden/bin/warden -- create --network 10.254.0.126'
+      run_as_root '/warden/bin/warden -- create --network 10.254.0.126'
       execute 'ping -c3 10.254.0.126'
       execute "route del -net 10.254.0.0/22 gw 10.244.0.2"
     end
 
     it 'should allow outbound traffic from nested containers' do
-
       #create a nested container and have it download something
-      run_as_root 'source /etc/profile.d/rvm.sh; handle=`/warden/bin/warden -- create | cut -d' ' -f3`;
+      run_as_root 'handle=`/warden/bin/warden -- create | cut -d' ' -f3`;
         /warden/bin/warden -- run --handle $handle --script "curl http://rvm.io" '
-
     end
   end
 end
