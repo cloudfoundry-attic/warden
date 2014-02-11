@@ -62,7 +62,12 @@ function should_use_overlayfs() {
   modprobe -q overlayfs >/dev/null 2>&1 || true
 
   # cannot mount overlayfs in aufs
-  if [ "$(current_fs $rootfs_path)" == "aufs" ]; then
+  if [ "$(current_fs tmp/rootfs)" == "aufs" ]; then
+    return 1
+  fi
+
+  # cannot mount overlayfs in overlayfs; whiteout not supported
+  if [ "$(current_fs tmp/rootfs)" == "overlayfs" ]; then
     return 1
   fi
 
@@ -81,7 +86,12 @@ function should_use_aufs() {
   fi
 
   # cannot mount aufs in aufs
-  if [ "$(current_fs $rootfs_path)" == "aufs" ]; then
+  if [ "$(current_fs tmp/rootfs)" == "aufs" ]; then
+    return 1
+  fi
+
+  # cannot mount aufs in overlayfs
+  if [ "$(current_fs tmp/rootfs)" == "overlayfs" ]; then
     return 1
   fi
 
