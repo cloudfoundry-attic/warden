@@ -171,6 +171,24 @@ describe Warden::Container::Base do
     end
   end
 
+  context "dispatch" do
+    let(:request) { double("request", to_hash: {fake: "request", sensitive: "information"}).as_null_object }
+    let(:logger) { double("logger").as_null_object }
+
+    subject(:container) { Container.new }
+
+    before do
+      container.stub(:logger).and_return(logger)
+      container.stub(:hook)
+    end
+
+    it "logs to debug level to avoid logging sensitive information in production" do
+      logger.should_receive(:debug).with(an_instance_of(String), request: request.to_hash, response: an_instance_of(Hash))
+
+      container.dispatch(request)
+    end
+  end
+
   describe "stop" do
     before(:each) do
       @container = initialize_container
