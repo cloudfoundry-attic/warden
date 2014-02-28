@@ -225,20 +225,6 @@ module Warden
               add_bind_mount(file, src_path, dst_path, mode)
             end
           end
-
-          # for nested warden, we share the host's cgroup fs to contrainers using bind mount
-          if Server.config.allow_nested_warden?
-            tmp_warden_cgroup = File.join(container_path, "tmp", "warden", "cgroup")
-            FileUtils.mkdir_p(tmp_warden_cgroup)
-
-            # Bind-mount cgroups
-            add_bind_mount(file, tmp_warden_cgroup, "/tmp/warden/cgroup", "rw")
-
-            # for each subsystems, only pass the group of the current container instead of all groups, so that nested warder server will setup groups directly under parent container's hierarchy
-            %w(cpu cpuacct devices memory).each do |subsystem|
-              add_bind_mount(file, cgroup_path(subsystem), "/tmp/warden/cgroup/#{subsystem}", "rw")
-            end
-          end
         end
       end
     end
