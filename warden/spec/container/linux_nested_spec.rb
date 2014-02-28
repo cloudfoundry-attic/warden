@@ -220,11 +220,6 @@ describe "linux", :platform => "linux", :needs_root => true do
       run_as_root '/warden/bin/warden -- create'
     end
 
-    it 'should setup nested cgroup' do
-      run_as_root '/warden/bin/warden -- create'
-      Dir.glob("/tmp/warden/cgroup/cpu/instance-#{handle}/instance-*").should_not be_empty
-    end
-
     it 'should allow inbound traffic to nested containers' do
       #ping the nested container from host
       execute "route add -net 10.254.0.0/22 gw 10.244.0.2"
