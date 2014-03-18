@@ -22,7 +22,7 @@ module Warden
             @container = container
 
             oom_notifier_path = Warden::Util.path("src/oom/oom")
-            @child = DeferredChild.new(oom_notifier_path, container.memory_cgroup_path)
+            @child = DeferredChild.new(oom_notifier_path, container.cgroup_path(:memory))
             @child.logger = logger
             @child.run
             @child_exited = false
@@ -65,47 +65,12 @@ module Warden
         end
 
         def oomed
-          memory = memory_cgroup_file_contents('memory.usage_in_bytes')
-          memory_limit = memory_cgroup_file_contents('memory.limit_in_bytes')
-          swap = memory_cgroup_file_contents('memory.memsw.usage_in_bytes')
-          swap_limit = memory_cgroup_file_contents('memory.memsw.limit_in_bytes')
-          stats = format_memory_stats(memory_cgroup_file_contents('memory.stat'))
-          logger.warn("OOM happened for container with handle '#{handle}', memory usage: #{memory}, memory limit: #{memory_limit}, memory + swap usage: #{swap}, memory + swap limit: #{swap_limit}, #{stats}")
+          logger.warn("OOM happened for #{handle}")
 
           events << "out of memory"
-
-          oom_killer true
-
           if state == State::Active
             dispatch(Protocol::StopRequest.new)
           end
-        end
-
-        def format_memory_stats(memory_stats)
-          memory_stats.gsub(' ', ': ').gsub("\n", ', ')
-        end
-
-        private :format_memory_stats
-
-        def oom_killer(enable)
-          File.open(File.join(memory_cgroup_path, "memory.oom_control"), 'w') do |f|
-            f.write(enable ? '0' : '1')
-          end
-        end
-
-        private :oom_killer
-
-        def memory_cgroup_file_contents(filename)
-          File.read(File.join(memory_cgroup_path, filename)).chomp
-        rescue
-          # memory.memsw.* files cannot be read when swapping is off
-          '-'
-        end
-
-        private :memory_cgroup_file_contents
-
-        def memory_cgroup_path
-          cgroup_path(:memory)
         end
 
         def start_oom_notifier_if_needed
@@ -124,9 +89,6 @@ module Warden
         private :start_oom_notifier_if_needed
 
         def limit_memory(limit_in_bytes)
-          # Disable the oom killer before setting up the oom notifier.
-          oom_killer false
-
           # Need to set up the oom notifier before we set the memory
           # limit to avoid a race between when the limit is set and
           # when the oom notifier is registered.
@@ -144,7 +106,7 @@ module Warden
           # successfully. To mitigate this, both limits are written twice.
           2.times do
             ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
-              File.open(File.join(memory_cgroup_path, path), 'w') do |f|
+              File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
                 f.write(limit_in_bytes.to_s)
               end
             end
@@ -164,7 +126,7 @@ module Warden
             end
           end
 
-          limit_in_bytes = File.read(File.join(memory_cgroup_path, "memory.limit_in_bytes"))
+          limit_in_bytes = File.read(File.join(cgroup_path(:memory), "memory.limit_in_bytes"))
           response.limit_in_bytes = limit_in_bytes.to_i
 
           nil

@@ -204,11 +204,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     describe "setting limits" do
       def integer_from_memory_cgroup(file)
-        memory_cgroup_file_contents(file).to_i
-      end
-
-      def memory_cgroup_file_contents(file)
-        File.read(File.join("/tmp/warden/cgroup/memory", "instance-#{@handle}", file))
+        File.read(File.join("/tmp/warden/cgroup/memory", "instance-#{@handle}", file)).to_i
       end
 
       let(:hundred_mb) { 100 * 1024 * 1024 }
@@ -216,10 +212,6 @@ describe "linux", :platform => "linux", :needs_root => true do
       before do
         response = limit_memory(:limit_in_bytes => hundred_mb)
         response.limit_in_bytes.should == hundred_mb
-      end
-
-      it 'disables oom killer' do
-        memory_cgroup_file_contents("memory.oom_control").should match(/oom_kill_disable\s*1/)
       end
 
       it "sets `memory.limit_in_bytes`" do

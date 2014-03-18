@@ -12,4 +12,3 @@ ci-working-dir
 *.swp
 .rvmrc
 *.pid
-*.iml
