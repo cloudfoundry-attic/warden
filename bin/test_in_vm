@@ -28,11 +28,11 @@ Dir.chdir(tmpdir) do
     puts "Build took too long, killing the VM"
     raise e
   ensure
-    #if ENV["NODESTROY"]
-    #  puts "Skipping vagrant destroy"
-    #else
-    #  sh("vagrant destroy --force")
-    #end
+    if ENV["NODESTROY"]
+      puts "Skipping vagrant destroy"
+    else
+      sh("vagrant destroy --force")
+    end
     sh("vagrant status")
   end
 end
