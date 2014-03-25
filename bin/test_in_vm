@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+require 'tmpdir'
+require 'timeout'
+require 'fileutils'
+
+def sh(cmd)
+  ok = system(cmd)
+  raise RuntimeError unless ok
+  ok
+end
+
+tmpdir = Dir.mktmpdir
+
+FileUtils.copy("Vagrantfile", tmpdir)
+FileUtils.copy("bin/rsync_workspace_into_vm.sh", tmpdir)
+puts "Running vagrant in a temporary folder: #{tmpdir}"
+
+build_timeout_in_seconds = 2400
+warden_source_dir = Dir.pwd
+Dir.chdir(tmpdir) do
+  begin
+    Timeout.timeout(build_timeout_in_seconds) do
+      sh("vagrant up")
+      sh("./rsync_workspace_into_vm.sh #{warden_source_dir}")
+      sh("vagrant ssh -c 'cd ~/workspace && bin/test'")
+    end
+  rescue Timeout::Error => e
+    puts "Build took too long, killing the VM"
+    raise e
+  ensure
+    #if ENV["NODESTROY"]
+    #  puts "Skipping vagrant destroy"
+    #else
+    #  sh("vagrant destroy --force")
+    #end
+    sh("vagrant status")
+  end
+end

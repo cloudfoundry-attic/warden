@@ -26,7 +26,7 @@ at the command line, see the [warden server README](warden/README.md).
 
 ## Testing
 
-[warden-test-infrastructure](https://github.com/cloudfoundry/warden-test-infrastructure) provides a way to create a vagrant box and run warden tests.
+[warden-test-infrastructure](https://github.com/cloudfoundry/warden-test-infrastructure) provides a way to create a vagrant box.
 
 ```
 # Checkout the repos
@@ -37,8 +37,7 @@ git clone https://github.com/cloudfoundry/warden-test-infrastructure
 pushd warden-test-infrastructure && git submodule update --init && ./create_vagrant_box.sh && popd
 
 # Run warden tests
-export FOLDER_NAME=
-pushd warden && ../warden-test-infrastructure/ci-build
+pushd warden && bin/test_in_vm
 ```
 
 ## License
