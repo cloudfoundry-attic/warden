@@ -1,3 +1,4 @@
+#!/bin/bash
 set -e -x -u
 
 vagrant ssh-config > ssh_config
