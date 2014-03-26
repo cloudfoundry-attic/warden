@@ -3,10 +3,8 @@ require 'tmpdir'
 require 'timeout'
 require 'fileutils'
 
-def sh(cmd)
-  ok = system(cmd)
-  raise RuntimeError unless ok
-  ok
+def system!(cmd)
+  system(cmd) or raise "Command failed: '#{cmd}'"
 end
 
 tmpdir = Dir.mktmpdir
@@ -20,9 +18,9 @@ warden_source_dir = Dir.pwd
 Dir.chdir(tmpdir) do
   begin
     Timeout.timeout(build_timeout_in_seconds) do
-      sh("vagrant up")
-      sh("./rsync_workspace_into_vm.sh #{warden_source_dir}")
-      sh("vagrant ssh -c 'cd ~/workspace && bin/test'")
+      system!("vagrant up")
+      system!("./rsync_workspace_into_vm.sh #{warden_source_dir}")
+      system!("vagrant ssh -c 'cd ~/workspace && bin/test'")
     end
   rescue Timeout::Error => e
     puts "Build took too long, killing the VM"
@@ -31,8 +29,8 @@ Dir.chdir(tmpdir) do
     if ENV["NODESTROY"]
       puts "Skipping vagrant destroy"
     else
-      sh("vagrant destroy --force")
+      system!("vagrant destroy --force")
     end
-    sh("vagrant status")
+    system!("vagrant status")
   end
 end
