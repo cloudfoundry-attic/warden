@@ -59,9 +59,10 @@ describe "linux", :platform => "linux", :needs_root => true do
     unmount_depot
 
     execute("rmdir #{container_depot_path}")
-    execute("rm #{container_depot_file}")
+    execute("sync")
 
     execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1 | xargs --no-run-if-empty --max-args=1 losetup --detach")
+    execute("rm #{container_depot_file}")
   end
 
   def execute(command)
