@@ -16,6 +16,9 @@ ln -sf pts/ptmx /dev/ptmx
 mkdir -p /proc
 mount -t proc none /proc
 
+mkdir -p /dev/shm
+mount -t tmpfs -o size=64k tmpfs /dev/shm
+
 hostname $id
 
 ifconfig lo 127.0.0.1
