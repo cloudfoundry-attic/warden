@@ -30,8 +30,8 @@ at the command line, see the [warden server README](warden/README.md).
 # Checkout the repos
 git clone https://github.com/cloudfoundry/warden
 
-# Run warden tests
-pushd warden && bin/test_in_vm
+# Run warden server tests
+bin/test_in_vm
 ```
 
 ## License
