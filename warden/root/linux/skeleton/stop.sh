@@ -15,6 +15,8 @@ fi
 
 WAIT=10
 
+source etc/config
+
 function usage() {
   echo "Usage $0 [OPTION]..." >&2
   echo "  -w N seconds to wait before sending SIGKILL;" >&2
@@ -44,22 +46,28 @@ function ms() {
 ms_start=$(ms)
 ms_end=$(($ms_start + ($WAIT * 1000)))
 
-# Send SIGTERM
-if [[ $(ms) -lt $ms_end ]]
-then
-  bin/wsh pkill -TERM -v -P 0 || true
-fi
+pid=$(cat ./run/wshd.pid)
+path=/tmp/warden/cgroup/cpu/instance-$id
+tasks=$path/tasks
 
-# Wait for processes to quit
-while [[ $(ms) -lt $ms_end ]]
+# pkill with -v (--inverse) does not work on
+# both ubuntu lucid and trusty
+while true
 do
-  if ! bin/wsh pgrep -c -v -P 0 > /dev/null
-  then
-    exit 0
+  if ! pgrep -c -P $pid; then
+    # all child processes exited
+    break
   fi
+
+  subTasks=$(cat $tasks | grep -v $pid)
+
+  signal=TERM
+  if [[ $(ms) -gt $ms_end ]]; then
+    # forcibly kill after the grace period
+    signal=KILL
+  fi
+
+  kill -$signal $subTasks 2> /dev/null || true
 
   sleep 1
 done
-
-# Send SIGKILL
-bin/wsh pkill -KILL -v -P 0 || true
