@@ -1,7 +1,7 @@
 language: ruby
 
 rvm:
-  - 1.9.3-p484
+  - 1.9.3-p545
   - 2.0.0
 
 env:
