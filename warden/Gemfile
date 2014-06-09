@@ -12,5 +12,5 @@ gem "warden-protocol", :git => "https://github.com/cloudfoundry/warden.git"
 gem "warden-client", :git => "https://github.com/cloudfoundry/warden.git"
 
 group :spec do
-  gem "rspec"
+  gem "rspec", "~> 2.11.0"
 end

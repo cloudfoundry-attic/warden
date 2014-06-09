@@ -4,7 +4,3 @@ gemspec
 
 gem "rake"
 gem "warden-protocol", :path => "../warden-protocol"
-
-group :spec do
-  gem "rspec"
-end
