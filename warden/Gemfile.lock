@@ -69,7 +69,7 @@ DEPENDENCIES
   membrane!
   pidfile
   rake
-  rspec
+  rspec (~> 2.11.0)
   steno (~> 0.0.15)!
   warden-client!
   warden-protocol!

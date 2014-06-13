@@ -44,8 +44,8 @@ module Warden
           end
 
           if @resources.has_key?("net_out")
-            @resources["net_out"].each do |network, port|
-              _net_out(network, port)
+            @resources["net_out"].each do |network, port_range, protocol|
+              _net_out(network, port_range, protocol)
             end
           end
         end
@@ -121,22 +121,34 @@ module Warden
           raise
         end
 
-        def _net_out(network, port)
+        def _net_out(network, port_range, protocol)
           sh File.join(container_path, "net.sh"), "out", :env => {
             "NETWORK" => network,
-            "PORT"    => port,
+            "PORTS"    => port_range,
+            "PROTOCOL" => protocol,
           }
         end
 
         def do_net_out(request, response)
-          unless request.network || request.port
-            raise WardenError.new("Please specify network and/or port.")
+          unless request.network || request.port || request.port_range
+            raise WardenError.new("Please specify network, port, and/or port_range.")
           end
 
-          _net_out(request.network, request.port)
+          port_range = request.port_range || "#{request.port}"
+
+          protocol = case request.protocol
+            when Warden::Protocol::NetOutRequest::Protocol::TCP
+              "tcp"
+            when Warden::Protocol::NetOutRequest::Protocol::UDP
+              "udp"
+            else
+              "tcp"
+          end
+
+          _net_out(request.network, port_range, protocol)
 
           @resources["net_out"] ||= []
-          @resources["net_out"] << [request.network, request.port]
+          @resources["net_out"] << [request.network, port_range, protocol]
         end
 
         def acquire(opts = {})

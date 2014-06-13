@@ -10,6 +10,9 @@
 // * `handle`: Container handle.
 // * `network`: Network to whitelist (in the form `1.2.3.4/8`).
 // * `port`: Port to whitelist.
+// * `port_range`: Colon separated port range (in the form `8080:9080`).
+//    Note: port_range takes precedence over port
+// * `protocol`: Network protocol (`TCP` or `UDP`).
 //
 // ### Response
 //
@@ -25,10 +28,16 @@
 package warden;
 
 message NetOutRequest {
-  required string handle = 1;
+  enum Protocol {
+    TCP = 0;
+    UDP = 1;
+  }
+  required string handle     = 1;
 
-  optional string network = 2;
-  optional uint32 port    = 3;
+  optional string network    = 2;
+  optional uint32 port       = 3;
+  optional string port_range = 4;
+  optional Protocol protocol = 5;
 }
 
 message NetOutResponse {

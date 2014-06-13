@@ -179,7 +179,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       warden_repo = File.expand_path('../../../..' ,__FILE__)
 
       bind_mount_warden = Warden::Protocol::CreateRequest::BindMount.new
-      bind_mount_warden.src_path = File.join(warden_repo, "warden")
+      bind_mount_warden.src_path = File.join(warden_repo)
       bind_mount_warden.dst_path = "/warden"
       bind_mount_warden.mode = Warden::Protocol::CreateRequest::BindMount::Mode::RW
 
@@ -195,8 +195,8 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       run_as_root 'apt-get -qq -y install iptables'
       run_as_root 'sudo gem install bundler --no-rdoc --no-ri'
-      run_as_root 'cd /warden && BUNDLE_APP_CONFIG=/tmp/.bundle sudo bundle install'
-      run_as_root 'cd /warden && sudo bundle exec rake warden:start[spec/assets/config/child-linux.yml]', :background
+      run_as_root 'cd /warden/warden && BUNDLE_APP_CONFIG=/tmp/.bundle sudo bundle install'
+      run_as_root 'cd /warden/warden && sudo bundle exec rake warden:start[spec/assets/config/child-linux.yml]', :background
 
       sleep 5 # wait warden server to start up
 
@@ -217,21 +217,21 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     it 'should run nested containers' do
-      run_as_root '/warden/bin/warden -- create'
+      run_as_root '/warden/warden/bin/warden -- create'
     end
 
     it 'should allow inbound traffic to nested containers' do
       #ping the nested container from host
       execute "route add -net 10.254.0.0/22 gw 10.244.0.2"
-      run_as_root '/warden/bin/warden -- create --network 10.254.0.126'
+      run_as_root '/warden/warden/bin/warden -- create --network 10.254.0.126'
       execute 'ping -c3 10.254.0.126'
       execute "route del -net 10.254.0.0/22 gw 10.244.0.2"
     end
 
     it 'should allow outbound traffic from nested containers' do
       #create a nested container and have it download something
-      run_as_root 'handle=`/warden/bin/warden -- create | cut -d' ' -f3`;
-        /warden/bin/warden -- run --handle $handle --script "curl http://rvm.io" '
+      run_as_root 'handle=`/warden/warden/bin/warden -- create | cut -d' ' -f3`;
+        /warden/warden/bin/warden -- run --handle $handle --script "curl http://rvm.io" '
     end
   end
 end

@@ -489,10 +489,16 @@ module Warden
     class NetOutRequest
       include Warden::Protocol::BaseMessage
 
+      module Protocol
+        TCP = 0
+        UDP = 1
+      end
 
       required :handle, :string, 1
       optional :network, :string, 2
       optional :port, :uint32, 3
+      optional :port_range, :string, 4
+      optional :protocol, NetOutRequest::Protocol, 5
 
     end
 
