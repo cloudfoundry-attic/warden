@@ -483,7 +483,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       unless response.stdout.strip == "ok"
         # Clean up
-        client.stop(:handle => server_container[:handle])
+        client.run(:handle => server_container[:handle], :script => "pkill -9 nc")
         return false
       end
 
@@ -504,6 +504,14 @@ describe "linux", :platform => "linux", :needs_root => true do
       client.run(:handle => server_container[:handle], :script => cleanup_script)
       response = client.link(:handle => server_container[:handle], :job_id => job_id)
       response.stdout.strip == "ok"
+    end
+
+    def verify_ping_connectivity(server_container, client_container)
+      # Try to ping the server container
+      client_script = "ping -c1 -w1 #{server_container[:ip]}"
+      response = run(client_container[:handle], client_script)
+
+      response.exit_status == 0
     end
 
     context "reachability" do
@@ -546,10 +554,12 @@ describe "linux", :platform => "linux", :needs_root => true do
       describe "net_out control" do
         it "disallows traffic to networks before net_out" do
           expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq false
+          expect(verify_udp_connectivity(@containers[1], @containers[0], 2000)).to eq false
+          expect(verify_ping_connectivity(@containers[2], @containers[1])).to eq false
         end
 
         context "tcp" do
-          it "allows traffic to networks after net_out" do
+          it "allows outbound tcp traffic to networks after net_out" do
             net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001)).to eq false
@@ -557,10 +567,52 @@ describe "linux", :platform => "linux", :needs_root => true do
         end
 
         context "udp" do
-          it "allows traffic to networks after net_out" do
+          it "allows outbound udp traffic to networks after net_out" do
             net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP)
             expect(verify_udp_connectivity(@containers[1], @containers[0], 2000)).to eq true
             expect(verify_udp_connectivity(@containers[1], @containers[0], 2001)).to eq false
+          end
+        end
+
+        context "icmp" do
+          # Assertions testing that containers do NOT have connectivity should only be done
+          # between containers that have NEVER had connectivity in any tests. This is because
+          # the ESTABLISHED state is cached for 30 seconds and can pollute other tests.
+          it "allows outbound icmp traffic after net out" do
+            net_out(:handle => @containers[0][:handle],
+                    :network => @containers[1][:ip],
+                    :protocol => Warden::Protocol::NetOutRequest::Protocol::ICMP,
+                    :icmp_type => 8, :icmp_code => 0) # ICMP Echo Request
+
+            expect(verify_ping_connectivity(@containers[1], @containers[0])).to eq true
+            expect(verify_ping_connectivity(@containers[2], @containers[1])).to eq false
+          end
+
+          it "allows outbound icmp traffic after net out when type and code are -1" do
+            net_out(:handle => @containers[0][:handle],
+                    :network => @containers[1][:ip],
+                    :protocol => Warden::Protocol::NetOutRequest::Protocol::ICMP,
+                    :icmp_type => -1, :icmp_code => -1) # Everything
+
+            expect(verify_ping_connectivity(@containers[1], @containers[0])).to eq true
+          end
+
+          it "does not allow outbound when type does not match" do
+            net_out(:handle => @containers[1][:handle],
+                    :network => @containers[2][:ip],
+                    :protocol => Warden::Protocol::NetOutRequest::Protocol::ICMP,
+                    :icmp_type => 0, :icmp_code => 0) # ICMP Echo Reply
+
+            expect(verify_ping_connectivity(@containers[2], @containers[1])).to eq false
+          end
+
+          it "does not allow outbound when code does not match" do
+            net_out(:handle => @containers[1][:handle],
+                    :network => @containers[2][:ip],
+                    :protocol => Warden::Protocol::NetOutRequest::Protocol::ICMP,
+                    :icmp_type => 8, :icmp_code => 8) # Bogus code
+
+            expect(verify_ping_connectivity(@containers[2], @containers[1])).to eq false
           end
         end
 
@@ -571,12 +623,6 @@ describe "linux", :platform => "linux", :needs_root => true do
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001)).to eq true
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 2002)).to eq true
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 1999)).to eq false
-          end
-
-          it "will raise an error if min > max" do
-            expect {
-              net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port_range => "2002:2000", :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
-            }.to raise_error
           end
         end
 
@@ -600,7 +646,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
     end
 
-    describe "check network and port fields" do
+    describe "check argument handling" do
       let(:handle) { client.create.handle }
 
       it "should raise error when both fields are absent" do
@@ -619,6 +665,18 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "should not raise error when both network and port fields are present" do
         net_out(:handle => handle, :network => "4.2.2.2", :port => 1234).should be_ok
+      end
+
+      it "should raise an error when the port range specifies min > max" do
+        expect do
+          net_out(:handle => handle, :port_range => "2002:2000", :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
+        end.to raise_error(Warden::Client::ServerError, %r"port range maximum must be greater than minimum"i)
+      end
+
+      it "should raise an error when an unknown protocol is specified" do
+        expect do
+          net_out(:handle => handle, :protocol => 10)
+        end.to raise_error(Warden::Protocol::ProtocolError)
       end
     end
   end

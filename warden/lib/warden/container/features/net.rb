@@ -44,8 +44,8 @@ module Warden
           end
 
           if @resources.has_key?("net_out")
-            @resources["net_out"].each do |network, port_range, protocol|
-              _net_out(network, port_range, protocol)
+            @resources["net_out"].each do |*args|
+              _net_out(*args)
             end
           end
         end
@@ -121,11 +121,13 @@ module Warden
           raise
         end
 
-        def _net_out(network, port_range, protocol)
+        def _net_out(network, port_range, protocol, icmp_type, icmp_code)
           sh File.join(container_path, "net.sh"), "out", :env => {
             "NETWORK" => network,
             "PORTS"    => port_range,
             "PROTOCOL" => protocol,
+            "ICMP_TYPE" => icmp_type,
+            "ICMP_CODE" => icmp_code,
           }
         end
 
@@ -135,20 +137,27 @@ module Warden
           end
 
           port_range = request.port_range || "#{request.port}"
+          validate_port_range(port_range)
+          icmp_type = nil
+          icmp_code = nil
 
-          protocol = case request.protocol
+          case request.protocol
             when Warden::Protocol::NetOutRequest::Protocol::TCP
-              "tcp"
+              protocol = "tcp"
             when Warden::Protocol::NetOutRequest::Protocol::UDP
-              "udp"
+              protocol = "udp"
+            when Warden::Protocol::NetOutRequest::Protocol::ICMP
+              icmp_type = request.icmp_type unless request.icmp_type == -1
+              icmp_code = request.icmp_code unless request.icmp_code == -1
+              protocol = "icmp"
             else
-              "tcp"
+              protocol = "tcp"
           end
 
-          _net_out(request.network, port_range, protocol)
+          _net_out(request.network, port_range, protocol, icmp_type, icmp_code)
 
           @resources["net_out"] ||= []
-          @resources["net_out"] << [request.network, port_range, protocol]
+          @resources["net_out"] << [request.network, port_range, protocol, icmp_type, icmp_code]
         end
 
         def acquire(opts = {})
@@ -186,6 +195,15 @@ module Warden
             self.deny_networks  = config.network["deny_networks"]
             self.allow_networks = config.network["allow_networks"]
           end
+        end
+
+        private
+
+        def validate_port_range(port_range)
+          return if port_range.nil?
+          return unless port_range.include? ":"
+          min_port, max_port = port_range.split(":")
+          raise WardenError.new("Port range maximum must be greater than minimum") unless min_port.to_i < max_port.to_i
         end
       end
     end

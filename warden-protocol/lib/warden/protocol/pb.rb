@@ -492,6 +492,7 @@ module Warden
       module Protocol
         TCP = 0
         UDP = 1
+        ICMP = 2
       end
 
       required :handle, :string, 1
@@ -499,6 +500,8 @@ module Warden
       optional :port, :uint32, 3
       optional :port_range, :string, 4
       optional :protocol, NetOutRequest::Protocol, 5
+      optional :icmp_type, :int32, 6
+      optional :icmp_code, :int32, 7
 
     end
 

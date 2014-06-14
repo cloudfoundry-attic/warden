@@ -107,25 +107,28 @@ case "${1}" in
     ;;
 
   "out")
-    if [ -z "${NETWORK:-}" ] && [ -z "${PORTS:-}" ]; then
+    if [ "${PROTOCOL:-}" != "icmp" ] && [ -z "${NETWORK:-}" ] && [ -z "${PORTS:-}" ]; then
       echo "Please specify NETWORK and/or PORTS..." 1>&2
       exit 1
     fi
 
-    opts=""
+    opts="--protocol ${PROTOCOL:-tcp}"
 
     if [ -n "${NETWORK:-}" ]; then
       opts="${opts} --destination ${NETWORK}"
     fi
 
-    if [ -n "${PROTOCOL}" ]; then
-      opts="${opts} --protocol ${PROTOCOL}"
-    else
-      opts="${opts} --protocol tcp"
-    fi
-
     if [ -n "${PORTS:-}" ]; then
       opts="${opts} --destination-port ${PORTS}"
+    fi
+
+    if [ "${PROTOCOL}" == "icmp" ]; then
+      if [ -n "${ICMP_TYPE}" ]; then
+        opts="${opts} --icmp-type ${ICMP_TYPE}"
+        if [ -n "${ICMP_CODE}" ]; then
+          opts="${opts}/${ICMP_CODE}"
+        fi
+      fi
     fi
 
     iptables -I ${filter_instance_chain} 1 ${opts} --jump RETURN

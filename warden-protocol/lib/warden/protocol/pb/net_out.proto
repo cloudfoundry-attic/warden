@@ -12,7 +12,9 @@
 // * `port`: Port to whitelist.
 // * `port_range`: Colon separated port range (in the form `8080:9080`).
 //    Note: port_range takes precedence over port
-// * `protocol`: Network protocol (`TCP` or `UDP`).
+// * `protocol`: Network protocol (`TCP`, `UDP` or `ICMP`). Defaults to `TCP` if not set.
+// * `icmp_type`: ICMP type (use -1 to specify all ICMP types).
+// * `icmp_code`: ICMP code (use -1 to specify all ICMP codes for the given type).
 //
 // ### Response
 //
@@ -31,6 +33,7 @@ message NetOutRequest {
   enum Protocol {
     TCP = 0;
     UDP = 1;
+    ICMP = 2;
   }
   required string handle     = 1;
 
@@ -38,6 +41,8 @@ message NetOutRequest {
   optional uint32 port       = 3;
   optional string port_range = 4;
   optional Protocol protocol = 5;
+  optional int32 icmp_type   = 6;
+  optional int32 icmp_code   = 7;
 }
 
 message NetOutResponse {
