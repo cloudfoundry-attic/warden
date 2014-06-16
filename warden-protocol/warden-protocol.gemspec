@@ -8,9 +8,8 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Protocol specification for Warden}
   gem.homepage      = ""
 
-  gem.files         = `git ls-files`.split($\)
-  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
-  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
+  gem.files         = Dir.glob("lib/**/*")
+  gem.test_files    = Dir.glob("spec/**/*")
   gem.name          = "warden-protocol"
   gem.require_paths = ["lib"]
   gem.version       = Warden::Protocol::VERSION
