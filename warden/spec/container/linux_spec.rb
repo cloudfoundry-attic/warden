@@ -121,7 +121,8 @@ describe "linux", :platform => "linux", :needs_root => true do
               "pool_size" => 1000},
           "logging" => {
               "level" => "debug",
-              "file" => File.join(work_path, "warden.log")}
+              "file" => File.join(work_path, "warden.log")
+          }
       )
 
       Warden::Server.run!
@@ -641,6 +642,25 @@ describe "linux", :platform => "linux", :needs_root => true do
 
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
             expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq false
+          end
+        end
+
+        context "after restoring from snapshot" do
+          it "restores net-out rules to containers with snapshots" do
+            net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+
+            iptable_rule = `/sbin/iptables-save | grep #{@containers[0][:handle]}| grep 2000 | sed -e 's/^-A/-D/'`
+            iptable_rule = iptable_rule.chomp
+            `iptables #{iptable_rule}`
+
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq false
+
+            drain_and_restart
+
+            reset_client
+
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
           end
         end
       end

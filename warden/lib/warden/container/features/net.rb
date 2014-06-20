@@ -44,7 +44,7 @@ module Warden
           end
 
           if @resources.has_key?("net_out")
-            @resources["net_out"].each do |*args|
+            @resources["net_out"].each do |args|
               _net_out(*args)
             end
           end

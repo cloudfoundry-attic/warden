@@ -71,3 +71,17 @@ shared_examples "snapshotting_net_in" do
     job_snapshot.should be_an_instance_of Hash
   end
 end
+
+shared_examples "snapshotting_net_out" do
+  it "should snapshot a container after a net_out request" do
+    handle = client.create.handle
+    client.net_out(:handle => handle, :network => "1.2.3.0/32", :port => 8765, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
+
+    snapshot_path = File.join(container_depot_path, handle, "snapshot.json")
+    File.exist?(snapshot_path).should be_true
+    snapshot = Yajl::Parser.parse(File.read(snapshot_path))
+
+    snapshot["resources"]["net_out"].size.should == 1
+    snapshot["resources"]["net_out"].first.should eq ["1.2.3.0/32", "8765", "tcp", nil, nil]
+  end
+end
