@@ -115,7 +115,14 @@ case "${1}" in
     opts="--protocol ${PROTOCOL:-tcp}"
 
     if [ -n "${NETWORK:-}" ]; then
-      opts="${opts} --destination ${NETWORK}"
+      case ${NETWORK} in
+        *-*)
+          opts="${opts} -m iprange --dst-range ${NETWORK}"
+          ;;
+        *)
+          opts="${opts} --destination ${NETWORK}"
+          ;;
+      esac
     fi
 
     if [ -n "${PORTS:-}" ]; then

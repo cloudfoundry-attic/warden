@@ -6,6 +6,7 @@ require "warden/server"
 require "warden/client"
 require "warden/network"
 require "warden/util"
+require "ipaddr"
 
 require "warden/container/linux"
 
@@ -452,7 +453,6 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-
   describe "net_out" do
     def net_out(options = {})
       response = client.net_out(options)
@@ -638,6 +638,28 @@ describe "linux", :platform => "linux", :needs_root => true do
 
           it "cannot connect to a subnet that is not included" do
             network = "#{@containers[1][:ip]}/30" # One server container
+            net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
+
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq false
+          end
+        end
+
+        context "network using range" do
+          it "can connect to multiple subnets when the range includes them" do
+            first_address = IPAddr.new("#{@containers[0][:ip]}").&(IPAddr.new('255.255.255.0')).to_s
+            last_address = IPAddr.new("#{@containers[0][:ip]}").|(IPAddr.new('0.0.0.255')).to_s
+            network = "#{first_address}-#{last_address}" # All local warden containers
+            net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
+
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq true
+          end
+
+          it "cannot connect to a subnet that is not included in the range" do
+            first_address = IPAddr.new("#{@containers[1][:ip]}").&(IPAddr.new('255.255.255.252')).to_s
+            last_address = IPAddr.new("#{@containers[1][:ip]}").|(IPAddr.new('0.0.0.3')).to_s
+            network = "#{first_address}-#{last_address}" # One server container
             net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
 
             expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
