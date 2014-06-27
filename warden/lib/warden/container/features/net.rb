@@ -150,6 +150,8 @@ module Warden
               icmp_type = request.icmp_type unless request.icmp_type == -1
               icmp_code = request.icmp_code unless request.icmp_code == -1
               protocol = "icmp"
+            when Warden::Protocol::NetOutRequest::Protocol::ALL
+              protocol = "all"
             else
               protocol = "tcp"
           end

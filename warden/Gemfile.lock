@@ -29,7 +29,7 @@ PATH
 PATH
   remote: ../warden-protocol
   specs:
-    warden-protocol (0.1.4)
+    warden-protocol (0.1.5)
       beefcake (~> 0.3.0)
 
 GEM

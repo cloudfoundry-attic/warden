@@ -548,7 +548,9 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "does not allow traffic to networks not configured in allowed networks" do
         [0, 1, 2].permutation(2) do |first, second|
-          reachable?(@containers[first][:handle], @containers[second][:ip]).should be_false
+          expect(verify_tcp_connectivity(@containers[first], @containers[second], 2000)).to eq false
+          expect(verify_udp_connectivity(@containers[first], @containers[second], 2002)).to eq false
+          expect(verify_ping_connectivity(@containers[first], @containers[second])).to eq false
         end
       end
 
@@ -586,7 +588,6 @@ describe "linux", :platform => "linux", :needs_root => true do
                     :icmp_type => 8, :icmp_code => 0) # ICMP Echo Request
 
             expect(verify_ping_connectivity(@containers[1], @containers[0])).to eq true
-            expect(verify_ping_connectivity(@containers[2], @containers[1])).to eq false
           end
 
           it "allows outbound icmp traffic after net out when type and code are -1" do
@@ -614,6 +615,17 @@ describe "linux", :platform => "linux", :needs_root => true do
                     :icmp_type => 8, :icmp_code => 8) # Bogus code
 
             expect(verify_ping_connectivity(@containers[2], @containers[1])).to eq false
+          end
+        end
+
+        context "all protocols" do
+          it "allows outbound all traffic to networks after net_out" do
+            net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :protocol => Warden::Protocol::NetOutRequest::Protocol::ALL)
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001)).to eq true
+            expect(verify_udp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_udp_connectivity(@containers[1], @containers[0], 2001)).to eq true
+            expect(verify_ping_connectivity(@containers[1], @containers[0])).to eq true
           end
         end
 
