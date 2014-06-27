@@ -34,6 +34,7 @@ message NetOutRequest {
     TCP = 0;
     UDP = 1;
     ICMP = 2;
+    ALL = 3;
   }
   required string handle     = 1;
 

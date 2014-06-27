@@ -493,6 +493,7 @@ module Warden
         TCP = 0
         UDP = 1
         ICMP = 2
+        ALL = 3
       end
 
       required :handle, :string, 1
