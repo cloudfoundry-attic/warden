@@ -68,6 +68,18 @@ function teardown_filter() {
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
     xargs --no-run-if-empty --max-lines=1 iptables
 
+  # Remove block-traffic-to-host rules
+  iptables -S INPUT |
+    grep 'block-traffic-to-host' |
+    sed -e "s/-A/-D/" |
+    xargs --no-run-if-empty --max-lines=1 iptables
+
+  # Remove block-traffic-to-host rules
+  iptables -S INPUT |
+    grep 'related-traffic' |
+    sed -e "s/-A/-D/" |
+    xargs --no-run-if-empty --max-lines=1 iptables
+
   iptables -F ${filter_forward_chain} 2> /dev/null || true
   iptables -F ${filter_default_chain} 2> /dev/null || true
 }
@@ -102,6 +114,14 @@ function setup_filter() {
 
     iptables -A ${filter_default_chain} --destination "$n" --jump DROP
   done
+
+  iptables -A ${filter_default_chain} --jump REJECT
+
+  # Accept packets related to previously established connections
+  iptables -I INPUT -m state --state ESTABLISHED,RELATED --jump ACCEPT -m comment --comment 'related-traffic'
+
+  # Reject traffic from containers to host
+  iptables -A INPUT -s ${POOL_NETWORK} --jump REJECT -m comment --comment 'block-traffic-to-host'
 
   # Forward outbound traffic via ${filter_forward_chain}
   iptables -A FORWARD -i w-+ --jump ${filter_forward_chain}

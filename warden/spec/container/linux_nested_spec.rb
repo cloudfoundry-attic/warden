@@ -142,6 +142,10 @@ describe "linux", :platform => "linux", :needs_root => true do
 
   describe "nested" do
     attr_reader :handle
+    let(:allow_networks) do
+      ["0.0.0.0/0"]
+    end
+
 
     def run_as_root(script, background = false)
       puts "---------------------------- running #{script}" if debug?
@@ -192,6 +196,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       @create_request.bind_mounts = [bind_mount_warden, bind_mount_rootfs]
 
       create
+      client.net_out(handle: @handle, network: "0.0.0.0/0", protocol: Warden::Protocol::NetOutRequest::Protocol::ALL)
 
       run_as_root 'apt-get -qq -y install iptables'
       run_as_root 'sudo gem install bundler --no-rdoc --no-ri'
