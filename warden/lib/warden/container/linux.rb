@@ -48,6 +48,7 @@ module Warden
               "CONTAINER_DEPOT_PATH" => container_depot_path,
               "CONTAINER_DEPOT_MOUNT_POINT_PATH" => container_depot_mount_point_path,
               "DISK_QUOTA_ENABLED" => disk_quota_enabled.to_s,
+              "ALLOW_INHERITED_DNS" => allow_inherited_dns.to_s,
             },
           }
 

@@ -92,6 +92,7 @@ module Warden
         "deny_networks"  => [],
         "allow_networks" => [],
         "mtu"            => 1500,
+        "allow_inherited_dns" => false,
       }
     end
 
@@ -102,13 +103,14 @@ module Warden
           optional("pool_network") => String,
 
           # Present for Backwards compatibility
-          optional("pool_start_address") => String,
-          optional("pool_size")          => Integer,
-          optional("release_delay")          => Integer,
-          optional("mtu")                => Integer,
+          optional("pool_start_address")  => String,
+          optional("pool_size")           => Integer,
+          optional("release_delay")       => Integer,
+          optional("mtu")                 => Integer,
+          optional("allow_inherited_dns") => bool,
 
-          "deny_networks"      => [String],
-          "allow_networks"     => [String],
+          "deny_networks"                 => [String],
+          "allow_networks"                => [String],
         }
       end
     end
