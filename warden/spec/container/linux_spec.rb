@@ -24,7 +24,6 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
   let(:allow_networks) { [] }
   let(:deny_networks) { [] }
-  let(:allow_inherited_dns) { false }
   let(:mtu) { 1500 }
   let(:job_output_limit) { 100 * 1024 }
   let(:server_pidfile) { nil }
@@ -117,7 +116,6 @@ describe "linux", :platform => "linux", :needs_root => true do
               "pool_start_address" => @start_address,
               "pool_size" => 64,
               "mtu" => mtu,
-              "allow_inherited_dns" => allow_inherited_dns,
               "allow_networks" => allow_networks,
               "deny_networks" => deny_networks},
           "port" => {
@@ -618,20 +616,6 @@ describe "linux", :platform => "linux", :needs_root => true do
         @containers.each do |e|
           `ping -q -w1 -c1 #{e[:ip]}`
           $?.should == 0
-        end
-      end
-
-      context "when allow_inherited_dns is true" do
-        let(:allow_inherited_dns) { true }
-
-        it "allows traffic to the dns server" do
-          client_script = <<-EOF
-            for ns in `grep nameserver /etc/resolv.conf | cut -f2- -d' '`; do
-              dig @${ns} +time=1 +tries=1 example.com > /dev/null || exit 1
-            done
-          EOF
-          response = run(@containers[0][:handle], client_script)
-          expect(response.exit_status).to eq 0
         end
       end
 

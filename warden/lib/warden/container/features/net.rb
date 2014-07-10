@@ -191,14 +191,11 @@ module Warden
           # Network whitelist
           attr_accessor :allow_networks
 
-          attr_accessor :allow_inherited_dns
-
           def setup(config)
             super(config)
 
             self.deny_networks  = config.network["deny_networks"]
             self.allow_networks = config.network["allow_networks"]
-            self.allow_inherited_dns = config.network["allow_inherited_dns"]
           end
         end
 

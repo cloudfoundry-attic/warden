@@ -115,13 +115,6 @@ function setup_filter() {
     iptables -A ${filter_default_chain} --destination "$n" --jump DROP
   done
 
-  if [ "$ALLOW_INHERITED_DNS" = "true" ]; then
-    for ns in `grep nameserver /etc/resolv.conf | cut -f2- -d' '`; do
-      iptables -A ${filter_default_chain} -d ${ns} -p udp -m udp --dport 53 --jump ACCEPT -m comment --comment 'allow-inherited-dns'
-      iptables -A ${filter_default_chain} -d ${ns} -p tcp -m tcp --dport 53 --jump ACCEPT -m comment --comment 'allow-inherited-dns'
-    done
-  fi
-
   iptables -A ${filter_default_chain} --jump REJECT
 
   # Accept packets related to previously established connections
