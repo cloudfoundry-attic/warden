@@ -621,14 +621,15 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       context "when allow_networks is configured" do
         # Allow traffic to the first two subnets
+        host_gw_ip = `ip route get 1.1.1.1 | cut -f 3 -d ' ' |head -n 1`
         let(:allow_networks) do
-          ["4.2.2.1/32"]
+          [host_gw_ip]
         end
 
         it "allows traffic to networks configured in allowed networks" do
-          reachable?(@containers[0][:handle], "4.2.2.1").should be_true
-          reachable?(@containers[1][:handle], "4.2.2.1").should be_true
-          reachable?(@containers[2][:handle], "4.2.2.1").should be_true
+          reachable?(@containers[0][:handle], host_gw_ip).should be_true
+          reachable?(@containers[1][:handle], host_gw_ip).should be_true
+          reachable?(@containers[2][:handle], host_gw_ip).should be_true
         end
 
         it "disallows traffic to networks that are not configured in allowed networks" do
