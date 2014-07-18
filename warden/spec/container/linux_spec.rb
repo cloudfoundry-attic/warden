@@ -24,6 +24,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
   let(:allow_networks) { [] }
   let(:deny_networks) { [] }
+  let(:allow_host_access) { false }
   let(:mtu) { 1500 }
   let(:job_output_limit) { 100 * 1024 }
   let(:server_pidfile) { nil }
@@ -111,13 +112,14 @@ describe "linux", :platform => "linux", :needs_root => true do
               "container_grace_time" => 5,
               "job_output_limit" => job_output_limit,
               "pidfile" => server_pidfile,
-              "syslog_socket" => syslog_socket},
+              "syslog_socket" => syslog_socket },
           "network" => {
               "pool_start_address" => @start_address,
               "pool_size" => 64,
               "mtu" => mtu,
               "allow_networks" => allow_networks,
-              "deny_networks" => deny_networks},
+              "deny_networks" => deny_networks,
+              "allow_host_access" => allow_host_access },
           "port" => {
               "pool_start_port" => 64000,
               "pool_size" => 1000},
@@ -551,17 +553,17 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       context "when connecting to the host" do
-        it "rejects outbound tcp traffic" do
+        def verify_tcp_connectivity_to_host(handle)
           server_pid = Process.spawn("echo ok | nc -l 8080", pgroup: true)
           client_script = "nc -w1 #{host_first_ipv4.ip_address} 8080"
           response = run(handle, client_script)
 
           Process.kill("TERM", -Process.getpgid(server_pid))
 
-          expect(response.exit_status).not_to eq 0
+          response.exit_status == 0
         end
 
-        it "rejects outbound udp traffic" do
+        def verify_udp_connectivity_to_host(handle)
           socket = UDPSocket.new
           socket.bind(host_first_ipv4.ip_address.to_s, 8080)
 
@@ -571,18 +573,47 @@ describe "linux", :platform => "linux", :needs_root => true do
 
           begin
             socket.recvfrom_nonblock(3)
-            fail("datagram received")
+            return true
           rescue IO::WaitReadable
+            return false
           ensure
             socket.close
           end
         end
 
-        it "rejects outbound icmp traffic" do
+        def verify_icmp_connectivity_to_host(handle)
           # Try to ping the host
           client_script = "ping -c1 -w1 #{host_first_ipv4.ip_address}"
           response = client.run(:handle => handle, :script => client_script)
-          expect(response.exit_status).to eq 1 # "If ping does not receive any reply packets at all"
+          response.exit_status == 0
+        end
+
+        it "rejects outbound tcp traffic" do
+          expect(verify_tcp_connectivity_to_host(handle)).to eq false
+        end
+
+        it "rejects outbound udp traffic" do
+          expect(verify_udp_connectivity_to_host(handle)).to eq false
+        end
+
+        it "rejects outbound icmp traffic" do
+          expect(verify_icmp_connectivity_to_host(handle)).to eq false
+        end
+
+        context "when warden is configured to allow containers to talk to the host" do
+          let(:allow_host_access) { true }
+
+          it "allows outbound tcp traffic" do
+            expect(verify_tcp_connectivity_to_host(handle)).to eq true
+          end
+
+          it "allows outbound udp traffic" do
+            expect(verify_udp_connectivity_to_host(handle)).to eq true
+          end
+
+          it "allows outbound icmp traffic" do
+            expect(verify_icmp_connectivity_to_host(handle)).to eq true
+          end
         end
       end
 

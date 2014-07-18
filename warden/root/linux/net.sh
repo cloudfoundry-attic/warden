@@ -16,6 +16,9 @@ nat_instance_prefix="warden-instance-"
 ALLOW_NETWORKS=${ALLOW_NETWORKS:-}
 DENY_NETWORKS=${DENY_NETWORKS:-}
 
+# Default ALLOW_HOST_ACCESS to false
+ALLOW_HOST_ACCESS=${ALLOW_HOST_ACCESS:-false}
+
 function external_ip() {
   # The ';tx;d;:x' trick deletes non-matching lines
   ip route get 8.8.8.8 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x'
@@ -74,7 +77,7 @@ function teardown_filter() {
     sed -e "s/-A/-D/" |
     xargs --no-run-if-empty --max-lines=1 iptables
 
-  # Remove block-traffic-to-host rules
+  # Remove related-traffic rules
   iptables -S INPUT |
     grep 'related-traffic' |
     sed -e "s/-A/-D/" |
@@ -121,7 +124,9 @@ function setup_filter() {
   iptables -I INPUT -m state --state ESTABLISHED,RELATED --jump ACCEPT -m comment --comment 'related-traffic'
 
   # Reject traffic from containers to host
-  iptables -A INPUT -s ${POOL_NETWORK} --jump REJECT -m comment --comment 'block-traffic-to-host'
+  if [ "$ALLOW_HOST_ACCESS" != "true" ]; then
+    iptables -A INPUT -s ${POOL_NETWORK} --jump REJECT -m comment --comment 'block-traffic-to-host'
+  fi
 
   # Forward outbound traffic via ${filter_forward_chain}
   iptables -A FORWARD -i w-+ --jump ${filter_forward_chain}

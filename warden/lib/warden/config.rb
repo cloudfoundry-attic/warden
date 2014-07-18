@@ -91,6 +91,7 @@ module Warden
         "pool_network"   => "10.254.0.0/24",
         "deny_networks"  => [],
         "allow_networks" => [],
+        "allow_host_access" => false,
         "mtu"            => 1500,
       }
     end
@@ -109,6 +110,7 @@ module Warden
 
           "deny_networks"      => [String],
           "allow_networks"     => [String],
+          optional("allow_host_access") => bool,
         }
       end
     end
