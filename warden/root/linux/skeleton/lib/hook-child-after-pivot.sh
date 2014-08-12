@@ -17,7 +17,7 @@ mkdir -p /proc
 mount -t proc none /proc
 
 mkdir -p /dev/shm
-mount -t tmpfs -o size=64k tmpfs /dev/shm
+mount -t tmpfs tmpfs /dev/shm
 
 hostname $id
 

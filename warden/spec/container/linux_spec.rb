@@ -1081,6 +1081,71 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "/dev/shm" do
+    attr_reader :handle
+
+    before do
+      response = client.create
+      response.should be_ok
+
+      @handle = response.handle
+    end
+
+    def run(script)
+      response = client.run(:handle => handle, :script => script)
+      response.should be_ok
+      response
+    end
+
+    it "is a directory" do
+      response = run("[ -d /dev/shm ]")
+      response.exit_status.should == 0
+    end
+
+    it "is mounted as a tmpfs device" do
+      response = run("grep /dev/shm /proc/mounts")
+      response.exit_status.should == 0
+      response.stdout.should match(/tmpfs/)
+    end
+
+    it "can be written to by unprivileged users" do
+      response = run("id -u > /dev/shm/id.txt")
+      response.exit_status.should == 0
+
+      response = run("cat /dev/shm/id.txt")
+      response.stdout.strip.should_not eq('0')
+    end
+
+    context "when there is a memory limit" do
+      let(:megabyte)     { 1024 * 1024 }
+      let(:memory_limit) { megabyte * 32 }
+
+      before do
+        response = client.limit_memory(:handle => handle, :limit_in_bytes => memory_limit)
+        response.limit_in_bytes.should == memory_limit
+      end
+
+      it "can write less than the memory limit" do
+        run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=30")
+
+        response = client.info(:handle => handle)
+        response.state.should == "active"
+
+        response = run("du -m /dev/shm/out.bin | cut -f1")
+        response.stdout.strip.to_i.should be(30)
+      end
+
+      it "terminates when writing more data than the memory limit" do
+        run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=34")
+        sleep 0.20 # wait a bit for the warden to be notified of the oom
+
+        response = client.info(:handle => handle)
+        response.state.should == "stopped"
+        response.events.should include("out of memory")
+      end
+    end
+  end
+
   describe "create with network" do
     it "should be able to specify network" do
       create_request = Warden::Protocol::CreateRequest.new
