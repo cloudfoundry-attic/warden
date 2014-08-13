@@ -503,6 +503,7 @@ module Warden
       optional :protocol, NetOutRequest::Protocol, 5
       optional :icmp_type, :int32, 6
       optional :icmp_code, :int32, 7
+      optional :log, :bool, 8
 
     end
 

@@ -121,13 +121,14 @@ module Warden
           raise
         end
 
-        def _net_out(network, port_range, protocol, icmp_type, icmp_code)
+        def _net_out(network, port_range, protocol, icmp_type, icmp_code, log)
           sh File.join(container_path, "net.sh"), "out", :env => {
             "NETWORK" => network,
             "PORTS"    => port_range,
             "PROTOCOL" => protocol,
             "ICMP_TYPE" => icmp_type,
             "ICMP_CODE" => icmp_code,
+            "LOG" => log,
           }
         end
 
@@ -156,10 +157,10 @@ module Warden
               protocol = "tcp"
           end
 
-          _net_out(request.network, port_range, protocol, icmp_type, icmp_code)
+          _net_out(request.network, port_range, protocol, icmp_type, icmp_code, request.log)
 
           @resources["net_out"] ||= []
-          @resources["net_out"] << [request.network, port_range, protocol, icmp_type, icmp_code]
+          @resources["net_out"] << [request.network, port_range, protocol, icmp_type, icmp_code, request.log]
         end
 
         def acquire(opts = {})

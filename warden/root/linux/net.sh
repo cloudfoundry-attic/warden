@@ -7,10 +7,10 @@ shopt -s nullglob
 
 filter_forward_chain="warden-forward"
 filter_default_chain="warden-default"
-filter_instance_prefix="warden-instance-"
+filter_instance_prefix="warden-i-"
 nat_prerouting_chain="warden-prerouting"
 nat_postrouting_chain="warden-postrouting"
-nat_instance_prefix="warden-instance-"
+nat_instance_prefix="warden-i-"
 
 # Default ALLOW_NETWORKS/DENY_NETWORKS to empty
 ALLOW_NETWORKS=${ALLOW_NETWORKS:-}

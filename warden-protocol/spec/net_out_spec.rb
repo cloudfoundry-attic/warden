@@ -27,6 +27,11 @@ describe Warden::Protocol::NetOutRequest do
     it_should_be_typed_as_uint
   end
 
+  field :log do
+    it_should_be_optional
+    it_should_be_typed_as_boolean
+  end
+
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::NetOutResponse)
   end

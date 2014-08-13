@@ -11,10 +11,11 @@ source ./etc/config
 
 filter_forward_chain="warden-forward"
 filter_default_chain="warden-default"
-filter_instance_prefix="warden-instance-"
+filter_instance_prefix="warden-i-"
 filter_instance_chain="${filter_instance_prefix}${id}"
+filter_instance_log_chain="${filter_instance_prefix}${id}-log"
 nat_prerouting_chain="warden-prerouting"
-nat_instance_prefix="warden-instance-"
+nat_instance_prefix="warden-i-"
 nat_instance_chain="${filter_instance_prefix}${id}"
 
 external_ip=$(ip route get 8.8.8.8 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x')
@@ -29,6 +30,8 @@ function teardown_filter() {
   # Flush and delete instance chain
   iptables -F ${filter_instance_chain} 2> /dev/null || true
   iptables -X ${filter_instance_chain} 2> /dev/null || true
+  iptables -F ${filter_instance_log_chain} 2> /dev/null || true
+  iptables -X ${filter_instance_log_chain} 2> /dev/null || true
 }
 
 function setup_filter() {
@@ -43,6 +46,13 @@ function setup_filter() {
   iptables -I ${filter_forward_chain} 2 \
     --in-interface ${network_host_iface} \
     --goto ${filter_instance_chain}
+
+  # Create instance log chain
+  iptables -N ${filter_instance_log_chain}
+  iptables -A ${filter_instance_log_chain} \
+    -p tcp -m conntrack --ctstate NEW,UNTRACKED,INVALID -j LOG --log-prefix "${filter_instance_chain} "
+  iptables -A ${filter_instance_log_chain} \
+    --jump RETURN
 }
 
 function teardown_nat() {
@@ -138,7 +148,13 @@ case "${1}" in
       fi
     fi
 
-    iptables -I ${filter_instance_chain} 1 ${opts} --jump RETURN
+    if [ "${LOG}"  == "true" ]; then
+      target="--goto ${filter_instance_log_chain}"
+    else
+      target="--jump RETURN"
+    fi
+
+    iptables -I ${filter_instance_chain} 1 ${opts} ${target}
 
     ;;
   "get_ingress_info")

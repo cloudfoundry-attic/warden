@@ -742,6 +742,23 @@ describe "linux", :platform => "linux", :needs_root => true do
           end
         end
 
+        context "logs outbound requests" do
+          it "logs only tcp traffic" do
+            net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP, :log => true)
+            net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP, :log => true)
+            net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2001, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
+            net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2001, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP)
+            verify_tcp_connectivity(@containers[1], @containers[0], 2000)
+            verify_tcp_connectivity(@containers[1], @containers[0], 2001)
+            verify_udp_connectivity(@containers[1], @containers[0], 2000)
+            verify_udp_connectivity(@containers[1], @containers[0], 2001)
+            verify_ping_connectivity(@containers[1], @containers[0])
+
+            out = `grep -c warden-i-#{@containers[0][:handle]} /var/log/syslog`.chomp
+            expect(out).to eq("1")
+          end
+        end
+
         context "when port ranges are specified" do
           it "should allow access to all ports in the range" do
             net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port_range => "2000:2002", :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)

@@ -44,6 +44,7 @@ message NetOutRequest {
   optional Protocol protocol = 5;
   optional int32 icmp_type   = 6;
   optional int32 icmp_code   = 7;
+  optional bool log = 8;
 }
 
 message NetOutResponse {
