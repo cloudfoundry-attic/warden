@@ -233,7 +233,7 @@ char **env__add(char **envp, const char *key, const char *value) {
   return envp;
 }
 
-char **child_setup_environment(struct passwd *pw) {
+char **child_setup_environment(struct passwd *pw, char *lang) {
   int rv;
   char **envp = NULL;
 
@@ -250,6 +250,10 @@ char **child_setup_environment(struct passwd *pw) {
     envp = env__add(envp, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin");
   } else {
     envp = env__add(envp, "PATH", "/bin:/usr/bin");
+  }
+
+  if (lang != NULL) {
+    envp = env__add(envp, "LANG", lang);
   }
 
   return envp;
@@ -271,6 +275,7 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
     char *default_envp[] = { NULL };
     char **argv = default_argv;
     char **envp = default_envp;
+    msg__lang_t lang;
 
     rv = dup2(in, STDIN_FILENO);
     assert(rv != -1);
@@ -323,7 +328,13 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
       goto error;
     }
 
-    envp = child_setup_environment(pw);
+    rv = msg_lang_export(&req->lang, &lang);
+    if (rv == -1) {
+      perror("msg_lang_export");
+      goto error;
+    }
+
+    envp = child_setup_environment(pw, lang.lang);
     assert(envp != NULL);
 
     execvpe(argv[0], argv, envp);

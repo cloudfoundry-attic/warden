@@ -29,6 +29,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:job_output_limit) { 100 * 1024 }
   let(:server_pidfile) { nil }
   let(:syslog_socket) { nil }
+  let(:lang) { ENV['LANG'] }
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -100,6 +101,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     @start_address = next_class_c.to_human
 
     @pid = fork do
+      ENV['LANG'] = lang
       Process.setsid
       Signal.trap("TERM") { exit }
 
@@ -175,6 +177,34 @@ describe "linux", :platform => "linux", :needs_root => true do
   it_should_behave_like "snapshotting_common"
   it_should_behave_like "snapshotting_net_in"
   it_should_behave_like "writing_pidfile"
+
+  describe "locale when running commands" do
+    let(:lang) { "C" }
+
+    attr_reader :handle
+
+    before do
+      @handle = client.create.handle
+    end
+
+    it "should honor the host's LANG" do
+      response = client.run(:handle => handle, :script => "locale | grep LANG=")
+      response.exit_status.should == 0
+      response.stdout.strip.should == "LANG=#{lang}"
+      response.stderr.should == ""
+    end
+
+    context "when LANG is not set" do
+      let!(:lang) { nil }
+
+      it "defaults to en_US.UTF-8" do
+        response = client.run(:handle => handle, :script => "locale | grep LANG=")
+        response.exit_status.should == 0
+        response.stdout.strip.should == 'LANG=en_US.UTF-8'
+        response.stderr.should == ""
+      end
+    end
+  end
 
   describe "limit_memory" do
     attr_reader :handle

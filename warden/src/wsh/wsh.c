@@ -342,6 +342,12 @@ int main(int argc, char **argv) {
     exit(255);
   }
 
+  rv = msg_lang_import(&req.lang);
+  if (rv == -1) {
+    fprintf(stderr, "msg_lang_import: %s\n", strerror(errno));
+    exit(255);
+  }
+
   rv = un_send_fds(fd, (char *)&req, sizeof(req), NULL, 0);
   if (rv <= 0) {
     perror("sendmsg");

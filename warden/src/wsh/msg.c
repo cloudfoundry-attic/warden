@@ -155,6 +155,36 @@ int msg_user_export(msg__user_t *u, struct passwd *pw) {
   return 0;
 }
 
+int msg_lang_import(msg__lang_t *l) {
+  int rv;
+
+  char *lang = getenv("LANG");
+  if (lang != NULL) {
+    rv = snprintf(l->lang, sizeof(l->lang), "%s", lang);
+    assert(rv < sizeof(l->lang));
+  }
+
+  return 0;
+}
+
+int msg_lang_export(msg__lang_t *l, msg__lang_t *lang) {
+  int rv;
+
+  lang->lang[0] = '\0';
+
+  if (l != NULL) {
+    if (strnlen(l->lang, sizeof(l->lang)) >= sizeof(l->lang)) {
+      errno = EINVAL;
+      rv = -1;
+    } else {
+      memcpy(lang, l, sizeof(*lang));
+      rv = 0;
+    }
+  }
+
+  return rv;
+}
+
 void msg_request_init(msg_request_t *req) {
   assert(sizeof(msg_request_t) <= MSG_MAX_SIZE);
   memset(req, 0, sizeof(*req));

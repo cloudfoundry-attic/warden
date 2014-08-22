@@ -75,7 +75,7 @@ module Warden
       end
 
       def env
-        env = {
+        {
           "id" => container_id,
           "network_host_ip" => host_ip.to_human,
           "network_container_ip" => container_ip.to_human,
@@ -85,7 +85,6 @@ module Warden
           "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
           "container_iface_mtu" => container_iface_mtu,
         }
-        env
       end
 
       def do_create(request, response)
@@ -138,9 +137,11 @@ module Warden
         args += ["--user", user]
         args += ["/bin/bash"]
 
+        lang = { "LANG" => ENV['LANG'] || "en_US.UTF-8" }
+
         options = {
           :input => request.script,
-          :env => resource_limits(request),
+          :env => resource_limits(request).merge(lang),
         }
         args << options
 
