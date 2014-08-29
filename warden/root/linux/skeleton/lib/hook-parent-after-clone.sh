@@ -45,6 +45,8 @@ do
       echo "c 5:2 rw" > $instance_path/devices.allow
       # /dev/pts/*
       echo "c 136:* rw" > $instance_path/devices.allow
+      # /dev/fuse
+      echo "c 10:229 rw" > $instance_path/devices.allow
     fi
   fi
 

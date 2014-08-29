@@ -67,6 +67,18 @@ ln -s fd/1 stdout
 ln -s fd/2 stderr
 popd > /dev/null
 
+# Add fuse group and device, so fuse can work inside the container
+file=mnt/dev/fuse
+mknod -m 666 $file c 10 229
+$(which chroot) mnt env -i /bin/bash -l <<-EOS
+if ! getent group fuse >/dev/null; then
+  addgroup --system fuse
+fi
+# fix perms
+chown root:fuse /dev/fuse
+chmod uga+rw /dev/fuse
+EOS
+
 cat > mnt/etc/hostname <<-EOS
 $id
 EOS
