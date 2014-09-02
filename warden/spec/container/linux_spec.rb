@@ -1343,4 +1343,40 @@ describe "linux", :platform => "linux", :needs_root => true do
       expect(response.limit_in_shares).to be 100
     end
   end
+
+  describe "/dev/fuse" do
+    attr_reader :handle
+
+    before do
+      response = client.create
+      response.should be_ok
+
+      @handle = response.handle
+    end
+
+    def run(script)
+      response = client.run(:handle => handle, :script => script)
+      response.should be_ok
+      response
+    end
+
+    it "is a character special device" do
+      response = run("[ -c /dev/fuse ]")
+      response.exit_status.should == 0
+    end
+
+    it "can be used by unprivileged users" do
+      response = run("id -u")
+      response.stdout.strip.should_not eq('0')
+
+      run("mkdir -p /tmp/fuse_ctl")
+      response.exit_status.should == 0
+
+      run("mount -t fusectl none /tmp/fuse_ctl")
+      response.exit_status.should == 0
+
+      run("fusermount -u /fuse_ctl")
+      response.exit_status.should == 0
+    end
+  end
 end
