@@ -472,8 +472,9 @@ module Warden
       end
 
       def around_stop
-        check_state_in(State::Active)
+        check_state_in(State::Active, State::Stopped)
 
+        return if self.state == State::Stopped
         self.state = State::Stopped
 
         begin
@@ -496,8 +497,9 @@ module Warden
       end
 
       def before_destroy
-        check_state_in(State::Born, State::Active, State::Stopped)
+        check_state_in(State::Born, State::Active, State::Stopped, State::Destroyed)
 
+        return if self.state == State::Destroyed
         begin
           @obituary = dispatch(Protocol::InfoRequest.new(:handle => handle))
         rescue WardenError => e

@@ -502,7 +502,7 @@ describe Warden::Container::Base do
       end
     end
 
-    shared_examples "succeeds when born, active, or stopped" do |blk|
+    shared_examples "succeeds when born, active, stopped or destroyed" do |blk|
       it "succeeds when container was created" do
         @container.dispatch(Warden::Protocol::CreateRequest.new)
 
@@ -533,7 +533,7 @@ describe Warden::Container::Base do
 
         expect do
           instance_eval(&blk)
-        end.to raise_error(Warden::WardenError, /container state/i)
+        end.to_not raise_error
       end
     end
 
@@ -544,13 +544,13 @@ describe Warden::Container::Base do
     end
 
     describe "stop" do
-      include_examples "succeeds when active", Proc.new {
+      include_examples "succeeds when active or stopped", Proc.new {
         container.dispatch(Warden::Protocol::StopRequest.new)
       }
     end
 
     describe "destroy" do
-      include_examples "succeeds when born, active, or stopped", Proc.new {
+      include_examples "succeeds when born, active, stopped or destroyed", Proc.new {
         container.dispatch(Warden::Protocol::DestroyRequest.new)
       }
     end
