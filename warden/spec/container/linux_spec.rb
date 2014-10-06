@@ -1248,7 +1248,6 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
-
   describe "create with rootfs" do
     let(:another_rootfs_path) { File.join(work_path, "rootfs2") }
     let(:bad_rootfs_path) { File.join(work_path, "bad_rootfs") }
