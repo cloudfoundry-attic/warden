@@ -1223,7 +1223,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   describe "create with MTU" do
     let(:mtu) { 1454 }
 
-    it "should set MTU" do
+    it "should set warden side MTU" do
       create_request = Warden::Protocol::CreateRequest.new
       create_request.network = @start_address
 
@@ -1234,7 +1234,20 @@ describe "linux", :platform => "linux", :needs_root => true do
       mtu_response = client.run(:handle => response.handle, :script => script)
       mtu_response.stdout.should == "MTU:1454\n"
     end
+
+    it "should set host side MTU" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = @start_address
+
+      response = client.call(create_request)
+      response.should be_ok
+
+      script = "/sbin/ifconfig w-#{response.handle}-0 | grep -Eo 'MTU:[0-9]+'"
+      mtu_response = execute("#{script}")
+      mtu_response.should == "MTU:1454\n"
+    end
   end
+
 
   describe "create with rootfs" do
     let(:another_rootfs_path) { File.join(work_path, "rootfs2") }
