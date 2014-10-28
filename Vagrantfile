@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
 
   config.vm.box = "warden-compatible"
-  config.vm.box_url = "https://s3.amazonaws.com/runtime-artifacts/warden-compatible.box"
+  config.vm.box_url = "https://s3.amazonaws.com/cf-runtime-artifacts/warden-compatible.box"
 
   # Requires vagrant-aws and unf plugins
   config.vm.provider :aws do |aws, override|
