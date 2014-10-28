@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
   int ii            = 0;
 
   if (argc < 3) {
-    printf("Usage: report_quota [filesystem] [uid]+\n");
+    printf("Usage: repquota [filesystem] [uid]+\n");
     printf("Reports quota information for the supplied uids on the given filesystem\n");
     printf("Format is: <uid> <bytes used> <soft> <hard> <grace> <inodes used> <soft> <hard> <grace>\n");
     exit(1);
