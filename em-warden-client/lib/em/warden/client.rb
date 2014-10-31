@@ -37,7 +37,10 @@ class EventMachine::Warden::FiberAwareClient
     raise EventMachine::Warden::Client::Error.new("Not connected") unless @connection.connected?
 
     f = Fiber.current
-    @connection.call(*args) {|res| f.resume(res) }
+    @connection.call(*args) do |res|
+      logger.info "Calling a dead fiber: #{f.object_id}, Response: #{res.inspect}" if !f.alive?
+      f.resume(res)
+    end
     result = Fiber.yield
 
     result.get
@@ -63,5 +66,10 @@ class EventMachine::Warden::FiberAwareClient
     else
       [uri.path, EM::Warden::Client::Connection]
     end
+  end
+
+  def logger
+    @logger ||= Logger.new(STDOUT)
+    @logger
   end
 end
