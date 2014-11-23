@@ -105,11 +105,12 @@ class EventMachine::Warden::Client::Connection < ::EM::Connection
       @v1mode = true
     end
 
+    payload = ::Warden::Protocol::Buffer.request_to_wire(request)
     @requests << [request, blk]
 
     cancel_idle_timer
 
-    send_data(::Warden::Protocol::Buffer.request_to_wire(request))
+    send_data(payload)
   end
 
   def method_missing(method, *args, &blk)
