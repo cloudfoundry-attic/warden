@@ -33,6 +33,7 @@ module Warden
       end
 
       def do_destroy(request, response)
+        sh File.join(root_path, "stop.sh"), container_path, "-w", "0", raise: false
         sh File.join(root_path, "destroy.sh"), container_path
         logger.debug("Container destroyed")
       end
