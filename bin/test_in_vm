@@ -18,7 +18,7 @@ warden_source_dir = Dir.pwd
 Dir.chdir(tmpdir) do
   begin
     Timeout.timeout(build_timeout_in_seconds) do
-      system!("vagrant up")
+      system!("vagrant up --provider=virtualbox")
       system!("./rsync_workspace_into_vm.sh #{warden_source_dir}")
       system!("vagrant ssh -c 'cd ~/workspace && bin/test'")
     end
