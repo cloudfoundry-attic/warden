@@ -68,6 +68,7 @@ static muxer_sink_t *muxer_sink_alloc(int sink_fd) {
 static void muxer_sink_free(muxer_sink_t *sink) {
   assert(NULL != sink);
 
+  close(sink->fd);
   free(sink);
 }
 
@@ -205,7 +206,7 @@ void *muxer_acceptor(void *data) {
       sink_fd = accept(muxer->accept_fd, NULL, NULL);
       if (-1 == sink_fd) {
         perror("accept()");
-        continue;
+        break;
       }
 
       set_cloexec(sink_fd);
