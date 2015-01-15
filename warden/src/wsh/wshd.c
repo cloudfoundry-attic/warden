@@ -337,6 +337,10 @@ int child_fork(msg_request_t *req, int in, int out, int err) {
     envp = child_setup_environment(pw, lang.lang);
     assert(envp != NULL);
 
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigprocmask(SIG_SETMASK, &mask, NULL);
+
     execvpe(argv[0], argv, envp);
     perror("execvpe");
 
