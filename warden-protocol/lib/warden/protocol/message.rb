@@ -12,7 +12,7 @@ module Warden
             if Protocol.const_defined?(klass_name)
               [const_get(name), Protocol.const_get(klass_name)]
             end
-          end]
+          end.compact]
 
           if map.respond_to?(:default_proc=)
             map.default_proc = lambda do |h, k|

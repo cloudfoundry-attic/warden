@@ -104,11 +104,18 @@ module Warden
           # and memory.memsw.limit_in_bytes is set first, the invariant may not
           # hold. However, one of the two fields will always be set
           # successfully. To mitigate this, both limits are written twice.
-          2.times do
-            ["memory.limit_in_bytes", "memory.memsw.limit_in_bytes"].each do |path|
-              File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
-                f.write(limit_in_bytes.to_s)
-              end
+          memory_limit_path = "memory.limit_in_bytes"
+          memorysw_limit_path = "memory.memsw.limit_in_bytes"
+          current_memory_limit = File.read(File.open(File.join(cgroup_path(:memory), memory_limit_path), 'r')).to_i
+
+          increasing = current_memory_limit < limit_in_bytes
+
+          paths = [memory_limit_path, memorysw_limit_path]
+          paths.reverse! if increasing
+
+          paths.each do |path|
+            File.open(File.join(cgroup_path(:memory), path), 'w') do |f|
+              f.write(limit_in_bytes.to_s)
             end
           end
         end

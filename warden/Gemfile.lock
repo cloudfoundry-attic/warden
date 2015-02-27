@@ -37,7 +37,7 @@ GEM
   specs:
     beefcake (0.3.7)
     diff-lcs (1.1.3)
-    eventmachine (1.0.0)
+    eventmachine (1.0.3)
     grape (0.2.1)
       hashie (~> 1.2)
       multi_json
@@ -68,7 +68,7 @@ PLATFORMS
 
 DEPENDENCIES
   em-posix-spawn!
-  eventmachine (~> 1.0.0)
+  eventmachine (= 1.0.3)
   membrane!
   pidfile
   rake
