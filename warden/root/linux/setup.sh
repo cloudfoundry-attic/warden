@@ -54,6 +54,8 @@ if [ "$DISK_QUOTA_ENABLED" = "true" ] && quotaon -p $CONTAINER_DEPOT_MOUNT_POINT
 then
   mount -o remount,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0 $CONTAINER_DEPOT_MOUNT_POINT_PATH
   quotacheck -ugmb -F vfsv0 $CONTAINER_DEPOT_MOUNT_POINT_PATH
+  echo "quotacheck status code: $?"
+  ls -lart $CONTAINER_DEPOT_MOUNT_POINT_PATH
   quotaon $CONTAINER_DEPOT_MOUNT_POINT_PATH
 elif [ "$DISK_QUOTA_ENABLED" = "false" ] && ! quotaon -p $CONTAINER_DEPOT_MOUNT_POINT_PATH > /dev/null 2>&1
 then
