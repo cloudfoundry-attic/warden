@@ -87,7 +87,7 @@ cat > mnt/etc/hosts <<-EOS
 127.0.0.1 localhost
 $network_container_ip $id
 EOS
-
+cat /etc/hosts >> mnt/etc/hosts
 # By default, inherit the nameserver from the host container.
 #
 # Exception: When the host's nameserver is set to localhost (127.0.0.1), it is
