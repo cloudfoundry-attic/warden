@@ -188,11 +188,11 @@ function setup_nat() {
       --jump ${nat_postrouting_chain}
 
   # Enable NAT for traffic coming from containers
-  (iptables -t nat -S ${nat_postrouting_chain} | grep -q "\-j MASQUERADE\b") ||
+  (iptables -t nat -S ${nat_postrouting_chain} | grep -q "\-j SNAT\b") ||
     iptables -t nat -A ${nat_postrouting_chain} \
       --source ${POOL_NETWORK} \
-      ! --destination ${POOL_NETWORK} \
-      --jump MASQUERADE
+      --jump SNAT \
+      --to $(external_ip)
 }
 
 case "${1}" in
