@@ -514,7 +514,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       client_script = "nc -w1 #{server_container[:ip]} #{port}"
       response = run(client_container[:handle], client_script)
 
-      unless response.stdout.strip == "ok"
+      unless response.exit_status.zero?
         # Clean up
         client.run(:handle => server_container[:handle], :script => "pkill -9 nc")
         return false
@@ -535,6 +535,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       cleanup_script = "echo fail > /dev/udp/#{server_container[:ip]}/#{port}"
       client.run(:handle => server_container[:handle], :script => cleanup_script)
+
       response = client.link(:handle => server_container[:handle], :job_id => job_id)
       response.stdout.strip == "ok"
     end
