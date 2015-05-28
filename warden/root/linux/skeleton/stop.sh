@@ -51,7 +51,7 @@ path=/tmp/warden/cgroup/cpu/instance-$id
 tasks=$path/tasks
 
 # pkill with -v (--inverse) does not work on
-# both ubuntu lucid and trusty
+# both ubuntu trusty
 while true
 do
   if ! pgrep -c -P $pid; then

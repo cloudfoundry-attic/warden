@@ -7,7 +7,7 @@ shopt -s nullglob
 shopt -s globstar
 
 packages="openssh-server,rsync"
-suite="lucid"
+suite="trusty"
 mirror=$(grep "^deb" /etc/apt/sources.list | head -n1 | cut -d" " -f2)
 
 # Fallback to default Ubuntu mirror when mirror could not be determined

@@ -6,7 +6,7 @@ set -x
 # Assumes the rootfs is already installed to /var/warden/rootfs
 # The warden test suite currently uses /tmp/warden/rootfs instead
 mkdir -p /tmp/warden
-sudo ln -sf /var/warden/rootfs_lucid /tmp/warden/rootfs
+sudo ln -sf /var/warden/rootfs_cflinuxfs2 /tmp/warden/rootfs
 
 # Close stdin
 exec 0>&-
