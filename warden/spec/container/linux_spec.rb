@@ -511,7 +511,7 @@ describe "linux", :platform => "linux", :needs_root => true do
                    :script => server_script).job_id
 
       # Try to connect to the server container
-      client_script = "nc -w1 #{server_container[:ip]} #{port}"
+      client_script = "nc -w2 #{server_container[:ip]} #{port}"
       response = run(client_container[:handle], client_script)
 
       unless response.exit_status.zero?
@@ -533,8 +533,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       client_script = "echo ok > /dev/udp/#{server_container[:ip]}/#{port}"
       run(client_container[:handle], client_script)
 
-      cleanup_script = "echo fail > /dev/udp/#{server_container[:ip]}/#{port}"
-      client.run(:handle => server_container[:handle], :script => cleanup_script)
+      client.run(:handle => server_container[:handle], :script => "kill `lsof -t -i :#{port}`")
 
       response = client.link(:handle => server_container[:handle], :job_id => job_id)
       response.stdout.strip == "ok"
@@ -650,18 +649,16 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       context "when connecting to another container" do
         before do
-          @containers = 3.times.map do
+          @containers = 2.times.map do
             handle = client.create.handle
             {:handle => handle, :ip => client.info(:handle => handle).container_ip}
           end
         end
 
         it "does not allow traffic to networks not configured in allowed networks" do
-          [0, 1, 2].permutation(2) do |first, second|
-            expect(verify_tcp_connectivity(@containers[first], @containers[second], 2000)).to eq false
-            expect(verify_udp_connectivity(@containers[first], @containers[second], 2002)).to eq false
-            expect(verify_ping_connectivity(@containers[first], @containers[second])).to eq false
-          end
+          expect(verify_tcp_connectivity(@containers[0], @containers[1], 2000)).to eq false
+          expect(verify_udp_connectivity(@containers[0], @containers[1], 2002)).to eq false
+          expect(verify_ping_connectivity(@containers[0], @containers[1])).to eq false
         end
       end
     end
