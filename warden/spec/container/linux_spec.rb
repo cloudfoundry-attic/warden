@@ -563,7 +563,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         it "rejects outbound udp traffic" do
           client_script = "curl -s --connect-timeout 1 http://www.example.com/ -o /dev/null"
           response = run(handle, client_script)
-          expect(response.exit_status).to eq 6 # "Couldn't resolve host"
+          expect(response.exit_status).to eq 28 # "Timed out"
         end
 
         it "rejects outbound tcp traffic" do
