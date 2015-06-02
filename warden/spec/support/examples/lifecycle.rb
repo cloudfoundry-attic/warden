@@ -118,7 +118,7 @@ module Warden::Protocol
       attr_reader :handle
 
       before do
-        @handle = client.create(:grace_time => 1).handle
+        @handle = client.create(:grace_time => 3).handle
       end
 
       it "should destroy unreferenced container" do
@@ -126,7 +126,7 @@ module Warden::Protocol
         client.disconnect
 
         # Let the grace time pass
-        sleep 1.1
+        sleep 3.1
 
         # Test that the container can no longer be referenced
         expect do
@@ -142,7 +142,7 @@ module Warden::Protocol
         client.disconnect
 
         # Let the grace time pass
-        sleep 1.1
+        sleep 3.1
 
         # Test that the container can no longer be referenced
         expect do
@@ -157,7 +157,7 @@ module Warden::Protocol
         client.reconnect
 
         # Wait some time, but don't run out of grace time
-        sleep 0.1
+        sleep 2
 
         # Test that the container can still be referenced
         expect do
@@ -166,7 +166,7 @@ module Warden::Protocol
         end.to_not raise_error
 
         # Wait for the original grace time to run out
-        sleep 1.0
+        sleep 3.0
 
         # The new connection should have taken over ownership of this
         # container and canceled the original grace time

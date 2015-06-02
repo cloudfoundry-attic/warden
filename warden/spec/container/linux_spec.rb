@@ -511,7 +511,7 @@ describe "linux", :platform => "linux", :needs_root => true do
                    :script => server_script).job_id
 
       # Try to connect to the server container
-      client_script = "nc -w1 #{server_container[:ip]} #{port}"
+      client_script = "sleep 1; nc -w1 #{server_container[:ip]} #{port}"
       response = run(client_container[:handle], client_script)
 
       unless response.exit_status.zero?
@@ -530,13 +530,14 @@ describe "linux", :platform => "linux", :needs_root => true do
                             :script => server_script).job_id
 
       # Try to connect to the server container
-      client_script = "echo ok > /dev/udp/#{server_container[:ip]}/#{port}"
+      client_script = "sleep 1; echo ok > /dev/udp/#{server_container[:ip]}/#{port}"
       run(client_container[:handle], client_script)
 
-      cleanup_script = "echo fail > /dev/udp/#{server_container[:ip]}/#{port}"
+      cleanup_script = "sleep 1; echo fail > /dev/udp/#{server_container[:ip]}/#{port}"
       client.run(:handle => server_container[:handle], :script => cleanup_script)
 
       response = client.link(:handle => server_container[:handle], :job_id => job_id)
+
       response.stdout.strip == "ok"
     end
 
