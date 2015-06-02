@@ -317,19 +317,110 @@ describe "linux", :platform => "linux", :needs_root => true do
     attr_reader :handle
 
     def limit_disk(options = {})
-      response = client.limit_disk(options.merge(:handle => handle))
+      if not options.has_key? :handle
+        options = options.merge(:handle => handle)
+      end
+
+      response = client.limit_disk(options)
       response.should be_ok
       response
     end
 
-    def run(script)
-      response = client.run(:handle => handle, :script => script)
+    def run(script, container_handle = "")
+      if container_handle == ""
+        container_handle = handle
+      end
+      response = client.run(:handle => container_handle, :script => script)
       response.should be_ok
       response
+    end
+
+    def perform_rsync(src_path, dst_path, exclude_pattern = '')
+      # Build arguments
+      args  = ["rsync"]
+      args += ["-r"]      # Recursive copy
+      args += ["-p"]      # Preserve permissions
+      args += ["--links"] # Preserve symlinks
+      if exclude_pattern != ''
+        args += ['--exclude', exclude_pattern]
+      end
+      args += [src_path + "/", dst_path]
+
+      execute args.join(" ") + "> /dev/null 2> /dev/null"
     end
 
     before do
       @handle = client.create.handle
+    end
+
+    context 'when vcap user exists' do
+      attr_reader :vcap_handle
+
+      let(:vcap_rootfs_path) { File.join(work_path, "vcap_rootfs") }
+      let(:vcap_home_directory) { File.join(vcap_rootfs_path, "home", "vcap")}
+      let(:vcap_home_file) { File.join(vcap_home_directory, "a_file.txt")}
+      let(:vcap_tmp_file) { File.join(vcap_rootfs_path, "tmp", "a_file.txt")}
+
+      before do
+        if File.exists? vcap_rootfs_path
+          FileUtils.rm_rf(vcap_rootfs_path)
+        end
+
+        perform_rsync(container_rootfs_path, vcap_rootfs_path, "mnt/dev/*")
+        FileUtils.mkdir_p(vcap_home_directory)
+        FileUtils.touch(vcap_home_file)
+        FileUtils.touch(vcap_tmp_file)
+        FileUtils.chown(10000, 10000, vcap_home_directory)
+        FileUtils.chown(10000, 10000, vcap_home_file)
+        FileUtils.chown(10000, 10000, vcap_tmp_file)
+
+        open("#{vcap_rootfs_path}/etc/passwd", 'a') do |passwd_file|
+          passwd_file.puts 'vcap:x:10000:10000:vcap:/home/vcap:/bin/bash'
+        end
+
+        open("#{vcap_rootfs_path}/etc/group", 'a') do |group_file|
+          group_file.puts 'vcap:x:10000:'
+        end
+
+        create_request = Warden::Protocol::CreateRequest.new
+        create_request.rootfs = vcap_rootfs_path
+
+        expect {
+          @vcap_handle = client.call(create_request).handle
+        }.to_not raise_error Warden::Client::ServerError
+      end
+
+      it 'should apply different disk quota on every container' do
+        limit_response = limit_disk(:byte_limit => 2 * 1024 * 1024)
+        vcap_limit_response = limit_disk(:handle => vcap_handle, :byte_limit => 4 * 1024 * 1024)
+
+        limit_response = limit_disk()
+        limit_response.byte_limit.should == 2 * 1024 * 1024
+
+        vcap_limit_response = limit_disk(:handle => vcap_handle)
+        vcap_limit_response.byte_limit.should == 4 * 1024 * 1024
+
+        response = run("dd if=/dev/zero of=/tmp/test bs=1M count=3", vcap_handle)
+        response.exit_status.should == 0
+      end
+
+      it 'should still own his files' do
+        response = run("stat -c %u /home/vcap/a_file.txt", vcap_handle)
+        response.exit_status.should == 0
+        response.stdout.strip!.should == "10001"
+
+        response = run("stat -c %g /home/vcap/a_file.txt", vcap_handle)
+        response.exit_status.should == 0
+        response.stdout.strip!.should == "10001"
+
+        response = run("stat -c %u /tmp/a_file.txt", vcap_handle)
+        response.exit_status.should == 0
+        response.stdout.strip!.should == "10001"
+
+        response = run("stat -c %g /tmp/a_file.txt", vcap_handle)
+        response.exit_status.should == 0
+        response.stdout.strip!.should == "10001"
+      end
     end
 
     it "should allow the disk quota to be changed" do

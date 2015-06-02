@@ -17,6 +17,7 @@ network_host_iface="w-${id}-0"
 network_container_ip=${network_container_ip:-10.0.0.2}
 network_container_iface="w-${id}-1"
 user_uid=${user_uid:-10000}
+group_gid=$user_uid
 rootfs_path=$(readlink -f $rootfs_path)
 allow_nested_warden=${allow_nested_warden:-false}
 
@@ -103,10 +104,24 @@ else
   cp /etc/resolv.conf mnt/etc/
 fi
 
-# Add vcap user if not already present
+old_user_uid=$(cat mnt/etc/passwd | grep 'vcap:' | cut -d ':' -f 3) 
+old_group_gid=$(cat mnt/etc/group | grep 'vcap:' | cut -d ':' -f 3) 
+
 $(which chroot) mnt env -i /bin/bash -l <<-EOS
-if ! id vcap > /dev/null 2>&1
+if [ -z $old_group_gid ]
 then
-  useradd -mU -u $user_uid -s /bin/bash vcap
+  groupadd -g $group_gid vcap
+else
+  groupmod -g $group_gid vcap 
+  find / -group $old_group_gid -exec chgrp -h $group_gid {} \;
+fi
+
+if [ -z $old_user_uid ]
+then
+  useradd -m -u $user_uid -s /bin/bash -g $group_gid vcap
+else
+  usermod -u $user_uid -g $group_gid vcap
+  find / -user $old_user_uid -exec chown -h $user_uid {} \;
 fi
 EOS
+
