@@ -391,14 +391,17 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       it 'should apply different disk quota on every container' do
-        limit_response = limit_disk(:byte_limit => 2 * 1024 * 1024)
+        limit_response = limit_disk(:byte_limit => 4 * 1024 * 1024)
         vcap_limit_response = limit_disk(:handle => vcap_handle, :byte_limit => 4 * 1024 * 1024)
 
         limit_response = limit_disk()
-        limit_response.byte_limit.should == 2 * 1024 * 1024
+        limit_response.byte_limit.should == 4 * 1024 * 1024
 
         vcap_limit_response = limit_disk(:handle => vcap_handle)
         vcap_limit_response.byte_limit.should == 4 * 1024 * 1024
+
+        response = run("dd if=/dev/zero of=/tmp/test bs=1M count=3")
+        response.exit_status.should == 0
 
         response = run("dd if=/dev/zero of=/tmp/test bs=1M count=3", vcap_handle)
         response.exit_status.should == 0
@@ -420,6 +423,14 @@ describe "linux", :platform => "linux", :needs_root => true do
         response = run("stat -c %g /tmp/a_file.txt", vcap_handle)
         response.exit_status.should == 0
         response.stdout.strip!.should == "10001"
+
+        response = run("cat /etc/passwd | grep vcap: | cut -d ':' -f 3", vcap_handle)
+        response.exit_status.should == 0
+        response.stdout.strip.should == "10001"
+
+        response = run("cat /etc/group | grep vcap: | cut -d ':' -f 3", vcap_handle)
+        response.exit_status.should == 0
+        response.stdout.strip.should == "10001"
       end
     end
 
