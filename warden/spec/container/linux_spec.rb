@@ -404,7 +404,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         response.exit_status.should == 0
       end
 
-      it 'should still own his files' do
+      it "should still own vcap's files" do
         response = run("stat -c %u /home/vcap/a_file.txt", vcap_handle)
         response.exit_status.should == 0
         response.stdout.strip!.should == "10001"
