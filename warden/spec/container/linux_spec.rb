@@ -500,7 +500,7 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
 
     def reachable?(handle, ip)
-      response = run(handle, "ping -q -w1 -c1 #{ip}")
+      response = run(handle, "ping -q -w2 -c1 #{ip}")
       response.exit_status == 0
     end
 
@@ -541,7 +541,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def verify_ping_connectivity(server_container, client_container)
       # Try to ping the server container
-      client_script = "ping -c1 -w1 #{server_container[:ip]}"
+      client_script = "ping -c1 -w2 #{server_container[:ip]}"
       response = run(client_container[:handle], client_script)
 
       response.exit_status == 0
@@ -560,7 +560,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       context "when connecting to a remote address" do
         it "rejects outbound udp traffic" do
-          client_script = "curl -s --connect-timeout 1 http://www.example.com/ -o /dev/null"
+          client_script = "curl -s --connect-timeout 2 http://www.example.com/ -o /dev/null"
           response = run(handle, client_script)
           expect(response.exit_status).to eq 28 # "Timed out"
         end
@@ -568,7 +568,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         it "rejects outbound tcp traffic" do
           client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
 
-          client_script = "curl -s --connect-timeout 1 http://www.example.com/ -o /dev/null"
+          client_script = "curl -s --connect-timeout 2 http://www.example.com/ -o /dev/null"
           response = run(handle, client_script)
           expect(response.exit_status).to eq 7 # "Failed to connect to host"
         end
@@ -576,7 +576,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         it "rejects outbound icmp traffic" do
           client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
 
-          client_script = "ping -w1 -c1 www.example.com"
+          client_script = "ping -w2 -c1 www.example.com"
           response = run(handle, client_script)
           expect(response.exit_status).to eq 1 # "If ping does not receive any reply packets at all"
         end
@@ -585,7 +585,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       context "when connecting to the host" do
         def verify_tcp_connectivity_to_host(handle)
           server_pid = Process.spawn("echo ok | nc -l 8080", pgroup: true)
-          client_script = "nc -w1 #{host_first_ipv4.ip_address} 8080"
+          client_script = "nc -w2 #{host_first_ipv4.ip_address} 8080"
           response = run(handle, client_script)
 
           Process.kill("TERM", -Process.getpgid(server_pid))
@@ -613,7 +613,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         def verify_icmp_connectivity_to_host(handle)
           # Try to ping the host
-          client_script = "ping -c1 -w1 #{host_first_ipv4.ip_address}"
+          client_script = "ping -c1 -w2 #{host_first_ipv4.ip_address}"
           response = client.run(:handle => handle, :script => client_script)
           response.exit_status == 0
         end
@@ -673,7 +673,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "reaches every container from the host" do
         @containers.each do |e|
-          `ping -q -w1 -c1 #{e[:ip]}`
+          `ping -q -w2 -c1 #{e[:ip]}`
           $?.should == 0
         end
       end
@@ -934,7 +934,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       # Connect through nc
       attempt do
-        `echo | nc -w1 #{external_ip} #{response.host_port}`.chomp == "ok"
+        `echo | nc -w2 #{external_ip} #{response.host_port}`.chomp == "ok"
       end
 
       # Clean up
