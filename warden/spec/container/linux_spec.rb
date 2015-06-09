@@ -573,7 +573,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         it "rejects outbound tcp traffic" do
           client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
 
-          client_script = "curl -s --connect-timeout 5 http://www.example.com/ -o /dev/null"
+          client_script = "curl -s --connect-timeout 15 http://www.example.com/ -o /dev/null"
           response = run(handle, client_script)
           expect(response.exit_status).to eq 7 # "Failed to connect to host"
         end
