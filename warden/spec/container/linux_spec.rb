@@ -504,17 +504,22 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.exit_status == 0
     end
 
-    def verify_tcp_connectivity(server_container, client_container, port)
+    def verify_tcp_connectivity(server_container, client_container, port, retry_count = 1)
       # Listen for a connection in server_container
       server_script = "echo ok | nc -l #{port}"
       client.spawn(:handle => server_container[:handle],
                    :script => server_script).job_id
 
       # Try to connect to the server container
-      client_script = "nc -w2 #{server_container[:ip]} #{port}"
-      response = run(client_container[:handle], client_script)
+      client_script = "nc -w5 #{server_container[:ip]} #{port}"
 
-      unless response.exit_status.zero?
+      response = nil
+      retry_count.times do
+        response = run(client_container[:handle], client_script)
+        break if response.exit_status == 0
+      end
+
+      unless response.exit_status == 0
         # Clean up
         client.run(:handle => server_container[:handle], :script => "pkill -9 nc")
         return false
@@ -568,7 +573,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         it "rejects outbound tcp traffic" do
           client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
 
-          client_script = "curl -s --connect-timeout 2 http://www.example.com/ -o /dev/null"
+          client_script = "curl -s --connect-timeout 5 http://www.example.com/ -o /dev/null"
           response = run(handle, client_script)
           expect(response.exit_status).to eq 7 # "Failed to connect to host"
         end
@@ -583,10 +588,15 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       context "when connecting to the host" do
-        def verify_tcp_connectivity_to_host(handle)
+        def verify_tcp_connectivity_to_host(handle, retry_count = 1)
           server_pid = Process.spawn("echo ok | nc -l 8080", pgroup: true)
-          client_script = "nc -w2 #{host_first_ipv4.ip_address} 8080"
-          response = run(handle, client_script)
+          client_script = "nc #{host_first_ipv4.ip_address} 8080"
+
+          response = nil
+          retry_count.times do
+            response = run(handle, client_script)
+            break if response.exit_status == 0
+          end
 
           Process.kill("TERM", -Process.getpgid(server_pid))
 
@@ -634,7 +644,7 @@ describe "linux", :platform => "linux", :needs_root => true do
           let(:allow_host_access) { true }
 
           it "allows outbound tcp traffic" do
-            expect(verify_tcp_connectivity_to_host(handle)).to eq true
+            expect(verify_tcp_connectivity_to_host(handle, 5)).to eq true
           end
 
           it "allows outbound udp traffic" do
@@ -707,7 +717,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         it "allows outbound tcp traffic to networks after net_out" do
           net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
-          expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+          expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
           client.net_in(:handle => @containers[0][:handle])
           expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001)).to eq false
         end
