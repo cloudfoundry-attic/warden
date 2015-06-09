@@ -528,19 +528,24 @@ describe "linux", :platform => "linux", :needs_root => true do
       true
     end
 
-    def verify_udp_connectivity(server_container, client_container, port)
-      # Listen for a connection in server_container
-      server_script = "nc -u -l #{port}"
-      job_id = client.spawn(:handle => server_container[:handle],
-                            :script => server_script).job_id
+    def verify_udp_connectivity(server_container, client_container, port, retry_count = 1)
+      response = nil
+      retry_count.times do |count|
+        # Listen for a connection in server_container
+        server_script = "nc -u -l #{port}"
+        job_id = client.spawn(:handle => server_container[:handle],
+                              :script => server_script).job_id
 
-      # Try to connect to the server container
-      client_script = "echo ok > /dev/udp/#{server_container[:ip]}/#{port}"
-      run(client_container[:handle], client_script)
+        # Try to connect to the server container
+        sleep count
+        client_script = "echo ok > /dev/udp/#{server_container[:ip]}/#{port}"
+        run(client_container[:handle], client_script)
 
-      client.run(:handle => server_container[:handle], :script => "kill `lsof -t -i :#{port}`")
+        client.run(:handle => server_container[:handle], :script => "kill `lsof -t -i :#{port}`")
 
-      response = client.link(:handle => server_container[:handle], :job_id => job_id)
+        response = client.link(:handle => server_container[:handle], :job_id => job_id)
+        break if response.stdout.strip == "ok"
+      end
       response.stdout.strip == "ok"
     end
 
@@ -724,7 +729,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         it "allows outbound udp traffic to networks after net_out" do
           net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP)
-          expect(verify_udp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+          expect(verify_udp_connectivity(@containers[1], @containers[0], 2000, 3)).to eq true
           expect(verify_udp_connectivity(@containers[1], @containers[0], 2001)).to eq false
         end
 
@@ -772,10 +777,10 @@ describe "linux", :platform => "linux", :needs_root => true do
         context "all protocols" do
           it "allows outbound traffic over all protocols to networks after net_out" do
             net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :protocol => Warden::Protocol::NetOutRequest::Protocol::ALL)
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001)).to eq true
-            expect(verify_udp_connectivity(@containers[1], @containers[0], 2000)).to eq true
-            expect(verify_udp_connectivity(@containers[1], @containers[0], 2001)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001, 5)).to eq true
+            expect(verify_udp_connectivity(@containers[1], @containers[0], 2000, 3)).to eq true
+            expect(verify_udp_connectivity(@containers[1], @containers[0], 2001, 3)).to eq true
             expect(verify_ping_connectivity(@containers[1], @containers[0])).to eq true
           end
         end
@@ -800,10 +805,10 @@ describe "linux", :platform => "linux", :needs_root => true do
         context "when port ranges are specified" do
           it "should allow access to all ports in the range" do
             net_out(:handle => @containers[0][:handle], :network => @containers[1][:ip], :port_range => "2000:2002", :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001)).to eq true
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2002)).to eq true
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 1999)).to eq false
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2001, 5)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2002, 5)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 1999, 5)).to eq false
           end
         end
 
@@ -812,15 +817,15 @@ describe "linux", :platform => "linux", :needs_root => true do
             network = "#{@containers[0][:ip]}/24" # All local warden containers
             net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
 
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
-            expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
+            expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000, 5)).to eq true
           end
 
           it "cannot connect to a subnet that is not included" do
             network = "#{@containers[1][:ip]}/30" # One server container
             net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
 
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
             expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq false
           end
         end
@@ -832,8 +837,8 @@ describe "linux", :platform => "linux", :needs_root => true do
             network = "#{first_address}-#{last_address}" # All local warden containers
             net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
 
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
-            expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
+            expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000, 5)).to eq true
           end
 
           it "cannot connect to a subnet that is not included in the range" do
@@ -842,7 +847,7 @@ describe "linux", :platform => "linux", :needs_root => true do
             network = "#{first_address}-#{last_address}" # One server container
             net_out(:handle => @containers[0][:handle], :network => network, :port => 2000, :protocol => Warden::Protocol::NetOutRequest::Protocol::TCP)
 
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
             expect(verify_tcp_connectivity(@containers[2], @containers[0], 2000)).to eq false
           end
         end
@@ -861,7 +866,7 @@ describe "linux", :platform => "linux", :needs_root => true do
             drain_and_restart
             reset_client
 
-            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000)).to eq true
+            expect(verify_tcp_connectivity(@containers[1], @containers[0], 2000, 5)).to eq true
           end
         end
       end
