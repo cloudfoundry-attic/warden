@@ -148,3 +148,23 @@ describe Warden::Protocol do
     end
   end
 end
+
+describe Warden::Protocol::BaseMessage do
+  class TestMessage
+    include Warden::Protocol::BaseMessage
+
+    required :field1, :string, 1
+    required :field2, :string, 2
+
+    def filtered_fields
+      [:field2]
+    end
+  end
+
+  describe "filtered_hash" do
+    it "filters out the filtered_fields" do
+      message = TestMessage.new(field1: 'f1', field2: 'f2')
+      expect(message.filtered_hash.keys).to_not include(:field2)
+    end
+  end
+end

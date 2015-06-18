@@ -172,7 +172,8 @@ describe Warden::Container::Base do
   end
 
   context "dispatch" do
-    let(:request) { double("request", to_hash: {fake: "request", sensitive: "information"}).as_null_object }
+    let(:response) { double("response", filtered_hash: {}).as_null_object }
+    let(:request) { double("request", filtered_hash: {fake: "request", sensitive: "information"}, create_response: response).as_null_object }
     let(:logger) { double("logger").as_null_object }
 
     subject(:container) { Container.new }
@@ -183,8 +184,18 @@ describe Warden::Container::Base do
     end
 
     it "logs to debug level to avoid logging sensitive information in production" do
-      logger.should_receive(:debug).with(an_instance_of(String), request: request.to_hash, response: an_instance_of(Hash))
+      logger.should_receive(:debug).with(an_instance_of(String), request: request.filtered_hash, response: an_instance_of(Hash))
 
+      container.dispatch(request)
+    end
+
+    it "calls filtered hash on the request to exclude sensitive information" do
+      request.should_receive(:filtered_hash)
+      container.dispatch(request)
+    end
+
+    it "calls filtered hash on the response to exclude sensitive information" do
+      response.should_receive(:filtered_hash)
       container.dispatch(request)
     end
   end

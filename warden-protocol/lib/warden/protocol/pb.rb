@@ -605,7 +605,6 @@ module Warden
     class SpawnRequest
       include Warden::Protocol::BaseMessage
 
-
       required :handle, :string, 1
       required :script, :string, 2
       optional :privileged, :bool, 3, :default => false
@@ -613,6 +612,9 @@ module Warden
       optional :discard_output, :bool, 5, :default => false
       optional :log_tag, :string, 6
 
+      def filtered_fields
+        [:script]
+      end
     end
 
     class SpawnResponse

@@ -298,8 +298,8 @@ module Warden
         t2 = Time.now
 
         logger.debug("%s (took %.6f)" % [klass_name, t2 - t1],
-                    :request => request.to_hash,
-                    :response => response.to_hash)
+                    :request => request.filtered_hash,
+                    :response => response.filtered_hash)
 
         response
       end

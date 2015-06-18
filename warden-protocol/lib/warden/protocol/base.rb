@@ -112,14 +112,14 @@ module Warden
         end
       end
 
-      def to_hash
-        fields.values.inject({}) do |h, fld|
-          if v = self[fld.name]
-            v = v.to_hash if v.respond_to?(:to_hash)
-            h[fld.name] = v
-          end
-          h
-        end
+      def filtered_fields
+        []
+      end
+
+      def filtered_hash
+        fields = to_hash
+        filtered_fields.each { |field| fields.delete(field) }
+        fields
       end
 
       module ClassMethods

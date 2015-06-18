@@ -43,6 +43,12 @@ describe Warden::Protocol::SpawnRequest do
   it "should respond to #create_response" do
     request.create_response.should be_a(Warden::Protocol::SpawnResponse)
   end
+
+  describe "filtered_hash" do
+    it "excludes the script field" do
+      expect(request.filtered_hash.keys).to_not include(:script)
+    end
+  end
 end
 
 describe Warden::Protocol::SpawnResponse do
