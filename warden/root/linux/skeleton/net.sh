@@ -21,6 +21,7 @@ nat_instance_chain="${filter_instance_prefix}${id}"
 external_ip=$(ip route get 8.8.8.8 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x')
 
 function teardown_filter() {
+  echo "Teardown filter"
   # Prune forward chain
   iptables -S ${filter_forward_chain} 2> /dev/null |
     grep "\-g ${filter_instance_chain}\b" |
@@ -56,6 +57,7 @@ function setup_filter() {
 }
 
 function teardown_nat() {
+  echo "Teardown nat"
   # Prune prerouting chain
   iptables -t nat -S ${nat_prerouting_chain} 2> /dev/null |
     grep "\-j ${nat_instance_chain}\b" |
