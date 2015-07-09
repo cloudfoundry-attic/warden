@@ -273,6 +273,36 @@ describe Warden::Container::Base do
         end.to_not raise_error
       end
     end
+
+    context "when do_destroy fails" do
+      before do
+        @container.should_receive(:do_destroy).and_raise(Warden::WardenError.new("failure"))
+      end
+
+      it "should not be destroyed" do
+        expect do
+          @container.dispatch(Warden::Protocol::DestroyRequest.new)
+        end.to raise_error
+
+        expect(@container.state).to_not eql(Warden::Container::State::Destroyed)
+      end
+
+      it "should not be removed from the registry" do
+        expect do
+          @container.dispatch(Warden::Protocol::DestroyRequest.new)
+        end.to raise_error
+
+        expect(Container.registry.size).to eq 1
+      end
+
+      it "should not delete the snapshot" do
+        @container.should_receive(:delete_snapshot).once
+
+        expect do
+          @container.dispatch(Warden::Protocol::DestroyRequest.new)
+        end.to raise_error
+      end
+    end
   end
 
   describe "connection management" do

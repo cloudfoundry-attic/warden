@@ -509,10 +509,6 @@ module Warden
           # so there's no info to get anyway.
         end
 
-        delete_snapshot
-
-        self.class.registry.delete(handle)
-
         unless self.state == State::Stopped
           # Ignore, stopping before destroy is a best effort
           begin
@@ -520,12 +516,13 @@ module Warden
           rescue WardenError => e
           end
         end
-
-        self.state = State::Destroyed
       end
 
       def after_destroy
+        delete_snapshot
         release
+        self.state = State::Destroyed
+        self.class.registry.delete(handle)
       end
 
       def do_destroy(request, response)
@@ -733,10 +730,6 @@ module Warden
 
       def container_info
         obituary || dispatch(Warden::Protocol::InfoRequest.new(:handle => handle))
-      end
-
-      def state
-        @state
       end
 
       def state=(state)
