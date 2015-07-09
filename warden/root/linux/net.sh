@@ -26,79 +26,79 @@ function external_ip() {
 
 function teardown_deprecated_rules() {
   # Remove jump to warden-dispatch from INPUT
-  iptables -S INPUT 2> /dev/null |
+  iptables -w -S INPUT 2> /dev/null |
     grep " -j warden-dispatch" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Remove jump to warden-dispatch from FORWARD
-  iptables -S FORWARD 2> /dev/null |
+  iptables -w -S FORWARD 2> /dev/null |
     grep " -j warden-dispatch" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Prune warden-dispatch
-  iptables -F warden-dispatch 2> /dev/null || true
+  iptables -w -F warden-dispatch 2> /dev/null || true
 
   # Delete warden-dispatch
-  iptables -X warden-dispatch 2> /dev/null || true
+  iptables -w -X warden-dispatch 2> /dev/null || true
 }
 
 function teardown_filter() {
   teardown_deprecated_rules
 
   # Prune warden-forward chain
-  iptables -S ${filter_forward_chain} 2> /dev/null |
+  iptables -w -S ${filter_forward_chain} 2> /dev/null |
     grep "\-g ${filter_instance_prefix}" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Prune per-instance chains
-  iptables -S 2> /dev/null |
+  iptables -w -S 2> /dev/null |
     grep "^-A ${filter_instance_prefix}" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Delete per-instance chains
-  iptables -S 2> /dev/null |
+  iptables -w -S 2> /dev/null |
     grep "^-N ${filter_instance_prefix}" |
     sed -e "s/-N/-X/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Remove jump to warden-forward from FORWARD
-  iptables -S FORWARD 2> /dev/null |
+  iptables -w -S FORWARD 2> /dev/null |
     grep " -j ${filter_forward_chain}" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Remove block-traffic-to-host rules
-  iptables -S INPUT |
+  iptables -w -S INPUT |
     grep 'block-traffic-to-host' |
     sed -e "s/-A/-D/" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
   # Remove related-traffic rules
-  iptables -S INPUT |
+  iptables -w -S INPUT |
     grep 'related-traffic' |
     sed -e "s/-A/-D/" |
-    xargs --no-run-if-empty --max-lines=1 iptables
+    xargs --no-run-if-empty --max-lines=1 iptables -w
 
-  iptables -F ${filter_forward_chain} 2> /dev/null || true
-  iptables -F ${filter_default_chain} 2> /dev/null || true
+  iptables -w -F ${filter_forward_chain} 2> /dev/null || true
+  iptables -w -F ${filter_default_chain} 2> /dev/null || true
 }
 
 function setup_filter() {
   teardown_filter
 
   # Create or flush forward chain
-  iptables -N ${filter_forward_chain} 2> /dev/null || iptables -F ${filter_forward_chain}
-  iptables -A ${filter_forward_chain} -j DROP
+  iptables -w -N ${filter_forward_chain} 2> /dev/null || iptables -w -F ${filter_forward_chain}
+  iptables -w -A ${filter_forward_chain} -j DROP
 
   # Create or flush default chain
-  iptables -N ${filter_default_chain} 2> /dev/null || iptables -F ${filter_default_chain}
+  iptables -w -N ${filter_default_chain} 2> /dev/null || iptables -w -F ${filter_default_chain}
 
   # Always allow established connections to warden containers
-  iptables -A ${filter_default_chain} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+  iptables -w -A ${filter_default_chain} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
   for n in ${ALLOW_NETWORKS}; do
     if [ "$n" == "" ]
@@ -106,7 +106,7 @@ function setup_filter() {
       break
     fi
 
-    iptables -A ${filter_default_chain} --destination "$n" --jump RETURN
+    iptables -w -A ${filter_default_chain} --destination "$n" --jump RETURN
   done
 
   for n in ${DENY_NETWORKS}; do
@@ -115,81 +115,81 @@ function setup_filter() {
       break
     fi
 
-    iptables -A ${filter_default_chain} --destination "$n" --jump DROP
+    iptables -w -A ${filter_default_chain} --destination "$n" --jump DROP
   done
 
-  iptables -A ${filter_default_chain} --jump REJECT
+  iptables -w -A ${filter_default_chain} --jump REJECT
 
   # Accept packets related to previously established connections
-  iptables -I INPUT -m state --state ESTABLISHED,RELATED --jump ACCEPT -m comment --comment 'related-traffic'
+  iptables -w -I INPUT -m state --state ESTABLISHED,RELATED --jump ACCEPT -m comment --comment 'related-traffic'
 
   # Reject traffic from containers to host
   if [ "$ALLOW_HOST_ACCESS" != "true" ]; then
-    iptables -A INPUT -s ${POOL_NETWORK} --jump REJECT -m comment --comment 'block-traffic-to-host'
+    iptables -w -A INPUT -s ${POOL_NETWORK} --jump REJECT -m comment --comment 'block-traffic-to-host'
   fi
 
   # Forward outbound traffic via ${filter_forward_chain}
-  iptables -A FORWARD -i w-+ --jump ${filter_forward_chain}
+  iptables -w -A FORWARD -i w-+ --jump ${filter_forward_chain}
 
   # Forward inbound traffic immediately
   default_interface=$(ip route show | grep default | cut -d' ' -f5 | head -1)
-  iptables -I ${filter_forward_chain} -i $default_interface --jump ACCEPT
+  iptables -w -I ${filter_forward_chain} -i $default_interface --jump ACCEPT
 }
 
 function teardown_nat() {
   # Prune prerouting chain
-  iptables -t nat -S ${nat_prerouting_chain} 2> /dev/null |
+  iptables -w -t nat -S ${nat_prerouting_chain} 2> /dev/null |
     grep "\-j ${nat_instance_prefix}" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables -t nat
+    xargs --no-run-if-empty --max-lines=1 iptables -w -t nat
 
   # Prune per-instance chains
-  iptables -t nat -S 2> /dev/null |
+  iptables -w -t nat -S 2> /dev/null |
     grep "^-A ${nat_instance_prefix}" |
     sed -e "s/-A/-D/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables -t nat
+    xargs --no-run-if-empty --max-lines=1 iptables -w -t nat
 
   # Delete per-instance chains
-  iptables -t nat -S 2> /dev/null |
+  iptables -w -t nat -S 2> /dev/null |
     grep "^-N ${nat_instance_prefix}" |
     sed -e "s/-N/-X/" -e "s/\s\+\$//" |
-    xargs --no-run-if-empty --max-lines=1 iptables -t nat
+    xargs --no-run-if-empty --max-lines=1 iptables -w -t nat
 
   # Flush prerouting chain
-  iptables -t nat -F ${nat_prerouting_chain} 2> /dev/null || true
+  iptables -w -t nat -F ${nat_prerouting_chain} 2> /dev/null || true
 
   # Flush postrouting chain
-  iptables -t nat -F ${nat_postrouting_chain} 2> /dev/null || true
+  iptables -w -t nat -F ${nat_postrouting_chain} 2> /dev/null || true
 }
 
 function setup_nat() {
   teardown_nat
 
   # Create prerouting chain
-  iptables -t nat -N ${nat_prerouting_chain} 2> /dev/null || true
+  iptables -w -t nat -N ${nat_prerouting_chain} 2> /dev/null || true
 
   # Bind chain to PREROUTING
-  (iptables -t nat -S PREROUTING | grep -q "\-j ${nat_prerouting_chain}\b") ||
-    iptables -t nat -A PREROUTING \
+  (iptables -w -t nat -S PREROUTING | grep -q "\-j ${nat_prerouting_chain}\b") ||
+    iptables -w -t nat -A PREROUTING \
       --jump ${nat_prerouting_chain}
 
   # Bind chain to OUTPUT (for traffic originating from same host)
-  (iptables -t nat -S OUTPUT | grep -q "\-j ${nat_prerouting_chain}\b") ||
-    iptables -t nat -A OUTPUT \
+  (iptables -w -t nat -S OUTPUT | grep -q "\-j ${nat_prerouting_chain}\b") ||
+    iptables -w -t nat -A OUTPUT \
       --out-interface "lo" \
       --jump ${nat_prerouting_chain}
 
   # Create postrouting chain
-  iptables -t nat -N ${nat_postrouting_chain} 2> /dev/null || true
+  iptables -w -t nat -N ${nat_postrouting_chain} 2> /dev/null || true
 
   # Bind chain to POSTROUTING
-  (iptables -t nat -S POSTROUTING | grep -q "\-j ${nat_postrouting_chain}\b") ||
-    iptables -t nat -A POSTROUTING \
+  (iptables -w -t nat -S POSTROUTING | grep -q "\-j ${nat_postrouting_chain}\b") ||
+    iptables -w -t nat -A POSTROUTING \
       --jump ${nat_postrouting_chain}
 
   # Enable NAT for traffic coming from containers
-  (iptables -t nat -S ${nat_postrouting_chain} | grep -q "\-j MASQUERADE\b") ||
-    iptables -t nat -A ${nat_postrouting_chain} \
+  (iptables -w -t nat -S ${nat_postrouting_chain} | grep -q "\-j MASQUERADE\b") ||
+    iptables -w -t nat -A ${nat_postrouting_chain} \
       --source ${POOL_NETWORK} \
       ! --destination ${POOL_NETWORK} \
       --jump MASQUERADE
