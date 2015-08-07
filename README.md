@@ -1,6 +1,3 @@
-[![Build Status](https://travis-ci.org/cloudfoundry/warden.png)](https://travis-ci.org/cloudfoundry/warden)
-[![Code Climate](https://codeclimate.com/github/cloudfoundry/warden.png)](https://codeclimate.com/github/cloudfoundry/warden)
-
 # warden
 
 Manages isolated, ephemeral, and resource controlled environments.
