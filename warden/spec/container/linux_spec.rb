@@ -235,7 +235,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "should default to a large number" do
       response = limit_memory
-      response.limit_in_bytes.should == 18446744073709551615
+      response.limit_in_bytes.should == 9223372036854775807
     end
 
     describe "setting limits" do
