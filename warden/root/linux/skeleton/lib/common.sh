@@ -79,12 +79,6 @@ function should_use_aufs() {
   # load it so it's in /proc/filesystems
   modprobe -q aufs >/dev/null 2>&1 || true
 
-  # don't use aufs for nested warden as neither overlayfs nor aufs can mount
-  # on it
-  if [ "$allow_nested_warden" == "true" ]; then
-    return 1
-  fi
-
   # cannot mount aufs in aufs
   if [ "$(current_fs tmp/rootfs)" == "aufs" ]; then
     return 1
