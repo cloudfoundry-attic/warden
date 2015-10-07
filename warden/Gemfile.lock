@@ -30,12 +30,12 @@ PATH
   remote: ../warden-protocol
   specs:
     warden-protocol (0.1.5)
-      beefcake (~> 0.3.0)
+      beefcake (~> 1.0.0)
 
 GEM
   remote: http://rubygems.org/
   specs:
-    beefcake (0.3.7)
+    beefcake (1.0.0)
     diff-lcs (1.1.3)
     eventmachine (1.0.3)
     grape (0.2.1)
@@ -77,3 +77,6 @@ DEPENDENCIES
   warden-client!
   warden-protocol!
   yajl-ruby
+
+BUNDLED WITH
+   1.10.6

@@ -681,7 +681,7 @@ describe Warden::Repl::CommandsManager do
       run_command = Warden::Protocol::RunRequest.new(:handle => "handle",
                                                      :script => "script")
       spawn_command = @subject.convert_to_spawn_command(run_command)
-      run_command.fields.each_pair do |key, field|
+      run_command.__beefcake_fields__.each_pair do |key, field|
         target = spawn_command.send(field.name)
         source = run_command.send(field.name)
 

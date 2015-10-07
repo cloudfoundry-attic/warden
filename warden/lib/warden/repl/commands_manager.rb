@@ -220,7 +220,7 @@ module Warden::Repl
       spawn_command = Warden::Protocol::SpawnRequest.new
 
       clone = Warden::Protocol::RunRequest.decode(run_command.encode)
-      clone.fields.each_value do |field|
+      clone.__beefcake_fields__.each_value do |field|
         value = clone.send("#{field.name}")
         spawn_command.send("#{field.name}=", value) if value
       end
@@ -324,7 +324,7 @@ module Warden::Repl
       end
 
       serialized = {}
-      obj.fields.each_value do |field_info|
+      obj.__beefcake_fields__.each_value do |field_info|
         field_name = "#{field_info.name.to_s}"
         field = obj.send(field_name)
         next if !field
@@ -383,7 +383,7 @@ module Warden::Repl
     # definition.
     def get_fields_map(request)
       fields_map = {}
-      request.fields.each_value do |field|
+      request.__beefcake_fields__.each_value do |field|
         fields_map[field.name.to_s] = field
       end
 

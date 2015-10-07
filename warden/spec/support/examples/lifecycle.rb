@@ -1,4 +1,4 @@
-# coding: UTF-8
+# encoding: UTF-8
 
 module Warden::Protocol
   shared_examples "lifecycle" do
@@ -13,8 +13,8 @@ module Warden::Protocol
     end
 
     it "should allow to create a container with a custom non-ASCII handle" do
-      response = client.create(:handle => "\x80")
-      response.handle.should == "\x80".force_encoding("BINARY")
+      response = client.create(:handle => "\302\202")
+      response.handle.should eq "\302\202"
     end
 
     it "should allow to use a container created with a custom handle" do
