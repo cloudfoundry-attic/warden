@@ -21,7 +21,7 @@ ALLOW_HOST_ACCESS=${ALLOW_HOST_ACCESS:-false}
 
 function external_ip() {
   # The ';tx;d;:x' trick deletes non-matching lines
-  ip route get 8.8.8.8 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x'
+  ip route get 1.2.3.4 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x'
 }
 
 function teardown_deprecated_rules() {

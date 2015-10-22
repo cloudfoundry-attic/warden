@@ -18,7 +18,7 @@ nat_prerouting_chain="warden-prerouting"
 nat_instance_prefix="warden-i-"
 nat_instance_chain="${filter_instance_prefix}${id}"
 
-external_ip=$(ip route get 8.8.8.8 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x')
+external_ip=$(ip route get 1.2.3.4 | sed 's/.*src\s\(.*\)\s/\1/;tx;d;:x')
 
 function teardown_filter() {
   echo "Teardown filter"
