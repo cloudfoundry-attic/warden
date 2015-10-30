@@ -1308,6 +1308,53 @@ describe "linux", :platform => "linux", :needs_root => true do
     end
   end
 
+  describe "network devices" do
+    let(:handle) do
+      response = client.create
+      response.should be_ok
+
+      response.handle
+    end
+
+    it "activates a host side network adapter" do
+      script = "/sbin/ifconfig w-#{handle}-0 | grep -Eo 'RUNNING'"
+      response = execute(script)
+      response.should eq("RUNNING\n")
+    end
+
+    it "activates a container side network adapter" do
+      script = "/sbin/ifconfig w-#{handle}-1 | grep -Eo 'RUNNING'"
+      response = client.run(:handle => handle, :script => script)
+      response.exit_status.should == 0
+      response.stdout.should eq("RUNNING\n")
+    end
+
+    it "activates a host side ifb network adapter" do
+      script = "/sbin/ifconfig w-#{handle}-2 | grep -Eo 'RUNNING'"
+      response = execute(script)
+      response.should eq("RUNNING\n")
+    end
+
+    context "when the container is destroyed" do
+      before do
+        response = client.destroy(:handle => handle)
+        response.should be_ok
+      end
+
+      it "destroys the host side network adapter" do
+        script = "/sbin/ifconfig -a"
+        response = execute(script)
+        response.should_not include("w-#{handle}-0")
+      end
+
+      it "destroys the host side ifb network adapter" do
+        script = "/sbin/ifconfig -a"
+        response = execute(script)
+        response.should_not include("w-#{handle}-2")
+      end
+    end
+  end
+
   describe "create with network" do
     it "should be able to specify network" do
       create_request = Warden::Protocol::CreateRequest.new
@@ -1358,6 +1405,18 @@ describe "linux", :platform => "linux", :needs_root => true do
       response.should be_ok
 
       script = "/sbin/ifconfig w-#{response.handle}-0 | grep -Eo 'MTU:[0-9]+'"
+      mtu_response = execute("#{script}")
+      mtu_response.should == "MTU:1454\n"
+    end
+
+    it "should set the host ifb adapter MTU" do
+      create_request = Warden::Protocol::CreateRequest.new
+      create_request.network = @start_address
+
+      response = client.call(create_request)
+      response.should be_ok
+
+      script = "/sbin/ifconfig w-#{response.handle}-2 | grep -Eo 'MTU:[0-9]+'"
       mtu_response = execute("#{script}")
       mtu_response.should == "MTU:1454\n"
     end

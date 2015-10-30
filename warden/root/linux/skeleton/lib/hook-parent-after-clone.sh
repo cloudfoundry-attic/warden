@@ -61,4 +61,11 @@ ip link set $network_container_iface netns $PID
 
 ifconfig $network_host_iface $network_host_ip netmask $network_netmask mtu $container_iface_mtu
 
+# setup ifb device for traffic shaping
+ip link add ${network_ifb_iface} type ifb
+ip link set ${network_ifb_iface} netns 1
+ifconfig ${network_ifb_iface} mtu ${container_iface_mtu}
+
+ip link set ${network_ifb_iface} up
+
 exit 0

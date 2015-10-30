@@ -160,19 +160,11 @@ case "${1}" in
 
     ;;
   "get_ingress_info")
-    if [ -z "${ID:-}" ]; then
-      echo "Please specify container ID..." 1>&2
-      exit 1
-    fi
-    tc filter show dev w-${ID}-0 parent ffff:
+    tc qdisc show dev ${network_ifb_iface}
 
     ;;
   "get_egress_info")
-    if [ -z "${ID:-}" ]; then
-      echo "Please specify container ID..." 1>&2
-      exit 1
-    fi
-    tc qdisc show dev w-${ID}-0
+    tc qdisc show dev ${network_host_iface}
 
     ;;
   *)

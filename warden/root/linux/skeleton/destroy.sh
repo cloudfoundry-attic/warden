@@ -11,6 +11,8 @@ source ./etc/config
 
 ./net.sh teardown
 
+ip link del ${network_ifb_iface}
+
 if [ -f ./run/wshd.pid ]
 then
   pid=$(cat ./run/wshd.pid)

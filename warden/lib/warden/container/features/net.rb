@@ -14,7 +14,6 @@ module Warden
         include Spawn
 
         INREG = /qdisc tbf [0-9a-f]+: root refcnt \d+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b lat 25.0ms/
-        OUTREG = /\s*police 0x[0-9a-f]+ rate (\d+)([KMG]?)bit burst (\d+)([KMG]?)b mtu \d+[KM]?b action drop overhead \d+b/
 
         def self.included(base)
           base.extend(ClassMethods)
@@ -53,20 +52,16 @@ module Warden
         def do_info(request, response)
           super(request, response)
 
-          container_id = self.class.registry[request.handle].container_id
-
           ret = {}
 
-          {:in => {:bash_key =>  "get_egress_info", :reg => INREG, :rate_key => :in_rate, :burst_key => :in_burst},
-            :out => {:bash_key => "get_ingress_info", :reg => OUTREG, :rate_key => :out_rate, :burst_key => :out_burst}}.each do |k, v|
+          [{:bash_key => "get_egress_info", :rate_key => :in_rate, :burst_key => :in_burst},
+           {:bash_key => "get_ingress_info", :rate_key => :out_rate, :burst_key => :out_burst}].each do |v|
 
             # Set default rate value to 0xffffffff default burst value to 0xffffffff
             ret[v[:rate_key]], ret[v[:burst_key]] = [0xffffffff, 0xffffffff]
-            info = sh File.join(container_path, "net.sh"), v[:bash_key], :env => {
-              "ID" => container_id
-            }
+            info = sh File.join(container_path, "net.sh"), v[:bash_key]
             info.split("\n").each do |line|
-              if band_info = v[:reg].match(line)
+              if band_info = INREG.match(line)
                 ret[v[:rate_key]] = to_num(band_info[1].to_i, band_info[2]) / 8 # Bits to bytes
                 ret[v[:burst_key]] = to_num(band_info[3].to_i, band_info[4])
                 break
