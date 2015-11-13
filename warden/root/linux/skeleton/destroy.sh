@@ -11,7 +11,7 @@ source ./etc/config
 
 ./net.sh teardown
 
-ip link del ${network_ifb_iface}
+ip link del ${network_ifb_iface} || true
 
 if [ -f ./run/wshd.pid ]
 then
