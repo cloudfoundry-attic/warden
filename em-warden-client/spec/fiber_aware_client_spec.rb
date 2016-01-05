@@ -12,7 +12,7 @@ describe EventMachine::Warden::FiberAwareClient do
           client = server.create_fiber_aware_client
           Fiber.new do
             client.connect
-            client.connected?.should be_true
+            expect(client.connected?).to be true
             EM.stop
           end.resume
         end
@@ -40,9 +40,9 @@ describe EventMachine::Warden::FiberAwareClient do
           client = server.create_fiber_aware_client
           Fiber.new do
             client.connect
-            client.connected?.should be_true
+            expect(client.connected?).to be true
             client.disconnect
-            client.connected?.should be_false
+            expect(client.connected?).to be false
             EM.stop
           end.resume
         end
@@ -67,7 +67,7 @@ describe EventMachine::Warden::FiberAwareClient do
         expected_response = Warden::Protocol::EchoResponse.new(:message => "world")
 
         handler = double()
-        handler.should_receive(request.class.type_underscored).and_return(expected_response)
+        allow(handler).to receive(request.class.type_underscored).and_return(expected_response)
         server = MockWardenServer.new(handler, socket_path)
         actual_response = nil
 
@@ -81,7 +81,7 @@ describe EventMachine::Warden::FiberAwareClient do
           end.resume
         end
 
-        actual_response.should == expected_response
+        expect(actual_response).to eq(expected_response)
       end
 
       it "should raise error payloads" do
@@ -89,7 +89,7 @@ describe EventMachine::Warden::FiberAwareClient do
         expected_response = MockWardenServer::Error.new("test error")
 
         handler = double()
-        handler.should_receive(request.class.type_underscored).and_raise(expected_response)
+        allow(handler).to receive(request.class.type_underscored).and_raise(expected_response)
         server = MockWardenServer.new(handler, socket_path)
 
         em do
@@ -124,7 +124,7 @@ describe EventMachine::Warden::FiberAwareClient do
         response = Warden::Protocol::EchoResponse.new(:message => "world")
 
         handler = double()
-        handler.should_receive(request.class.type_underscored).and_return(response)
+        allow(handler).to receive(request.class.type_underscored).and_return(response)
         server = MockWardenServer.new(handler, socket_path)
         actual_response = nil
 
@@ -138,7 +138,7 @@ describe EventMachine::Warden::FiberAwareClient do
           end.resume
         end
 
-        actual_response.should == "world"
+        expect(actual_response).to eq("world")
       end
 
       it "should raise error payloads" do
@@ -146,7 +146,7 @@ describe EventMachine::Warden::FiberAwareClient do
         response = MockWardenServer::Error.new("test error")
 
         handler = double()
-        handler.should_receive(request.class.type_underscored).and_raise(response)
+        allow(handler).to receive(request.class.type_underscored).and_raise(response)
         server = MockWardenServer.new(handler, socket_path)
 
         em do
