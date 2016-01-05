@@ -4,13 +4,15 @@ require "spec_helper"
 
 describe Warden::Protocol::EchoRequest do
   subject(:request) do
-    described_class.new(:message => "here's a snowman: ☃")
+    Warden::Protocol::EchoRequest.new(:message => "here's a snowman: ☃")
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "Echo" }
-  its("class.type_underscored") { should == "echo" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('Echo')
+    expect(request.class.type_underscored).to eq('echo')
+  end
 
   field :message do
     it_should_be_required
@@ -18,22 +20,29 @@ describe Warden::Protocol::EchoRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::EchoResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::EchoResponse)
   end
 end
 
 describe Warden::Protocol::EchoResponse do
   subject(:response) do
-    described_class.new(:message => "here's a snowman: ☃")
+    Warden::Protocol::EchoResponse.new(:message => "here's a snowman: ☃")
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "Echo" }
-  its("class.type_underscored") { should == "echo" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('Echo')
+    expect(response.class.type_underscored).to eq('echo')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 
   field :message do
     it_should_be_required

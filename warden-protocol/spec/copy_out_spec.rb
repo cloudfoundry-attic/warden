@@ -4,7 +4,7 @@ require "spec_helper"
 
 describe Warden::Protocol::CopyOutRequest do
   subject(:request) do
-    described_class.new(
+    Warden::Protocol::CopyOutRequest.new(
       :handle => "handle",
       :src_path => "/src",
       :dst_path => "/dst"
@@ -13,8 +13,10 @@ describe Warden::Protocol::CopyOutRequest do
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "CopyOut" }
-  its("class.type_underscored") { should == "copy_out" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('CopyOut')
+    expect(request.class.type_underscored).to eq('copy_out')
+  end
 
   field :handle do
     it_should_be_required
@@ -37,20 +39,27 @@ describe Warden::Protocol::CopyOutRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::CopyOutResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::CopyOutResponse)
   end
 end
 
 describe Warden::Protocol::CopyOutResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::CopyOutResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "CopyOut" }
-  its("class.type_underscored") { should == "copy_out" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('CopyOut')
+    expect(response.class.type_underscored).to eq('copy_out')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 end

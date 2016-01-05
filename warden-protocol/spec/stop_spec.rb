@@ -4,13 +4,15 @@ require "spec_helper"
 
 describe Warden::Protocol::StopRequest do
   subject(:request) do
-    described_class.new(:handle => "handle")
+    Warden::Protocol::StopRequest.new(:handle => "handle")
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "Stop" }
-  its("class.type_underscored") { should == "stop" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('Stop')
+    expect(request.class.type_underscored).to eq('stop')
+  end
 
   field :handle do
     it_should_be_required
@@ -27,20 +29,27 @@ describe Warden::Protocol::StopRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::StopResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::StopResponse)
   end
 end
 
 describe Warden::Protocol::StopResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::StopResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "Stop" }
-  its("class.type_underscored") { should == "stop" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('Stop')
+    expect(response.class.type_underscored).to eq('stop')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 end

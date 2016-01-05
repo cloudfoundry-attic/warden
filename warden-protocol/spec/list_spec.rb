@@ -4,38 +4,47 @@ require "spec_helper"
 
 describe Warden::Protocol::ListRequest do
   subject(:request) do
-    described_class.new
+    Warden::Protocol::ListRequest.new
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "List" }
-  its("class.type_underscored") { should == "list" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('List')
+    expect(request.class.type_underscored).to eq('list')
+  end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::ListResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::ListResponse)
   end
 end
 
 describe Warden::Protocol::ListResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::ListResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "List" }
-  its("class.type_underscored") { should == "list" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('List')
+    expect(response.class.type_underscored).to eq('list')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 
   field :handles do
     it_should_be_optional
 
     it "should allow one or more handles" do
       subject.handles = ["a", "b"]
-      subject.should be_valid
+      expect(subject).to be_valid
     end
   end
 end

@@ -4,29 +4,38 @@ require "spec_helper"
 
 describe Warden::Protocol::PingRequest do
   subject(:request) do
-    described_class.new
+    Warden::Protocol::PingRequest.new
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "Ping" }
-  its("class.type_underscored") { should == "ping" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('Ping')
+    expect(request.class.type_underscored).to eq('ping')
+  end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::PingResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::PingResponse)
   end
 end
 
 describe Warden::Protocol::PingResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::PingResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "Ping" }
-  its("class.type_underscored") { should == "ping" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('Ping')
+    expect(response.class.type_underscored).to eq('ping')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 end

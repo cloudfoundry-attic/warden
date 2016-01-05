@@ -4,15 +4,15 @@ shared_examples "wrappable request" do
   let(:wrapped) { subject.wrap }
 
   it "should respond to #wrap" do
-    wrapped.should be_a(Warden::Protocol::Message)
+    expect(wrapped).to be_a(Warden::Protocol::Message)
 
     type_const = described_class.name.split("::").last.gsub(/Request$/, "")
-    wrapped.type.should == Warden::Protocol::Message::Type.const_get(type_const)
-    wrapped.payload.to_s.should == subject.encode.to_s
+    expect(wrapped.type).to eq(Warden::Protocol::Message::Type.const_get(type_const))
+    expect(wrapped.payload.to_s).to eq(subject.encode.to_s)
   end
 
   it "should retain class when unwrapped" do
-    wrapped.request.should be_a(described_class)
+    expect(wrapped.request).to be_a(described_class)
   end
 
   it "should retain properties when unwrapped" do

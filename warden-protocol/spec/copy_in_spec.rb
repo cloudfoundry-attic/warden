@@ -4,7 +4,7 @@ require "spec_helper"
 
 describe Warden::Protocol::CopyInRequest do
   subject(:request) do
-    described_class.new(
+    Warden::Protocol::CopyInRequest.new(
       :handle => "handle",
       :src_path => "/src",
       :dst_path => "/dst"
@@ -13,8 +13,10 @@ describe Warden::Protocol::CopyInRequest do
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "CopyIn" }
-  its("class.type_underscored") { should == "copy_in" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('CopyIn')
+    expect(request.class.type_underscored).to eq('copy_in')
+  end
 
   field :handle do
     it_should_be_required
@@ -32,20 +34,27 @@ describe Warden::Protocol::CopyInRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::CopyInResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::CopyInResponse)
   end
 end
 
 describe Warden::Protocol::CopyInResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::CopyInResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "CopyIn" }
-  its("class.type_underscored") { should == "copy_in" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('CopyIn')
+    expect(response.class.type_underscored).to eq('copy_in')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 end

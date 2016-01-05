@@ -4,13 +4,15 @@ require "spec_helper"
 
 describe Warden::Protocol::LimitBandwidthRequest do
   subject(:request) do
-    described_class.new(:handle => "handle", :rate => 1, :burst => 1)
+    Warden::Protocol::LimitBandwidthRequest.new(:handle => "handle", :rate => 1, :burst => 1)
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "LimitBandwidth" }
-  its("class.type_underscored") { should == "limit_bandwidth" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('LimitBandwidth')
+    expect(request.class.type_underscored).to eq('limit_bandwidth')
+  end
 
   field :handle do
     it_should_be_required
@@ -28,22 +30,29 @@ describe Warden::Protocol::LimitBandwidthRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::LimitBandwidthResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::LimitBandwidthResponse)
   end
 end
 
 describe Warden::Protocol::LimitBandwidthResponse do
   subject(:response) do
-    described_class.new(:rate => 1, :burst => 1)
+    Warden::Protocol::LimitBandwidthResponse.new(:rate => 1, :burst => 1)
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "LimitBandwidth" }
-  its("class.type_underscored") { should == "limit_bandwidth" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('LimitBandwidth')
+    expect(response.class.type_underscored).to eq('limit_bandwidth')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 
   field :rate do
     it_should_be_required

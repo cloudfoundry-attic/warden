@@ -4,13 +4,15 @@ require "spec_helper"
 
 describe Warden::Protocol::StreamRequest do
   subject(:request) do
-    described_class.new(:handle => "handle", :job_id => 1)
+    Warden::Protocol::StreamRequest.new(:handle => "handle", :job_id => 1)
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "Stream" }
-  its("class.type_underscored") { should == "stream" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('Stream')
+    expect(request.class.type_underscored).to eq('stream')
+  end
 
   field :handle do
     it_should_be_required
@@ -23,22 +25,29 @@ describe Warden::Protocol::StreamRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::StreamResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::StreamResponse)
   end
 end
 
 describe Warden::Protocol::StreamResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::StreamResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "Stream" }
-  its("class.type_underscored") { should == "stream" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('Stream')
+    expect(response.class.type_underscored).to eq('stream')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 
   field :name do
     it_should_be_optional
@@ -59,7 +68,7 @@ describe Warden::Protocol::StreamResponse do
     it_should_be_optional
 
     it "should be a InfoResponse" do
-      field.type.should == Warden::Protocol::InfoResponse
+      expect(field.type).to eq(Warden::Protocol::InfoResponse)
     end
   end
 end

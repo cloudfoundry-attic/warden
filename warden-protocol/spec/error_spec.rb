@@ -4,13 +4,18 @@ require "spec_helper"
 
 describe Warden::Protocol::ErrorResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::ErrorResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  it { should_not be_ok }
-  it { should be_error }
+  it 'should not be ok' do
+    expect(response).to_not be_ok
+  end
+
+  it 'should be an error' do
+    expect(response).to be_error
+  end
 
   field :message do
     it_should_be_optional
@@ -27,7 +32,7 @@ describe Warden::Protocol::ErrorResponse do
 
     it "should allow one or more entries" do
       subject.backtrace = ["a", "b"]
-      subject.should be_valid
+      expect(subject).to be_valid
     end
   end
 end

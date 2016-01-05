@@ -12,16 +12,16 @@ describe Warden::Protocol::Buffer do
   it "should support iterating over requests" do
     subject << Warden::Protocol::Buffer.request_to_wire(request)
     subject.each_request do |request|
-      request.class.should == Warden::Protocol::EchoRequest
-      request.message.should == "request"
+      expect(request.class).to eq(Warden::Protocol::EchoRequest)
+      expect(request.message).to eq("request")
     end
   end
 
   it "should support iterating over responses" do
     subject << Warden::Protocol::Buffer.response_to_wire(response)
     subject.each_response do |response|
-      response.class.should == Warden::Protocol::EchoResponse
-      response.message.should == "response"
+      expect(response.class).to eq(Warden::Protocol::EchoResponse)
+      expect(response.message).to eq("response")
     end
   end
 
@@ -40,8 +40,8 @@ describe Warden::Protocol::Buffer do
       end
 
       subject.each_request do |request|
-        request.class.should == Warden::Protocol::EchoRequest
-        request.message.should == "request"
+        expect(request.class).to eq(Warden::Protocol::EchoRequest)
+        expect(request.message).to eq("request")
       end
     end
 
@@ -59,8 +59,8 @@ describe Warden::Protocol::Buffer do
       end
 
       subject.each_response do |response|
-        response.class.should == Warden::Protocol::EchoResponse
-        response.message.should == "response"
+        expect(response.class).to eq(Warden::Protocol::EchoResponse)
+        expect(response.message).to eq("response")
       end
     end
   end

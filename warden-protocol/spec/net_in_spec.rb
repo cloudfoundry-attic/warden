@@ -4,13 +4,15 @@ require "spec_helper"
 
 describe Warden::Protocol::NetInRequest do
   subject(:request) do
-    described_class.new(:handle => "handle")
+    Warden::Protocol::NetInRequest.new(:handle => "handle")
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "NetIn" }
-  its("class.type_underscored") { should == "net_in" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('NetIn')
+    expect(request.class.type_underscored).to eq('net_in')
+  end
 
   field :handle do
     it_should_be_required
@@ -28,22 +30,29 @@ describe Warden::Protocol::NetInRequest do
   end
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::NetInResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::NetInResponse)
   end
 end
 
 describe Warden::Protocol::NetInResponse do
   subject(:response) do
-    described_class.new(:host_port => 1234, :container_port => 1234)
+    Warden::Protocol::NetInResponse.new(:host_port => 1234, :container_port => 1234)
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "NetIn" }
-  its("class.type_underscored") { should == "net_in" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('NetIn')
+    expect(response.class.type_underscored).to eq('net_in')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 
   field :host_port do
     it_should_be_required

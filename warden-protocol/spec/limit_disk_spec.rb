@@ -66,13 +66,15 @@ end
 
 describe Warden::Protocol::LimitDiskRequest do
   subject(:request) do
-    described_class.new(:handle => "handle")
+    Warden::Protocol::LimitDiskRequest.new(:handle => "handle")
   end
 
   it_should_behave_like "wrappable request"
 
-  its("class.type_camelized") { should == "LimitDisk" }
-  its("class.type_underscored") { should == "limit_disk" }
+  it 'has class type methods' do
+    expect(request.class.type_camelized).to eq('LimitDisk')
+    expect(request.class.type_underscored).to eq('limit_disk')
+  end
 
   field :handle do
     it_should_be_required
@@ -82,22 +84,29 @@ describe Warden::Protocol::LimitDiskRequest do
   it_should_behave_like "disk limiting"
 
   it "should respond to #create_response" do
-    request.create_response.should be_a(Warden::Protocol::LimitDiskResponse)
+    expect(request.create_response).to be_a(Warden::Protocol::LimitDiskResponse)
   end
 end
 
 describe Warden::Protocol::LimitDiskResponse do
   subject(:response) do
-    described_class.new
+    Warden::Protocol::LimitDiskResponse.new
   end
 
   it_should_behave_like "wrappable response"
 
-  its("class.type_camelized") { should == "LimitDisk" }
-  its("class.type_underscored") { should == "limit_disk" }
+  it 'has class type methods' do
+    expect(response.class.type_camelized).to eq('LimitDisk')
+    expect(response.class.type_underscored).to eq('limit_disk')
+  end
 
-  it { should be_ok }
-  it { should_not be_error }
+  it 'should be ok' do
+    expect(response).to be_ok
+  end
+
+  it 'should not be an error' do
+    expect(response).to_not be_error
+  end
 
   it_should_behave_like "disk limiting"
 end

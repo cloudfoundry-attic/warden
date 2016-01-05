@@ -16,5 +16,5 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "beefcake", "~> 1.0.0"
 
-  gem.add_development_dependency "rspec", "~> 2.11.0"
+  gem.add_development_dependency "rspec", "~> 3.0"
 end

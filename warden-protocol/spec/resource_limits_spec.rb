@@ -4,7 +4,7 @@ require "spec_helper"
 
 describe Warden::Protocol::ResourceLimits do
   subject do
-    described_class.new
+    Warden::Protocol::ResourceLimits.new
   end
 
   field :as do

@@ -5,13 +5,15 @@ require "spec_helper"
 module Warden::Protocol
   describe RunRequest do
     subject(:request) do
-      described_class.new(:handle => "handle", :script => "echo foo")
+      Warden::Protocol::RunRequest.new(:handle => "handle", :script => "echo foo")
     end
 
     it_should_behave_like "wrappable request"
 
-    its("class.type_camelized") { should == "Run" }
-    its("class.type_underscored") { should == "run" }
+    it 'has class type methods' do
+      expect(request.class.type_camelized).to eq('Run')
+      expect(request.class.type_underscored).to eq('run')
+    end
 
     field :handle do
       it_should_be_required
@@ -41,27 +43,34 @@ module Warden::Protocol
 
       it "should be populated with ResourceLimits object" do
         request.rlimits = ResourceLimits.new
-        request.should be_valid
+        expect(request).to be_valid
       end
     end
 
     it "should respond to #create_response" do
-      request.create_response.should be_a(RunResponse)
+      expect(request.create_response).to be_a(RunResponse)
     end
   end
 
   describe RunResponse do
     subject(:response) do
-      described_class.new
+      Warden::Protocol::RunResponse.new
     end
 
     it_should_behave_like "wrappable response"
 
-    its("class.type_camelized") { should == "Run" }
-    its("class.type_underscored") { should == "run" }
+    it 'has class type methods' do
+      expect(response.class.type_camelized).to eq('Run')
+      expect(response.class.type_underscored).to eq('run')
+    end
 
-    it { should be_ok }
-    it { should_not be_error }
+    it 'should be ok' do
+      expect(response).to be_ok
+    end
+
+    it 'should not be an error' do
+      expect(response).to_not be_error
+    end
 
     field :exit_status do
       it_should_be_optional
@@ -82,7 +91,7 @@ module Warden::Protocol
       it_should_be_optional
 
       it "should be a InfoResponse" do
-        field.type.should == InfoResponse
+        expect(field.type).to eq(InfoResponse)
       end
     end
   end

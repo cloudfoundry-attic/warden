@@ -84,6 +84,8 @@ module Warden
              Beefcake::Message::InvalidValueError,
              Beefcake::Message::RequiredFieldNotSetError => e
         raise ProtocolError, e
+      rescue Exception => e
+        raise ProtocolError, e
       end
 
       def reload
@@ -151,4 +153,5 @@ module Warden
 end
 
 require "warden/protocol/pb"
+require "warden/protocol/pb_ext"
 require "warden/protocol/message"
