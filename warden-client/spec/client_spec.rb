@@ -12,9 +12,9 @@ describe Warden::Client do
   it "shouldn't be able to connect without a server" do
     expect do
       client.connect
-    end.to raise_error
+    end.to raise_error Errno::ECONNREFUSED
 
-    client.should_not be_connected
+    expect(client).to_not be_connected
   end
 
   describe "connecting" do
@@ -29,7 +29,7 @@ describe Warden::Client do
           client.connect
         end.to_not raise_error
 
-        client.should be_connected
+        expect(client).to be_connected
       end
     end
 
@@ -41,7 +41,7 @@ describe Warden::Client do
           client.connect
         end.to_not raise_error
 
-        client.should be_connected
+        expect(client).to be_connected
       end
     end
   end
@@ -65,73 +65,73 @@ describe Warden::Client do
 
       before(:each) do
         client.connect
-        client.should be_connected
-        connection_count.should == 1
+        expect(client).to be_connected
+        expect(connection_count).to eq(1)
       end
 
       it "should not allow connecting" do
         expect do
           client.connect
-        end.to raise_error
+        end.to raise_error RuntimeError
 
         # This should not affect the connection
-        client.should be_connected
+        expect(client).to be_connected
 
         # This should not reconnect
-        connection_count.should == 1
+        expect(connection_count).to eq(1)
       end
 
       it "should allow disconnecting" do
         client.disconnect
-        client.should_not be_connected
+        expect(client).to_not be_connected
 
         # This should not reconnect
-        connection_count.should == 1
+        expect(connection_count).to eq(1)
       end
 
       it "should allow reconnecting" do
         client.reconnect
-        client.should be_connected
+        expect(client).to be_connected
 
         # This should have reconnected
-        connection_count.should == 2
+        expect(connection_count).to eq(2)
       end
     end
 
     context "when disconnected" do
 
       before(:each) do
-        connection_count.should == 0
+        expect(connection_count).to eq(0)
       end
 
       it "should not allow disconnecting" do
         expect do
           client.disconnect
-        end.to raise_error
+        end.to raise_error RuntimeError
 
         # This should not affect the connection
-        client.should_not be_connected
+        expect(client).to_not be_connected
 
         # This should not reconnect
-        connection_count.should == 0
+        expect(connection_count).to eq(0)
       end
 
       it "should allow connecting" do
         client.connect
-        client.should be_connected
+        expect(client).to be_connected
 
         # This should have connected
-        connection_count.should == 1
+        expect(connection_count).to eq(1)
       end
 
       # While it is semantically impossible to reconnect when the client was
       # never connected to begin with, it IS possible.
       it "should allow reconnecting" do
         client.reconnect
-        client.should be_connected
+        expect(client).to be_connected
 
         # This should have connected
-        connection_count.should == 1
+        expect(connection_count).to eq(1)
       end
     end
   end
@@ -183,7 +183,7 @@ describe Warden::Client do
       end
 
       client.connect
-      client.should be_connected
+      expect(client).to be_connected
     end
 
     it "should raise EOFError on eof" do
@@ -192,7 +192,7 @@ describe Warden::Client do
       end.to raise_error(::EOFError)
 
       # This should update the connection status
-      client.should_not be_connected
+      expect(client).to_not be_connected
     end
 
     it "should raise Warden::Client::ServerError on error payloads" do
@@ -201,17 +201,17 @@ describe Warden::Client do
       end.to raise_error(Warden::Client::ServerError)
 
       # This should not affect the connection
-      client.should be_connected
+      expect(client).to be_connected
     end
 
     it "should return decoded payload for non-error replies" do
       response = client.echo(:message => "hello")
-      response.message.should == "hello"
+      expect(response.message).to eq("hello")
     end
 
     it "should work when called with the old API" do
       response = client.call(["echo", "hello"])
-      response.should == "hello"
+      expect(response).to eq("hello")
     end
 
     it "should stream data" do
@@ -222,10 +222,10 @@ describe Warden::Client do
       block = lambda do |response|
         raise "Block should not be called more than once." if called
 
-        response.should be_an_instance_of Warden::Protocol::StreamResponse
-        response.data.should == "test"
-        response.name.should == "stream"
-        response.exit_status.should be_nil
+        expect(response).to be_an_instance_of Warden::Protocol::StreamResponse
+        expect(response.data).to eq("test")
+        expect(response.name).to eq("stream")
+        expect(response.exit_status).to be_nil
 
         called = true
       end
@@ -233,11 +233,11 @@ describe Warden::Client do
       request = Warden::Protocol::StreamRequest.new(:handle => handle,
                                                     :job_id => response.job_id)
       response = client.stream(request, &block)
-      response.data.should be_nil
-      response.name.should be_nil
-      response.exit_status.should == 0
+      expect(response.data).to be_nil
+      expect(response.name).to be_nil
+      expect(response.exit_status).to eq(0)
 
-      called.should be_true
+      expect(called).to be true
     end
   end
 end

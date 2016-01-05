@@ -3,11 +3,11 @@ require "warden/client/v1"
 
 describe Warden::Client::V1 do
   def to_request(args)
-    described_class.request_from_v1(args)
+    Warden::Client::V1.request_from_v1(args)
   end
 
   def to_response(response)
-    described_class.response_to_v1(response)
+    Warden::Client::V1.response_to_v1(response)
   end
 
   describe "create" do
@@ -19,11 +19,11 @@ describe Warden::Client::V1 do
             { "bind_mounts" => [["/src", "/dst", "ro"]] },
           ]
 
-          request.bind_mounts.should have(1).bind_mount
+          expect(request.bind_mounts.size).to eq(1)
 
           bind_mount = request.bind_mounts.first
-          bind_mount.src_path.should == "/src"
-          bind_mount.dst_path.should == "/dst"
+          expect(bind_mount.src_path).to eq("/src")
+          expect(bind_mount.dst_path).to eq("/dst")
         end
 
         ["ro", { "mode" => "ro" }].each do |mode|
@@ -33,12 +33,12 @@ describe Warden::Client::V1 do
               { "bind_mounts" => [["/src", "/dst", mode]] },
             ]
 
-            request.bind_mounts.should have(1).bind_mount
+            expect(request.bind_mounts.size).to eq(1)
 
             bind_mount = request.bind_mounts.first
-            bind_mount.src_path.should == "/src"
-            bind_mount.dst_path.should == "/dst"
-            bind_mount.mode.should == Warden::Protocol::CreateRequest::BindMount::Mode::RO
+            expect(bind_mount.src_path).to eq("/src")
+            expect(bind_mount.dst_path).to eq("/dst")
+            expect(bind_mount.mode).to eq(Warden::Protocol::CreateRequest::BindMount::Mode::RO)
           end
         end
 
@@ -49,8 +49,7 @@ describe Warden::Client::V1 do
               { "bind_mounts" => [["/src", "/dst", "rw"]] },
             ]
 
-            request.bind_mounts.first.mode.should ==
-              Warden::Protocol::CreateRequest::BindMount::Mode::RW
+            expect(request.bind_mounts.first.mode).to eq( Warden::Protocol::CreateRequest::BindMount::Mode::RW)
           end
         end
 
@@ -61,7 +60,7 @@ describe Warden::Client::V1 do
                 "create",
                 { "bind_mounts" => [["/src", "/dst", "rx"]] },
               ]
-            end.to raise_error
+            end.to raise_error NameError
           end
         end
       end
@@ -73,7 +72,7 @@ describe Warden::Client::V1 do
             { "grace_time" => 1.1 },
           ]
 
-          request.grace_time.should == 1
+          expect(request.grace_time).to eq(1)
         end
 
         it "should raise on an invalid value" do
@@ -82,7 +81,7 @@ describe Warden::Client::V1 do
               "create",
               { "grace_time" => "invalid" },
             ]
-          end.to raise_error
+          end.to raise_error ArgumentError
         end
       end
     end
@@ -90,7 +89,7 @@ describe Warden::Client::V1 do
     describe "response" do
       it "should return the handle" do
         response = to_response(Warden::Protocol::CreateResponse.new(:handle => "handle"))
-        response.should == "handle"
+        expect(response).to eq("handle")
       end
     end
   end
@@ -99,14 +98,19 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["stop", "handle"] }
 
-      its(:class)  { should == Warden::Protocol::StopRequest }
-      its(:handle) { should == "handle" }
+      it 'is a StopRequest' do
+        expect(subject).to be_a Warden::Protocol::StopRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
     end
 
     describe "response" do
       it "should always be ok" do
         response = to_response(Warden::Protocol::StopResponse.new)
-        response.should == "ok"
+        expect(response).to eq("ok")
       end
     end
   end
@@ -115,14 +119,19 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["destroy", "handle"] }
 
-      its(:class)  { should == Warden::Protocol::DestroyRequest }
-      its(:handle) { should == "handle" }
+      it 'is a DestroyRequest' do
+        expect(subject).to be_a Warden::Protocol::DestroyRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
     end
 
     describe "response" do
       it "should always be ok" do
         response = to_response(Warden::Protocol::DestroyResponse.new)
-        response.should == "ok"
+        expect(response).to eq("ok")
       end
     end
   end
@@ -131,8 +140,13 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["info", "handle"] }
 
-      its(:class)  { should == Warden::Protocol::InfoRequest }
-      its(:handle) { should == "handle" }
+      it 'is a InfoRequest' do
+        expect(subject).to be_a Warden::Protocol::InfoRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
     end
 
     describe "response" do
@@ -149,16 +163,16 @@ describe Warden::Client::V1 do
       end
 
       it "should return a hash" do
-        response.should be_a(Hash)
+        expect(response).to be_a(Hash)
       end
 
       it "should stringify keys" do
-        response["state"].should == "state"
+        expect(response["state"]).to eq("state")
       end
 
       it "should stringify keys of nested hashes" do
-        response["memory_stat"]["cache"].should == 1
-        response["memory_stat"]["rss"].should == 2
+        expect(response["memory_stat"]["cache"]).to eq(1)
+        expect(response["memory_stat"]["rss"]).to eq(2)
       end
     end
   end
@@ -167,15 +181,23 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["spawn", "handle", "echo foo"] }
 
-      its(:class)  { should == Warden::Protocol::SpawnRequest }
-      its(:handle) { should == "handle" }
-      its(:script) { should == "echo foo" }
+      it 'is a SpawnRequest' do
+        expect(subject).to be_a Warden::Protocol::SpawnRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a script' do
+        expect(subject.script).to eq('echo foo')
+      end
     end
 
     describe "response" do
       it "should return job_id" do
         response = to_response(Warden::Protocol::SpawnResponse.new(:job_id => 3))
-        response.should == 3
+        expect(response).to eq(3)
       end
     end
   end
@@ -184,9 +206,17 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["link", "handle", "1"] }
 
-      its(:class)  { should == Warden::Protocol::LinkRequest }
-      its(:handle) { should == "handle" }
-      its(:job_id) { should == 1 }
+      it 'is a LinkRequest' do
+        expect(subject).to be_a Warden::Protocol::LinkRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a job id' do
+        expect(subject.job_id).to eq(1)
+      end
     end
 
     describe "response" do
@@ -199,9 +229,9 @@ describe Warden::Client::V1 do
           )
         )
 
-        response[0].should == 255
-        response[1].should == "stdout"
-        response[2].should == "stderr"
+        expect(response[0]).to eq(255)
+        expect(response[1]).to eq("stdout")
+        expect(response[2]).to eq("stderr")
       end
     end
   end
@@ -210,9 +240,17 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["stream", "handle", "1"] }
 
-      its(:class)  { should == Warden::Protocol::StreamRequest }
-      its(:handle) { should == "handle" }
-      its(:job_id) { should == 1 }
+      it 'is a StreamRequest' do
+        expect(subject).to be_a Warden::Protocol::StreamRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a job id' do
+        expect(subject.job_id).to eq(1)
+      end
     end
 
     describe "response" do
@@ -225,9 +263,9 @@ describe Warden::Client::V1 do
           )
         )
 
-        response[0].should == "stdout"
-        response[1].should == "data"
-        response[2].should == 25
+        expect(response[0]).to eq("stdout")
+        expect(response[1]).to eq("data")
+        expect(response[2]).to eq(25)
       end
     end
   end
@@ -236,9 +274,17 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["run", "handle", "echo foo"] }
 
-      its(:class)  { should == Warden::Protocol::RunRequest }
-      its(:handle) { should == "handle" }
-      its(:script) { should == "echo foo" }
+      it 'is a RunRequest' do
+        expect(subject).to be_a Warden::Protocol::RunRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a script' do
+        expect(subject.script).to eq('echo foo')
+      end
     end
 
     describe "response" do
@@ -251,9 +297,9 @@ describe Warden::Client::V1 do
           )
         )
 
-        response[0].should == 255
-        response[1].should == "stdout"
-        response[2].should == "stderr"
+        expect(response[0]).to eq(255)
+        expect(response[1]).to eq("stdout")
+        expect(response[2]).to eq("stderr")
       end
     end
   end
@@ -262,17 +308,33 @@ describe Warden::Client::V1 do
     describe "request (in)" do
       subject { to_request ["net", "handle", "in"] }
 
-      its(:class)  { should == Warden::Protocol::NetInRequest }
-      its(:handle) { should == "handle" }
+      it 'is a NetInRequest' do
+        expect(subject).to be_a Warden::Protocol::NetInRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
     end
 
     describe "request (out)" do
       subject { to_request ["net", "handle", "out", "network:1234"] }
 
-      its(:class)   { should == Warden::Protocol::NetOutRequest }
-      its(:handle)  { should == "handle" }
-      its(:network) { should == "network" }
-      its(:port)    { should == 1234 }
+      it 'is a NetOutRequest' do
+        expect(subject).to be_a Warden::Protocol::NetOutRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a network' do
+        expect(subject.network).to eq('network')
+      end
+
+      it 'has a port' do
+        expect(subject.port).to eq(1234)
+      end
     end
 
     describe "response (in)" do
@@ -284,15 +346,15 @@ describe Warden::Client::V1 do
           )
         )
 
-        response["host_port"].should == 1234
-        response["container_port"].should == 2345
+        expect(response["host_port"]).to eq(1234)
+        expect(response["container_port"]).to eq(2345)
       end
     end
 
     describe "response (out)" do
       it "should always be ok" do
         response = to_response(Warden::Protocol::NetOutResponse.new)
-        response.should == "ok"
+        expect(response).to eq("ok")
       end
     end
   end
@@ -301,33 +363,58 @@ describe Warden::Client::V1 do
     describe "request (in)" do
       subject { to_request ["copy", "handle", "in", "/src", "/dst"] }
 
-      its(:class)    { should == Warden::Protocol::CopyInRequest }
-      its(:handle)   { should == "handle" }
-      its(:src_path) { should == "/src" }
-      its(:dst_path) { should == "/dst" }
+      it 'is a CopyInRequest' do
+        expect(subject).to be_a Warden::Protocol::CopyInRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a source path' do
+        expect(subject.src_path).to eq('/src')
+      end
+
+      it 'has a destination path' do
+        expect(subject.dst_path).to eq('/dst')
+      end
     end
 
     describe "request (out)" do
       subject { to_request ["copy", "handle", "out", "/src", "/dst", "owner"] }
 
-      its(:class)    { should == Warden::Protocol::CopyOutRequest }
-      its(:handle)   { should == "handle" }
-      its(:src_path) { should == "/src" }
-      its(:dst_path) { should == "/dst" }
-      its(:owner)    { should == "owner" }
+      it 'is a CopyOutRequest' do
+        expect(subject).to be_a Warden::Protocol::CopyOutRequest
+      end
+
+      it 'has a handle' do
+        expect(subject.handle).to eq('handle')
+      end
+
+      it 'has a source path' do
+        expect(subject.src_path).to eq('/src')
+      end
+
+      it 'has a destination path' do
+        expect(subject.dst_path).to eq('/dst')
+      end
+
+      it 'has an owner' do
+        expect(subject.owner).to eq('owner')
+      end
     end
 
     describe "response (in)" do
       it "should always be ok" do
         response = to_response(Warden::Protocol::CopyInResponse.new)
-        response.should == "ok"
+        expect(response).to eq("ok")
       end
     end
 
     describe "response (out)" do
       it "should always be ok" do
         response = to_response(Warden::Protocol::CopyOutResponse.new)
-        response.should == "ok"
+        expect(response).to eq("ok")
       end
     end
   end
@@ -337,17 +424,33 @@ describe Warden::Client::V1 do
       describe "without limit" do
         subject { to_request ["limit", "handle", "mem"] }
 
-        its(:class)          { should == Warden::Protocol::LimitMemoryRequest }
-        its(:handle)         { should == "handle" }
-        its(:limit_in_bytes) { should be_nil }
+        it 'is a LimitMemoryRequest' do
+          expect(subject).to be_a Warden::Protocol::LimitMemoryRequest
+        end
+
+        it 'has a handle' do
+          expect(subject.handle).to eq('handle')
+        end
+
+        it 'has no limit' do
+          expect(subject.limit_in_bytes).to be_nil
+        end
       end
 
       describe "with limit" do
         subject { to_request ["limit", "handle", "mem", "1234"] }
 
-        its(:class)          { should == Warden::Protocol::LimitMemoryRequest }
-        its(:handle)         { should == "handle" }
-        its(:limit_in_bytes) { should == 1234 }
+        it 'is a LimitMemoryRequest' do
+          expect(subject).to be_a Warden::Protocol::LimitMemoryRequest
+        end
+
+        it 'has a handle' do
+          expect(subject.handle).to eq('handle')
+        end
+
+        it 'has a limit' do
+          expect(subject.limit_in_bytes).to eq(1234)
+        end
       end
     end
 
@@ -358,7 +461,7 @@ describe Warden::Client::V1 do
             :limit_in_bytes => 1234
           })
         )
-        response.should == 1234
+        expect(response).to eq(1234)
       end
     end
 
@@ -366,17 +469,33 @@ describe Warden::Client::V1 do
       describe "without limit" do
         subject { to_request ["limit", "handle", "disk"] }
 
-        its(:class)          { should == Warden::Protocol::LimitDiskRequest }
-        its(:handle)         { should == "handle" }
-        its(:byte)           { should be_nil }
+        it 'is a LimitDiskRequest' do
+          expect(subject).to be_a Warden::Protocol::LimitDiskRequest
+        end
+
+        it 'has a handle' do
+          expect(subject.handle).to eq('handle')
+        end
+
+        it 'has no limit' do
+          expect(subject.byte).to be_nil
+        end
       end
 
       describe "with limit" do
         subject { to_request ["limit", "handle", "disk", "1234"] }
 
-        its(:class)          { should == Warden::Protocol::LimitDiskRequest }
-        its(:handle)         { should == "handle" }
-        its(:byte)           { should == 1234 }
+        it 'is a LimitDiskRequest' do
+          expect(subject).to be_a Warden::Protocol::LimitDiskRequest
+        end
+
+        it 'has a handle' do
+          expect(subject.handle).to eq('handle')
+        end
+
+        it 'has a limit' do
+          expect(subject.byte).to eq(1234)
+        end
       end
     end
 
@@ -387,7 +506,7 @@ describe Warden::Client::V1 do
             :byte => 1234
           })
         )
-        response.should == 1234
+        expect(response).to eq(1234)
       end
     end
   end
@@ -396,13 +515,15 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["ping"] }
 
-      its(:class) { should == Warden::Protocol::PingRequest }
+      it 'is a PingRequest' do
+        expect(subject).to be_a Warden::Protocol::PingRequest
+      end
     end
 
     describe "response" do
       it "should return pong" do
         response = to_response(Warden::Protocol::PingResponse.new)
-        response.should == "pong"
+        expect(response).to eq("pong")
       end
     end
   end
@@ -411,7 +532,9 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["list"] }
 
-      its(:class) { should == Warden::Protocol::ListRequest }
+      it 'is a ListRequest' do
+        expect(subject).to be_a Warden::Protocol::ListRequest
+      end
     end
 
     describe "response" do
@@ -421,7 +544,7 @@ describe Warden::Client::V1 do
             :handles => ["h1", "h2"]
           })
         )
-        response.should == ["h1", "h2"]
+        expect(response).to eq(["h1", "h2"])
       end
     end
   end
@@ -430,8 +553,13 @@ describe Warden::Client::V1 do
     describe "request" do
       subject { to_request ["echo", "hello world"] }
 
-      its(:class)   { should == Warden::Protocol::EchoRequest }
-      its(:message) { should == "hello world" }
+      it 'is a EchoRequest' do
+        expect(subject).to be_a Warden::Protocol::EchoRequest
+      end
+
+      it 'has a message' do
+        expect(subject.message).to eq('hello world')
+      end
     end
 
     describe "response" do
@@ -441,7 +569,7 @@ describe Warden::Client::V1 do
             :message => "hello world"
           })
         )
-        response.should == "hello world"
+        expect(response).to eq("hello world")
       end
     end
   end
