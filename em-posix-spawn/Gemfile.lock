@@ -1,0 +1,25 @@
+PATH
+  remote: .
+  specs:
+    em-posix-spawn (0.1.10)
+      eventmachine
+      posix-spawn
+
+GEM
+  remote: http://rubygems.org/
+  specs:
+    eventmachine (1.0.8)
+    minitest (5.8.3)
+    posix-spawn (0.3.11)
+    rake (10.4.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  em-posix-spawn!
+  minitest
+  rake
+
+BUNDLED WITH
+   1.11.2
