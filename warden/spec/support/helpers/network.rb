@@ -8,10 +8,8 @@ module Helpers
       rv
     end
 
-    def self.included(base)
-      base.instance_eval do
-        let(:next_class_c) { Helpers::Network.next_class_c }
-      end
+    def next_class_c
+      @next_class_c ||= Helpers::Network.next_class_c
     end
   end
 end
