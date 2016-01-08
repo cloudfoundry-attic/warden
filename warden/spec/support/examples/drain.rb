@@ -16,7 +16,7 @@ shared_examples "drain" do
       sleep 0.05
     end
 
-    warden_running?.should be_false
+    expect(warden_running?).to be_falsey
   end
 
   it "should break connections that are inactive" do
@@ -26,26 +26,30 @@ shared_examples "drain" do
 
     expect do
       client.destroy(:handle => handle)
-    end.to raise_error
+    end.to raise_error Errno::EPIPE
   end
 
   it "should break link requests" do
-    check_request_broken do
+    check_request_broken do |handle|
       resp = client.spawn(:handle => handle, :script => "sleep 1000")
       client.link(:handle => handle, :job_id => resp.job_id)
     end
   end
 
   it "should break run requests" do
-    check_request_broken do
+    check_request_broken do |handle|
       client.run(:handle => handle, :script => "sleep 1000")
     end
   end
 
   it "should break stream requests" do
-    check_request_broken do
+    check_request_broken do |handle|
       resp = client.spawn(:handle => handle, :script => "sleep 1000")
-      client.stream(:handle => handle, :job_id => resp.job_id)
+
+      stream_request = Warden::Protocol::StreamRequest.new
+      stream_request.handle = handle
+      stream_request.job_id = resp.job_id
+      client.stream(stream_request)
     end
   end
 
@@ -55,7 +59,7 @@ shared_examples "drain" do
 
     drain
 
-    File.exist?(snapshot_path).should be_true
+    expect(File.exist?(snapshot_path)).to be true
   end
 
   it "should recreate existing containers" do
@@ -69,7 +73,7 @@ shared_examples "drain" do
     new_client = create_client
 
     [active_handle, stopped_handle].zip(["active", "stopped"]).each do |h, state|
-      new_client.info(:handle => h).state.should == state
+      expect(new_client.info(:handle => h).state).to eq state
     end
   end
 
@@ -90,7 +94,7 @@ shared_examples "drain" do
     start_warden
 
     c = create_client
-    c.info(:handle => handle).container_path.should == new_path
+    expect(c.info(:handle => handle).container_path).to eq new_path
   end
 
   it "should not place existing containers networks back into the pool" do
@@ -99,7 +103,7 @@ shared_examples "drain" do
     drain_and_restart
 
     # Sort of a hack, relies on the fact that handles are encoded ips
-    create_client.create.handle.should_not == old_handle
+    expect(create_client.create.handle).to_not eq old_handle
   end
 
   it "should not place existing containers ports back into the pool" do
@@ -110,7 +114,7 @@ shared_examples "drain" do
 
     c = create_client
     h = c.create.handle
-    c.net_in(:handle => h).host_port.should == (old_port + 1)
+    expect(c.net_in(:handle => h).host_port).to eq (old_port + 1)
   end
 
 
@@ -125,7 +129,7 @@ shared_examples "drain" do
 
     c = create_client
     h = c.create.handle
-    get_uid(c, h).should == (old_uid + 1)
+    expect(get_uid(c, h)).to eq (old_uid + 1)
   end
 
   describe "jobs that stay alive over a restart" do
@@ -168,11 +172,11 @@ shared_examples "drain" do
       start = Time.now
       link_resp = c.link(:handle => @handle, :job_id => job_id)
       elapsed = Time.now - start
-      link_resp.exit_status.should == exp_status
-      link_resp.stdout.should == exp_stdout
+      expect(link_resp.exit_status).to eq exp_status
+      expect(link_resp.stdout).to eq exp_stdout
 
       # Check command was still running
-      elapsed.should be > 1
+      expect(elapsed).to be > 1
     end
 
     it "should allow streaming" do
@@ -184,11 +188,11 @@ shared_examples "drain" do
       start = Time.now
       streams = read_streams(c, @handle, job_id)
       elapsed = Time.now - start
-      streams.size.should == 1
-      streams["stdout"].should == exp_stdout
+      expect(streams.size).to eq 1
+      expect(streams["stdout"]).to eq exp_stdout
 
       # Check command was still running
-      elapsed.should be > 1
+      expect(elapsed).to be > 1
     end
 
     context "and their output is discarded" do
@@ -202,10 +206,10 @@ shared_examples "drain" do
         streams = read_streams(c, @handle, job_id)
         elapsed = Time.now - start
 
-        streams.should be_empty
+        expect(streams).to be_empty
 
         # Check command was still running
-        elapsed.should be > 1
+        expect(elapsed).to be > 1
       end
     end
 
@@ -304,9 +308,9 @@ shared_examples "drain" do
 
     c = create_client
     link_response = c.link(:handle => @handle, :job_id => @job_id)
-    link_response.stdout.should == ""
-    link_response.stderr.should == ""
-    link_response.exit_status.should == 2
+    expect(link_response.stdout).to eq ""
+    expect(link_response.stderr).to eq ""
+    expect(link_response.exit_status).to eq 2
   end
 
   describe "grace time" do
@@ -324,7 +328,7 @@ shared_examples "drain" do
 
       new_client = create_client
       sleep 1.1
-      expect{ new_client.info(:handle => handle) }.to_not raise_error(/unknown handle/)
+      expect{ new_client.info(:handle => handle) }.to_not raise_error
     end
   end
 end

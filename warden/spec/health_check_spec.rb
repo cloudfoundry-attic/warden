@@ -80,7 +80,7 @@ describe "health check" do
   it "should respond with HTTP 200" do
     uri = URI.parse("http://127.0.0.1:2345/")
     response = Net::HTTP.get_response(uri)
-    response.code.should == "200"
-    response.body.should be_empty
+    expect(response.code).to eq "200"
+    expect(response.body).to be_empty
   end
 end

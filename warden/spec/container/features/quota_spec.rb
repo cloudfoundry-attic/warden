@@ -14,10 +14,10 @@ describe Warden::Container::Features::Quota do
   end
 
   before do
-    instance.class.stub(:container_depot_mount_point_path).and_return("/")
-    instance.class.stub(:container_depot_block_size).and_return(4096)
+    allow(instance.class).to receive(:container_depot_mount_point_path).and_return("/")
+    allow(instance.class).to receive(:container_depot_block_size).and_return(4096)
 
-    instance.stub(:uid).and_return(1001)
+    allow(instance).to receive(:uid).and_return(1001)
 
     @current_limits = {}
     @default_limits = {
@@ -27,7 +27,7 @@ describe Warden::Container::Features::Quota do
       :inode_hard => 0,
     }
 
-    instance.class.stub(:repquota) do |uid|
+    allow(instance.class).to receive(:repquota) do |uid|
       {
         uid => {
           :quota => {
@@ -44,7 +44,7 @@ describe Warden::Container::Features::Quota do
       }
     end
 
-    instance.stub(:setquota) do |_, limits|
+    allow(instance).to receive(:setquota) do |_, limits|
       @current_limits = limits
     end
   end
@@ -55,14 +55,14 @@ describe Warden::Container::Features::Quota do
 
     describe "setting 'block_soft'" do
       before do
-        instance.class.stub(:disk_quota_enabled).and_return(true)
+        allow(instance.class).to receive(:disk_quota_enabled).and_return(true)
       end
 
       after do
         instance.do_limit_disk(request, response)
 
-        response.byte_soft.should  == 4096
-        response.block_soft.should == 1
+        expect(response.byte_soft).to eq 4096
+        expect(response.block_soft).to eq 1
       end
 
       %W(byte_soft).each do |byte_property|
@@ -91,19 +91,19 @@ describe Warden::Container::Features::Quota do
 
     describe "setting 'block_hard'" do
       before do
-        instance.class.stub(:disk_quota_enabled).and_return(true)
+        allow(instance.class).to receive(:disk_quota_enabled).and_return(true)
       end
 
       after do
         instance.do_limit_disk(request, response)
 
-        response.byte_limit.should == 4096
-        response.byte.should       == 4096
-        response.byte_hard.should  == 4096
+        expect(response.byte_limit).to eq 4096
+        expect(response.byte).to eq 4096
+        expect(response.byte_hard).to eq 4096
 
-        response.block_limit.should == 1
-        response.block.should       == 1
-        response.block_hard.should  == 1
+        expect(response.block_limit).to eq 1
+        expect(response.block).to eq 1
+        expect(response.block_hard).to eq 1
       end
 
       %W(byte_limit byte byte_hard).each do |byte_property|
@@ -132,13 +132,13 @@ describe Warden::Container::Features::Quota do
 
     describe "setting 'inode_soft'" do
       before do
-        instance.class.stub(:disk_quota_enabled).and_return(true)
+        allow(instance.class).to receive(:disk_quota_enabled).and_return(true)
       end
 
       after do
         instance.do_limit_disk(request, response)
 
-        response.inode_soft.should == 1024
+        expect(response.inode_soft).to eq 1024
       end
 
       %W(inode_soft).each do |inode_property|
@@ -154,15 +154,15 @@ describe Warden::Container::Features::Quota do
 
     describe "setting 'inode_hard'" do
       before do
-        instance.class.stub(:disk_quota_enabled).and_return(true)
+        allow(instance.class).to receive(:disk_quota_enabled).and_return(true)
       end
 
       after do
         instance.do_limit_disk(request, response)
 
-        response.inode_limit.should == 1024
-        response.inode.should       == 1024
-        response.inode_hard.should  == 1024
+        expect(response.inode_limit).to eq 1024
+        expect(response.inode).to eq 1024
+        expect(response.inode_hard).to eq 1024
       end
 
       %W(inode_limit inode inode_hard).each do |inode_property|
@@ -178,7 +178,7 @@ describe Warden::Container::Features::Quota do
 
     describe "disabling disk quota" do
       before do
-        instance.class.stub(:disk_quota_enabled).and_return(false)
+        allow(instance.class).to receive(:disk_quota_enabled).and_return(false)
       end
 
       after do
@@ -188,9 +188,9 @@ describe Warden::Container::Features::Quota do
           block_property = byte_property.gsub("byte", "block")
           inode_property = byte_property.gsub("byte", "inode")
 
-          response.method(byte_property ).call.should be_nil
-          response.method(block_property).call.should be_nil
-          response.method(inode_property).call.should be_nil
+          expect(response.method(byte_property ).call).to be_nil
+          expect(response.method(block_property).call).to be_nil
+          expect(response.method(inode_property).call).to be_nil
         end
       end
 

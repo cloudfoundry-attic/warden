@@ -50,12 +50,12 @@ describe Warden::Container::Base do
 
   def initialize_container
     container = Container.new
-    container.stub(:do_create)
-    container.stub(:do_stop)
-    container.stub(:do_destroy)
-    container.stub(:do_info)
-    container.stub(:delete_snapshot)
-    container.stub(:write_snapshot)
+    allow(container).to receive(:do_create)
+    allow(container).to receive(:do_stop)
+    allow(container).to receive(:do_destroy)
+    allow(container).to receive(:do_info)
+    allow(container).to receive(:delete_snapshot)
+    allow(container).to receive(:write_snapshot)
     container.acquire
     container
   end
@@ -64,53 +64,53 @@ describe Warden::Container::Base do
     let(:container) { Container.new }
 
     before do
-      container.stub(:delete_snapshot)
-      container.stub(:write_snapshot)
+      allow(container).to receive(:delete_snapshot)
+      allow(container).to receive(:write_snapshot)
     end
 
     context "on success" do
       before do
-        container.stub(:do_create)
-        container.should_receive(:write_snapshot)
+        allow(container).to receive(:do_create)
+        allow(container).to receive(:write_snapshot)
       end
 
       it "should call #do_create" do
-        container.should_receive(:do_create)
+        allow(container).to receive(:do_create)
         container.dispatch(Warden::Protocol::CreateRequest.new)
       end
 
       it "should return the container handle" do
         response = container.dispatch(Warden::Protocol::CreateRequest.new)
-        response.handle.should_not be_nil
+        expect(response.handle).to_not be_nil
       end
 
       it "should acquire a network" do
         container.dispatch(Warden::Protocol::CreateRequest.new)
-        container.network.should == network
-        network_pool.should be_empty
+        expect(container.network).to eq(network)
+        expect(network_pool).to be_empty
       end
 
       it "should acquire a uid" do
         container.dispatch(Warden::Protocol::CreateRequest.new)
-        container.uid.should == uid
-        uid_pool.should be_empty
+        expect(container.uid).to eq(uid)
+        expect(uid_pool).to be_empty
       end
 
       it "should register with the global registry" do
         container.dispatch(Warden::Protocol::CreateRequest.new)
-        Container.registry.size.should == 1
+        expect(Container.registry.size).to eq(1)
       end
     end
 
     context "on failure" do
       before do
-        container.stub(:do_stop)
-        container.stub(:do_destroy)
-        container.stub(:do_create).and_raise(Warden::WardenError.new("create"))
+        allow(container).to receive(:do_stop)
+        allow(container).to receive(:do_destroy)
+        allow(container).to receive(:do_create).and_raise(Warden::WardenError.new("create"))
       end
 
       it "should destroy" do
-        container.should_receive(:do_destroy)
+        allow(container).to receive(:do_destroy)
 
         expect do
           container.dispatch(Warden::Protocol::CreateRequest.new)
@@ -122,7 +122,7 @@ describe Warden::Container::Base do
           container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error(Warden::WardenError, "create")
 
-        Container.registry.should be_empty
+        expect(Container.registry).to be_empty
       end
 
       it "should release the acquired network" do
@@ -130,7 +130,7 @@ describe Warden::Container::Base do
           container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error(Warden::WardenError, "create")
 
-        network_pool.size.should == 1
+        expect(network_pool.size).to eq(1)
       end
 
       it "should release the acquired uid" do
@@ -138,12 +138,12 @@ describe Warden::Container::Base do
           container.dispatch(Warden::Protocol::CreateRequest.new)
         end.to raise_error(Warden::WardenError, "create")
 
-        uid_pool.size.should == 1
+        expect(uid_pool.size).to eq(1)
       end
 
       context "on failure of destroy" do
         before do
-          container.stub(:do_destroy).and_raise(Warden::WardenError.new("destroy"))
+          allow(container).to receive(:do_destroy).and_raise(Warden::WardenError.new("destroy"))
         end
 
         it "should raise original error" do
@@ -157,7 +157,7 @@ describe Warden::Container::Base do
             container.dispatch(Warden::Protocol::CreateRequest.new)
           end.to raise_error(Warden::WardenError, "create")
 
-          network_pool.size.should == 1
+          expect(network_pool.size).to eq(1)
         end
 
         it "should release the acquired uid" do
@@ -165,7 +165,7 @@ describe Warden::Container::Base do
             container.dispatch(Warden::Protocol::CreateRequest.new)
           end.to raise_error(Warden::WardenError, "create")
 
-          uid_pool.size.should == 1
+          expect(uid_pool.size).to eq(1)
         end
       end
     end
@@ -179,23 +179,23 @@ describe Warden::Container::Base do
     subject(:container) { Container.new }
 
     before do
-      container.stub(:logger).and_return(logger)
-      container.stub(:hook)
+      allow(container).to receive(:logger).and_return(logger)
+      allow(container).to receive(:hook)
     end
 
     it "logs to debug level to avoid logging sensitive information in production" do
-      logger.should_receive(:debug).with(an_instance_of(String), request: request.filtered_hash, response: an_instance_of(Hash))
+      allow(logger).to receive(:debug).with(an_instance_of(String), request: request.filtered_hash, response: an_instance_of(Hash))
 
       container.dispatch(request)
     end
 
     it "calls filtered hash on the request to exclude sensitive information" do
-      request.should_receive(:filtered_hash)
+      allow(request).to receive(:filtered_hash)
       container.dispatch(request)
     end
 
     it "calls filtered hash on the response to exclude sensitive information" do
-      response.should_receive(:filtered_hash)
+      allow(response).to receive(:filtered_hash)
       container.dispatch(request)
     end
   end
@@ -207,8 +207,8 @@ describe Warden::Container::Base do
     end
 
     it "should call #do_stop" do
-      @container.should_receive(:do_stop)
-      @container.should_receive(:write_snapshot)
+      allow(@container).to receive(:do_stop)
+      allow(@container).to receive(:write_snapshot)
       @container.dispatch(Warden::Protocol::StopRequest.new)
     end
   end
@@ -220,7 +220,7 @@ describe Warden::Container::Base do
     end
 
     it "should call #do_destroy" do
-      @container.should_receive(:do_destroy)
+      allow(@container).to receive(:do_destroy)
       @container.dispatch(Warden::Protocol::DestroyRequest.new)
     end
 
@@ -228,8 +228,8 @@ describe Warden::Container::Base do
       it "saves the container info as #obituary" do
         info_response = Warden::Protocol::InfoResponse.new
 
-        @container.should_receive(:do_stop)
-        @container.should_receive(:do_info).and_return(info_response)
+        allow(@container).to receive(:do_stop)
+        allow(@container).to receive(:do_info).and_return(info_response)
 
         expect do
           @container.dispatch(Warden::Protocol::DestroyRequest.new)
@@ -238,7 +238,7 @@ describe Warden::Container::Base do
 
       context "when getting the info fails" do
         it "ignores the failure" do
-          @container.should_receive(:do_info).and_raise(
+          allow(@container).to receive(:do_info).and_raise(
             Warden::WardenError.new("failure"))
 
           expect do
@@ -254,19 +254,19 @@ describe Warden::Container::Base do
       end
 
       it "should not call #do_stop" do
-        @container.should_not_receive(:do_stop)
+        expect(@container).to_not receive(:do_stop)
         @container.dispatch(Warden::Protocol::DestroyRequest.new)
       end
     end
 
     context "when not yet stopped" do
       it "should call #do_stop" do
-        @container.should_receive(:do_stop)
+        allow(@container).to receive(:do_stop)
         @container.dispatch(Warden::Protocol::DestroyRequest.new)
       end
 
       it "should not care if #do_stop succeeds" do
-        @container.should_receive(:do_stop).and_raise(Warden::WardenError.new("failure"))
+        allow(@container).to receive(:do_stop).and_raise(Warden::WardenError.new("failure"))
 
         expect do
           @container.dispatch(Warden::Protocol::DestroyRequest.new)
@@ -276,7 +276,7 @@ describe Warden::Container::Base do
 
     context "when do_destroy fails" do
       before do
-        @container.should_receive(:do_destroy).and_raise(Warden::WardenError.new("failure"))
+        allow(@container).to receive(:do_destroy).and_raise(Warden::WardenError.new("failure"))
       end
 
       it "should not be destroyed" do
@@ -296,7 +296,7 @@ describe Warden::Container::Base do
       end
 
       it "should not delete the snapshot" do
-        @container.should_receive(:delete_snapshot).once
+        allow(@container).to receive(:delete_snapshot).once
 
         expect do
           @container.dispatch(Warden::Protocol::DestroyRequest.new)
@@ -328,7 +328,7 @@ describe Warden::Container::Base do
     end
 
     it "should setup grace timer" do
-      container.should_receive(:setup_grace_timer)
+      allow(container).to receive(:setup_grace_timer)
       connection.emit(:close)
     end
   end
@@ -336,12 +336,12 @@ describe Warden::Container::Base do
   context "grace timer" do
     context "when unspecified" do
       it "should fire after server-wide grace time" do
-        Warden::Server.should_receive(:container_grace_time).and_return(0.02)
+        allow(Warden::Server).to receive(:container_grace_time).and_return(0.02)
 
         @container = initialize_container
 
         em do
-          @container.should_receive(:fire_grace_timer)
+          allow(@container).to receive(:fire_grace_timer)
           @container.setup_grace_timer
 
           ::EM.add_timer(0.03) { done }
@@ -355,7 +355,7 @@ describe Warden::Container::Base do
         @container.grace_time = nil
 
         em do
-          @container.should_not_receive(:fire_grace_timer)
+          expect(@container).to_not receive(:fire_grace_timer)
           @container.setup_grace_timer
 
           ::EM.add_timer(0.03) { done }
@@ -376,7 +376,7 @@ describe Warden::Container::Base do
 
         it "should not fire" do
           em do
-            @container.should_not_receive(:fire_grace_timer)
+            expect(@container).to_not receive(:fire_grace_timer)
             @container.setup_grace_timer
 
             ::EM.add_timer(0.01) { @container.cancel_grace_timer }
@@ -388,7 +388,7 @@ describe Warden::Container::Base do
       context "when the last connection closed" do
         it "should fire after grace time" do
           em do
-            @container.should_receive(:fire_grace_timer)
+            allow(@container).to receive(:fire_grace_timer)
             @container.setup_grace_timer
 
             ::EM.add_timer(0.03) { done }
@@ -397,7 +397,7 @@ describe Warden::Container::Base do
 
         it "should not fire when timer is cancelled" do
           em do
-            @container.should_not_receive(:fire_grace_timer)
+            expect(@container).to_not receive(:fire_grace_timer)
             @container.setup_grace_timer
 
             ::EM.add_timer(0.01) { @container.cancel_grace_timer }
@@ -408,7 +408,7 @@ describe Warden::Container::Base do
         context "when fired" do
           it "should destroy container" do
             em do
-              @container.should_receive(:dispatch).
+              allow(@container).to receive(:dispatch).
                 with(Warden::Protocol::DestroyRequest.new)
               @container.setup_grace_timer
 
@@ -418,7 +418,7 @@ describe Warden::Container::Base do
 
           it "should ignore any WardenError raised by destroy" do
             em do
-              @container.should_receive(:dispatch).
+              allow(@container).to receive(:dispatch).
                 with(Warden::Protocol::DestroyRequest.new).
                 and_raise(Warden::WardenError.new("failure"))
               @container.setup_grace_timer
@@ -599,7 +599,7 @@ describe Warden::Container::Base do
     describe "spawn" do
       before(:each) do
         @job = double("job", :job_id => 1)
-        @container.stub(:create_job).and_return(@job)
+        allow(@container).to receive(:create_job).and_return(@job)
       end
 
       include_examples "succeeds when active", Proc.new {
@@ -610,7 +610,7 @@ describe Warden::Container::Base do
     describe "run" do
       let(:job) { double("job", :job_id => 1, :err => nil, :yield => [0, "", ""], :cleanup => nil) }
       before(:each) do
-        container.stub(:create_job).and_return(job)
+        allow(container).to receive(:create_job).and_return(job)
       end
 
       include_examples "succeeds when active", Proc.new {
@@ -619,12 +619,12 @@ describe Warden::Container::Base do
 
       context "when job yielded with error" do
         before do
-          job.stub(:err) { WardenError.new("failed to do the job") }
+          allow(job).to receive(:err) { WardenError.new("failed to do the job") }
 
           it "saves the error message in response events" do
             container.dispatch(Warden::Protocol::CreateRequest.new)
             response = container.dispatch(Warden::Protocol::RunRequest.new)
-            response.info.events.should include("failed to do the job")
+            expect(response.info.events).to include("failed to do the job")
           end
         end
       end
@@ -632,7 +632,7 @@ describe Warden::Container::Base do
 
     describe "net_in" do
       before(:each) do
-        @container.stub(:do_net_in)
+        allow(@container).to receive(:do_net_in)
       end
 
       include_examples "succeeds when active", Proc.new {
@@ -642,7 +642,7 @@ describe Warden::Container::Base do
 
     describe "net_out" do
       before(:each) do
-        @container.stub(:do_net_out)
+        allow(@container).to receive(:do_net_out)
       end
 
       include_examples "succeeds when active", Proc.new {
@@ -652,7 +652,7 @@ describe Warden::Container::Base do
 
     describe "copy_in" do
       before(:each) do
-        @container.stub(:do_copy_in)
+        allow(@container).to receive(:do_copy_in)
       end
 
       include_examples "succeeds when active", Proc.new {
@@ -662,7 +662,7 @@ describe Warden::Container::Base do
 
     describe "copy_out" do
       before(:each) do
-        @container.stub(:do_copy_out)
+        allow(@container).to receive(:do_copy_out)
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
@@ -672,7 +672,7 @@ describe Warden::Container::Base do
 
     describe "limit_memory" do
       before(:each) do
-        @container.stub(:do_limit_memory)
+        allow(@container).to receive(:do_limit_memory)
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
@@ -682,7 +682,7 @@ describe Warden::Container::Base do
 
     describe "limit_disk" do
       before(:each) do
-        @container.stub(:do_limit_disk)
+        allow(@container).to receive(:do_limit_disk)
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
@@ -692,7 +692,7 @@ describe Warden::Container::Base do
 
     describe "limit_bandwidth" do
       before(:each) do
-        @container.stub(:do_limit_bandwidth)
+        allow(@container).to receive(:do_limit_bandwidth)
       end
 
       include_examples "succeeds when active or stopped", Proc.new {
@@ -702,7 +702,7 @@ describe Warden::Container::Base do
 
     describe "limit_cpu" do
       before(:each) do
-        @container.stub(:do_limit_cpu)
+        allow(@container).to receive(:do_limit_cpu)
       end
 
       include_examples "succeeds when active or stopped", Proc.new {

@@ -14,10 +14,10 @@ require "warden/container/linux"
 describe "linux", :platform => "linux", :needs_root => true do
   include Helpers::Drain
 
-  let(:work_path) { File.join(Dir.tmpdir, "warden", "spec") }
+  attr_reader :container_rootfs_path, :work_path
+
   let(:unix_domain_path) { File.join(work_path, "warden.sock") }
   let(:container_klass) { "Warden::Container::Linux" }
-  let(:container_rootfs_path) { File.join(work_path, "..", "rootfs") }
   let(:container_depot_path) { File.join(work_path, "containers") }
   let(:container_depot_file) { container_depot_path + ".img" }
   let(:have_uid_support) { true }
@@ -30,6 +30,11 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:server_pidfile) { nil }
   let(:syslog_socket) { nil }
   let(:lang) { ENV['LANG'] }
+
+  before(:all) do
+    @work_path = File.join(Dir.tmpdir, "warden", "spec")
+    @container_rootfs_path = File.join(work_path, "..", "rootfs")
+  end
 
   before do
     FileUtils.mkdir_p(work_path)
@@ -71,7 +76,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
   def execute(command)
     `#{command}`.tap do
-      $?.should be_success
+      expect($?).to be_success
     end
   end
 
@@ -189,9 +194,9 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "should honor the host's LANG" do
       response = client.run(:handle => handle, :script => "locale | grep LANG=")
-      response.exit_status.should == 0
-      response.stdout.strip.should == "LANG=#{lang}"
-      response.stderr.should == ""
+      expect(response.exit_status).to eq 0
+      expect(response.stdout.strip).to eq "LANG=#{lang}"
+      expect(response.stderr).to eq ""
     end
 
     context "when LANG is not set" do
@@ -199,9 +204,9 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "defaults to en_US.UTF-8" do
         response = client.run(:handle => handle, :script => "locale | grep LANG=")
-        response.exit_status.should == 0
-        response.stdout.strip.should == 'LANG=en_US.UTF-8'
-        response.stderr.should == ""
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip).to eq 'LANG=en_US.UTF-8'
+        expect(response.stderr).to eq ""
       end
     end
   end
@@ -211,13 +216,13 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def limit_memory(options = {})
       response = client.limit_memory(options.merge(:handle => handle))
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
     def run(script)
       response = client.run(:handle => handle, :script => script)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -235,7 +240,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "should default to a large number" do
       response = limit_memory
-      response.limit_in_bytes.should == 9223372036854771712
+      expect(response.limit_in_bytes).to eq 9223372036854771712
     end
 
     describe "setting limits" do
@@ -247,29 +252,29 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       before do
         response = limit_memory(:limit_in_bytes => hundred_mb)
-        response.limit_in_bytes.should == hundred_mb
+        expect(response.limit_in_bytes).to eq hundred_mb
       end
 
       it "sets `memory.limit_in_bytes`" do
-        integer_from_memory_cgroup("memory.limit_in_bytes").should == hundred_mb
+        expect(integer_from_memory_cgroup("memory.limit_in_bytes")).to eq hundred_mb
       end
 
       it "sets `memory.memsw.limit_in_bytes`" do
-        integer_from_memory_cgroup("memory.memsw.limit_in_bytes").should == hundred_mb
+        expect(integer_from_memory_cgroup("memory.memsw.limit_in_bytes")).to eq hundred_mb
       end
 
       describe "increasing limits" do
         before do
           response = limit_memory(:limit_in_bytes => 2 * hundred_mb)
-          response.limit_in_bytes.should == 2 * hundred_mb
+          expect(response.limit_in_bytes).to eq 2 * hundred_mb
         end
 
         it "sets `memory.limit_in_bytes`" do
-          integer_from_memory_cgroup("memory.limit_in_bytes").should == 2 * hundred_mb
+          expect(integer_from_memory_cgroup("memory.limit_in_bytes")).to eq 2 * hundred_mb
         end
 
         it "sets `memory.memsw.limit_in_bytes`" do
-          integer_from_memory_cgroup("memory.memsw.limit_in_bytes").should == 2 * hundred_mb
+          expect(integer_from_memory_cgroup("memory.memsw.limit_in_bytes")).to eq 2 * hundred_mb
         end
       end
     end
@@ -279,8 +284,8 @@ describe "linux", :platform => "linux", :needs_root => true do
         trigger_oom
 
         response = client.info(:handle => handle)
-        response.state.should == "stopped"
-        response.events.should include("out of memory")
+        expect(response.state).to eq "stopped"
+        expect(response.events).to include("out of memory")
       end
     end
 
@@ -322,7 +327,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       response = client.limit_disk(options)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -331,7 +336,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         container_handle = handle
       end
       response = client.run(:handle => container_handle, :script => script)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -366,28 +371,22 @@ describe "linux", :platform => "linux", :needs_root => true do
           FileUtils.rm_rf(vcap_rootfs_path)
         end
 
+        vcap_id = `grep vcap: #{container_rootfs_path}/etc/passwd | cut -d ':' -f 3`.strip
+
         perform_rsync(container_rootfs_path, vcap_rootfs_path, "mnt/dev/*")
         FileUtils.mkdir_p(vcap_home_directory)
         FileUtils.touch(vcap_home_file)
         FileUtils.touch(vcap_tmp_file)
-        FileUtils.chown(10000, 10000, vcap_home_directory)
-        FileUtils.chown(10000, 10000, vcap_home_file)
-        FileUtils.chown(10000, 10000, vcap_tmp_file)
-
-        open("#{vcap_rootfs_path}/etc/passwd", 'a') do |passwd_file|
-          passwd_file.puts 'vcap:x:10000:10000:vcap:/home/vcap:/bin/bash'
-        end
-
-        open("#{vcap_rootfs_path}/etc/group", 'a') do |group_file|
-          group_file.puts 'vcap:x:10000:'
-        end
+        FileUtils.chown(vcap_id, vcap_id, vcap_home_directory)
+        FileUtils.chown(vcap_id, vcap_id, vcap_home_file)
+        FileUtils.chown(vcap_id, vcap_id, vcap_tmp_file)
 
         create_request = Warden::Protocol::CreateRequest.new
         create_request.rootfs = vcap_rootfs_path
 
         expect {
           @vcap_handle = client.call(create_request).handle
-        }.to_not raise_error Warden::Client::ServerError
+        }.to_not raise_error
       end
 
       it 'should apply different disk quota on every container' do
@@ -395,48 +394,48 @@ describe "linux", :platform => "linux", :needs_root => true do
         vcap_limit_response = limit_disk(:handle => vcap_handle, :byte_limit => 4 * 1024 * 1024)
 
         limit_response = limit_disk()
-        limit_response.byte_limit.should == 4 * 1024 * 1024
+        expect(limit_response.byte_limit).to eq 4 * 1024 * 1024
 
         vcap_limit_response = limit_disk(:handle => vcap_handle)
-        vcap_limit_response.byte_limit.should == 4 * 1024 * 1024
+        expect(vcap_limit_response.byte_limit).to eq 4 * 1024 * 1024
 
         response = run("dd if=/dev/zero of=/tmp/test bs=1M count=3")
-        response.exit_status.should == 0
+        expect(response.exit_status).to eq 0
 
         response = run("dd if=/dev/zero of=/tmp/test bs=1M count=3", vcap_handle)
-        response.exit_status.should == 0
+        expect(response.exit_status).to eq 0
       end
 
       it "should still own vcap's files" do
         response = run("stat -c %u /home/vcap/a_file.txt", vcap_handle)
-        response.exit_status.should == 0
-        response.stdout.strip!.should == "10001"
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip!).to eq "10001"
 
         response = run("stat -c %g /home/vcap/a_file.txt", vcap_handle)
-        response.exit_status.should == 0
-        response.stdout.strip!.should == "10001"
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip!).to eq "10001"
 
         response = run("stat -c %u /tmp/a_file.txt", vcap_handle)
-        response.exit_status.should == 0
-        response.stdout.strip!.should == "10001"
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip!).to eq "10001"
 
         response = run("stat -c %g /tmp/a_file.txt", vcap_handle)
-        response.exit_status.should == 0
-        response.stdout.strip!.should == "10001"
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip!).to eq "10001"
 
         response = run("cat /etc/passwd | grep vcap: | cut -d ':' -f 3", vcap_handle)
-        response.exit_status.should == 0
-        response.stdout.strip.should == "10001"
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip).to eq "10001"
 
         response = run("cat /etc/group | grep vcap: | cut -d ':' -f 3", vcap_handle)
-        response.exit_status.should == 0
-        response.stdout.strip.should == "10001"
+        expect(response.exit_status).to eq 0
+        expect(response.stdout.strip).to eq "10001"
       end
     end
 
     it "should allow the disk quota to be changed" do
       response = limit_disk(:block_limit => 12345)
-      response.block_limit.should == 12345
+      expect(response.block_limit).to eq 12345
     end
 
     it "should set the block quota to 0 on creation" do
@@ -445,7 +444,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       # and destroy containers until we have exhausted the UID pool and
       # re-use an UID for the first time. The test is kept as a reminder.
       response = limit_disk()
-      response.block_limit.should == 0
+      expect(response.block_limit).to eq 0
     end
 
     context "with a 2M disk limit" do
@@ -455,13 +454,13 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "should succeed to write a 1M file" do
         response = run("dd if=/dev/zero of=/tmp/test bs=1M count=1")
-        response.exit_status.should == 0
+        expect(response.exit_status).to eq 0
       end
 
       it "should fail to write a 4M file" do
         response = run("dd if=/dev/zero of=/tmp/test bs=1M count=4")
-        response.exit_status.should == 1
-        response.stderr.should =~ /quota exceeded/i
+        expect(response.exit_status).to eq 1
+        expect(response.stderr).to match /quota exceeded/i
       end
     end
   end
@@ -477,7 +476,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def run
       response = client.run(options)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -488,7 +487,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "should save event" do
         response = run
-        response.info.events.should include("command exceeded maximum output")
+        expect(response.info.events).to include("command exceeded maximum output")
       end
 
       context "when output is discarded" do
@@ -496,7 +495,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         it "does not save an event as the job is not killed" do
           response = run
-          response.info.events.should be_nil
+          expect(response.info.events).to be_nil
         end
       end
     end
@@ -507,7 +506,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def limit_bandwidth(options = {})
       response = client.limit_bandwidth(options.merge(:handle => handle))
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -519,10 +518,10 @@ describe "linux", :platform => "linux", :needs_root => true do
       response = limit_bandwidth(:rate => 100 * 1000, :burst => 1000)
       ret = client.info(:handle => handle)
       [ret.bandwidth_stat.in_rate, ret.bandwidth_stat.out_rate].each do |v|
-        v.should == 100 * 1000
+        expect(v).to eq 100 * 1000
       end
       [ret.bandwidth_stat.in_burst, ret.bandwidth_stat.out_burst].each do |v|
-        v.should == 1000
+        expect(v).to eq 1000
       end
     end
 
@@ -530,10 +529,10 @@ describe "linux", :platform => "linux", :needs_root => true do
       response = limit_bandwidth(:rate => 200 * 1000, :burst => 2000)
       ret = client.info(:handle => handle)
       [ret.bandwidth_stat.in_rate, ret.bandwidth_stat.out_rate].each do |v|
-        v.should == 200 * 1000
+        expect(v).to eq 200 * 1000
       end
       [ret.bandwidth_stat.in_burst, ret.bandwidth_stat.out_burst].each do |v|
-        v.should == 2000
+        expect(v).to eq 2000
       end
     end
   end
@@ -547,7 +546,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def limit_cpu(options = {})
       response = client.limit_cpu(options.merge(:handle => handle))
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -591,13 +590,13 @@ describe "linux", :platform => "linux", :needs_root => true do
   describe "net_out" do
     def net_out(options = {})
       response = client.net_out(options)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
     def run(handle, script)
       response = client.run(:handle => handle, :script => script)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -678,7 +677,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         end
 
         it "rejects outbound tcp traffic" do
-          client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
+          expect(client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP)).to be_ok
 
           client_script = "curl -s --connect-timeout 15 http://www.example.com/ -o /dev/null"
           response = run(handle, client_script)
@@ -686,7 +685,7 @@ describe "linux", :platform => "linux", :needs_root => true do
         end
 
         it "rejects outbound icmp traffic" do
-          client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
+          expect(client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP)).to be_ok
 
           client_script = "ping -w2 -c1 www.example.com"
           response = run(handle, client_script)
@@ -791,7 +790,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       it "reaches every container from the host" do
         @containers.each do |e|
           `ping -q -w2 -c1 #{e[:ip]}`
-          $?.should == 0
+          expect($?).to eq 0
         end
       end
 
@@ -803,15 +802,15 @@ describe "linux", :platform => "linux", :needs_root => true do
         end
 
         it "allows traffic to networks configured in allowed networks" do
-          reachable?(@containers[0][:handle], host_gw_ip).should be_true
-          reachable?(@containers[1][:handle], host_gw_ip).should be_true
-          reachable?(@containers[2][:handle], host_gw_ip).should be_true
+          expect(reachable?(@containers[0][:handle], host_gw_ip)).to be true
+          expect(reachable?(@containers[1][:handle], host_gw_ip)).to be true
+          expect(reachable?(@containers[2][:handle], host_gw_ip)).to be true
         end
 
         it "disallows traffic to networks that are not configured in allowed networks" do
-          reachable?(@containers[0][:handle], "8.8.8.8").should be_false
-          reachable?(@containers[1][:handle], "8.8.8.8").should be_false
-          reachable?(@containers[2][:handle], "8.8.8.8").should be_false
+          expect(reachable?(@containers[0][:handle], "8.8.8.8")).to be false
+          expect(reachable?(@containers[1][:handle], "8.8.8.8")).to be false
+          expect(reachable?(@containers[2][:handle], "8.8.8.8")).to be false
         end
       end
 
@@ -984,15 +983,15 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       it "should not raise error when network field is present" do
-        net_out(:handle => handle, :network => "4.2.2.2").should be_ok
+        expect(net_out(:handle => handle, :network => "4.2.2.2")).to be_ok
       end
 
       it "should not raise error when port field is present" do
-        net_out(:handle => handle, :port => 1234).should be_ok
+        expect(net_out(:handle => handle, :port => 1234)).to be_ok
       end
 
       it "should not raise error when both network and port fields are present" do
-        net_out(:handle => handle, :network => "4.2.2.2", :port => 1234).should be_ok
+        expect(net_out(:handle => handle, :network => "4.2.2.2", :port => 1234)).to be_ok
       end
 
       it "should raise an error when the port range specifies min > max" do
@@ -1014,7 +1013,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def net_in(options = {})
       response = client.net_in(options.merge(:handle => handle))
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -1065,27 +1064,27 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "should allow the port on the container side to be specified" do
       response = net_in(:container_port => 8080)
-      response.container_port.should == 8080
+      expect(response.container_port).to eq 8080
       check_mapping(response)
     end
 
     it "should allow the port on the host side to be specified" do
       response = net_in(:host_port => 8080)
-      response.host_port.should == 8080
-      response.container_port.should == 8080
+      expect(response.host_port).to eq 8080
+      expect(response.container_port).to eq 8080
       check_mapping(response)
     end
 
     it "should allow the port on both of the container and host sides to be specified" do
       response = net_in(:host_port => 8080, :container_port => 8081)
-      response.host_port.should == 8080
-      response.container_port.should == 8081
+      expect(response.host_port).to eq 8080
+      expect(response.container_port).to eq 8081
       check_mapping(response)
     end
 
     it "should not redirect requests to other servers' container_port" do
-      client.net_out(:handle => handle, :port => 80).should be_ok
-      client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP).should be_ok
+      expect(client.net_out(:handle => handle, :port => 80)).to be_ok
+      expect(client.net_out(:handle => handle, :port => 53, :protocol => Warden::Protocol::NetOutRequest::Protocol::UDP)).to be_ok
 
       net_in(:host_port => 80, :container_port => 8080)
       script = "curl -s -w '%{http_code}' http://www.example.com/ -o /dev/null"
@@ -1105,37 +1104,37 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "should include memory stat" do
       response = client.info(:handle => handle)
-      response.memory_stat.rss.should > 0
+      expect(response.memory_stat.rss).to be > 0
     end
 
     it "should include cpu stat" do
       response = client.info(:handle => handle)
-      response.cpu_stat.usage.should > 0
-      response.cpu_stat.user.should >= 0
-      response.cpu_stat.system.should >= 0
+      expect(response.cpu_stat.usage).to be > 0
+      expect(response.cpu_stat.user).to be >= 0
+      expect(response.cpu_stat.system).to be >= 0
     end
 
     it "should include disk stat" do
       response = client.info(:handle => handle)
-      response.disk_stat.inodes_used.should > 0
+      expect(response.disk_stat.inodes_used).to be > 0
       bytes_used = response.disk_stat.bytes_used
-      bytes_used.should > 0
+      expect(bytes_used).to be > 0
 
       response = client.run(:handle => handle,
                             :script => "dd if=/dev/urandom of=/tmp/foo bs=1MB count=1")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
 
       response = client.info(:handle => handle)
-      response.disk_stat.bytes_used.should be_within(32000).of(bytes_used + 1_000_000)
+      expect(response.disk_stat.bytes_used).to be_within(32000).of(bytes_used + 1_000_000)
     end
 
     it "should include bandwidth stat" do
       response = client.info(:handle => handle)
       [response.bandwidth_stat.in_rate, response.bandwidth_stat.out_rate].each do |x|
-        x.should >= 0
+        expect(x).to be >= 0
       end
       [response.bandwidth_stat.in_burst, response.bandwidth_stat.out_burst].each do |x|
-        x.should >= 0
+        expect(x).to be >= 0
       end
     end
 
@@ -1151,7 +1150,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       sleep 0.1
 
       response = client.info(:handle => handle)
-      response.job_ids.should == [job_id_1]
+      expect(response.job_ids).to eq [job_id_1]
     end
   end
 
@@ -1165,13 +1164,13 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     def run(script)
       response = client.run(:handle => handle, :script => script)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
     def create
       response = client.call(@create_request)
-      response.should be_ok
+      expect(response).to be_ok
 
       @handle = response.handle
     end
@@ -1191,7 +1190,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     after do
       # Mounts should not appear in /etc/mtab
-      File.read("/etc/mtab").should_not match(Regexp.escape(@bind_mount.src_path))
+      expect(File.read("/etc/mtab")).to_not match(Regexp.escape(@bind_mount.src_path))
     end
 
     after :each do
@@ -1204,14 +1203,14 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       # Make sure we CAN READ a file that already exists
       response = run "cat #{@bind_mount.dst_path}/#{test_basename}"
-      response.exit_status.should == 0
-      response.stdout.should == test_contents
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to eq test_contents
 
       # Make sure we CAN'T WRITE a file
       response = run "touch #{@bind_mount.dst_path}/test"
-      response.exit_status.should == 1
-      response.stdout.should be_empty
-      response.stderr.should match(/read-only file system/i)
+      expect(response.exit_status).to eq 1
+      expect(response.stdout).to be_empty
+      expect(response.stderr).to match(/read-only file system/i)
     end
 
     it "should support bind mounting in RW mode" do
@@ -1220,14 +1219,14 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       # Make sure we CAN READ a file that already exists
       response = run "cat #{@bind_mount.dst_path}/#{test_basename}"
-      response.exit_status.should == 0
-      response.stdout.should == test_contents
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to eq test_contents
 
       # Make sure we CAN WRITE a file
       response = run "touch #{@bind_mount.dst_path}/test"
-      response.exit_status.should == 0
-      response.stdout.should be_empty
-      response.stderr.should be_empty
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to be_empty
+      expect(response.stderr).to be_empty
     end
 
     it "should return an error when a bind mount does not exist" do
@@ -1248,34 +1247,34 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     before do
       response = client.create
-      response.should be_ok
+      expect(response).to be_ok
 
       @handle = response.handle
     end
 
     def run(script)
       response = client.run(:handle => handle, :script => script)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
     it "is a directory" do
       response = run("[ -d /dev/shm ]")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
     end
 
     it "is mounted as a tmpfs device" do
       response = run("grep /dev/shm /proc/mounts")
-      response.exit_status.should == 0
-      response.stdout.should match(/tmpfs/)
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to match(/tmpfs/)
     end
 
     it "can be written to by unprivileged users" do
       response = run("id -u > /dev/shm/id.txt")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
 
       response = run("cat /dev/shm/id.txt")
-      response.stdout.strip.should_not eq('0')
+      expect(response.stdout.strip).to_not eq('0')
     end
 
     context "when there is a memory limit" do
@@ -1284,17 +1283,17 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       before do
         response = client.limit_memory(:handle => handle, :limit_in_bytes => memory_limit)
-        response.limit_in_bytes.should == memory_limit
+        expect(response.limit_in_bytes).to eq memory_limit
       end
 
       it "can write less than the memory limit" do
         run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=30")
 
         response = client.info(:handle => handle)
-        response.state.should == "active"
+        expect(response.state).to eq "active"
 
         response = run("du -m /dev/shm/out.bin | cut -f1")
-        response.stdout.strip.to_i.should be(30)
+        expect(response.stdout.strip.to_i).to be(30)
       end
 
       it "terminates when writing more data than the memory limit" do
@@ -1302,8 +1301,8 @@ describe "linux", :platform => "linux", :needs_root => true do
         sleep 0.20 # wait a bit for the warden to be notified of the oom
 
         response = client.info(:handle => handle)
-        response.state.should == "stopped"
-        response.events.should include("out of memory")
+        expect(response.state).to eq "stopped"
+        expect(response.events).to include("out of memory")
       end
     end
   end
@@ -1311,7 +1310,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   describe "network devices" do
     let(:handle) do
       response = client.create
-      response.should be_ok
+      expect(response).to be_ok
 
       response.handle
     end
@@ -1319,38 +1318,38 @@ describe "linux", :platform => "linux", :needs_root => true do
     it "activates a host side network adapter" do
       script = "/sbin/ifconfig w-#{handle}-0 | grep -Eo 'RUNNING'"
       response = execute(script)
-      response.should eq("RUNNING\n")
+      expect(response).to eq("RUNNING\n")
     end
 
     it "activates a container side network adapter" do
       script = "/sbin/ifconfig w-#{handle}-1 | grep -Eo 'RUNNING'"
       response = client.run(:handle => handle, :script => script)
-      response.exit_status.should == 0
-      response.stdout.should eq("RUNNING\n")
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to eq("RUNNING\n")
     end
 
     it "activates a host side ifb network adapter" do
       script = "/sbin/ifconfig w-#{handle}-2 | grep -Eo 'RUNNING'"
       response = execute(script)
-      response.should eq("RUNNING\n")
+      expect(response).to eq("RUNNING\n")
     end
 
     context "when the container is destroyed" do
       before do
         response = client.destroy(:handle => handle)
-        response.should be_ok
+        expect(response).to be_ok
       end
 
       it "destroys the host side network adapter" do
         script = "/sbin/ifconfig -a"
         response = execute(script)
-        response.should_not include("w-#{handle}-0")
+        expect(response).to_not include("w-#{handle}-0")
       end
 
       it "destroys the host side ifb network adapter" do
         script = "/sbin/ifconfig -a"
         response = execute(script)
-        response.should_not include("w-#{handle}-2")
+        expect(response).to_not include("w-#{handle}-2")
       end
     end
   end
@@ -1361,7 +1360,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       create_request.network = @start_address
 
       response = client.call(create_request)
-      response.should be_ok
+      expect(response).to be_ok
 
       info_request = Warden::Protocol::InfoRequest.new
       info_request.handle = response.handle
@@ -1369,7 +1368,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       response = client.call(info_request)
       network = Warden::Network::Address.new(response.container_ip).network(netmask)
 
-      network.to_human.should == @start_address
+      expect(network.to_human).to eq @start_address
     end
 
     it "should raise error to use network not in the pool" do
@@ -1390,11 +1389,11 @@ describe "linux", :platform => "linux", :needs_root => true do
       create_request.network = @start_address
 
       response = client.call(create_request)
-      response.should be_ok
+      expect(response).to be_ok
 
       script = "/sbin/ifconfig w-#{response.handle}-1 | grep -Eo 'MTU:[0-9]+'"
       mtu_response = client.run(:handle => response.handle, :script => script)
-      mtu_response.stdout.should == "MTU:1454\n"
+      expect(mtu_response.stdout).to eq "MTU:1454\n"
     end
 
     it "should set host side MTU" do
@@ -1402,11 +1401,11 @@ describe "linux", :platform => "linux", :needs_root => true do
       create_request.network = @start_address
 
       response = client.call(create_request)
-      response.should be_ok
+      expect(response).to be_ok
 
       script = "/sbin/ifconfig w-#{response.handle}-0 | grep -Eo 'MTU:[0-9]+'"
       mtu_response = execute("#{script}")
-      mtu_response.should == "MTU:1454\n"
+      expect(mtu_response).to eq "MTU:1454\n"
     end
 
     it "should set the host ifb adapter MTU" do
@@ -1414,11 +1413,11 @@ describe "linux", :platform => "linux", :needs_root => true do
       create_request.network = @start_address
 
       response = client.call(create_request)
-      response.should be_ok
+      expect(response).to be_ok
 
       script = "/sbin/ifconfig w-#{response.handle}-2 | grep -Eo 'MTU:[0-9]+'"
       mtu_response = execute("#{script}")
-      mtu_response.should == "MTU:1454\n"
+      expect(mtu_response).to eq "MTU:1454\n"
     end
   end
 
@@ -1437,7 +1436,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       create_request.rootfs = another_rootfs_path
 
       response = client.call(create_request)
-      response.should be_ok
+      expect(response).to be_ok
     end
 
     it "should raise error on bad rootfs path" do
@@ -1459,9 +1458,9 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "should run commands as root if the privileged option is set" do
       response = client.run(:handle => handle, :script => "id -u", :privileged => true)
-      response.exit_status.should == 0
-      response.stdout.should == "0\n"
-      response.stderr.should == ""
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to eq "0\n"
+      expect(response.stderr).to eq ""
     end
   end
 
@@ -1475,9 +1474,9 @@ describe "linux", :platform => "linux", :needs_root => true do
     it "should be configurable" do
       rlimits = Warden::Protocol::ResourceLimits.new(:nofile => 1234)
       response = client.run(:handle => handle, :script => "ulimit -n", :rlimits => rlimits)
-      response.exit_status.should == 0
-      response.stdout.chomp.should == "1234"
-      response.stderr.chomp.should == ""
+      expect(response.exit_status).to eq 0
+      expect(response.stdout.chomp).to eq "1234"
+      expect(response.stderr.chomp).to eq ""
     end
   end
 
@@ -1495,23 +1494,23 @@ describe "linux", :platform => "linux", :needs_root => true do
       reset_client
 
       containers = client.list.handles
-      containers.should_not include(@h1)
-      containers.should include(@h2)
+      expect(containers).to_not include(@h1)
+      expect(containers).to include(@h2)
 
       # Test that the path for h1 is gone
       h1_path = File.join(container_depot_path, @h1)
-      File.directory?(h1_path).should be_false
+      expect(File.directory?(h1_path)).to be false
     end
 
     it "should destroy containers without snapshot" do
       snapshot_path = File.join(container_depot_path, @h1, "snapshot.json")
-      File.exist?(snapshot_path).should be_true
+      expect(File.exist?(snapshot_path)).to be true
       File.delete(snapshot_path)
     end
 
     it "should destroy containers that have stopped" do
       wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
-      File.exist?(wshd_pid_path).should be_true
+      expect(File.exist?(wshd_pid_path)).to be true
       Process.kill("KILL", File.read(wshd_pid_path).to_i)
     end
   end
@@ -1535,34 +1534,34 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     before do
       response = client.create
-      response.should be_ok
+      expect(response).to be_ok
 
       @handle = response.handle
     end
 
     def run(script)
       response = client.run(:handle => handle, :script => script)
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
     it "is a character special device" do
       response = run("[ -c /dev/fuse ]")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
     end
 
     it "can be used by unprivileged users" do
       response = run("id -u")
-      response.stdout.strip.should_not eq('0')
+      expect(response.stdout.strip).to_not eq('0')
 
       run("mkdir -p /tmp/fuse_ctl")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
 
       run("mount -t fusectl none /tmp/fuse_ctl")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
 
       run("fusermount -u /fuse_ctl")
-      response.exit_status.should == 0
+      expect(response.exit_status).to eq 0
     end
   end
 end

@@ -10,16 +10,16 @@ module Warden::Protocol
 
     it "should redirect stdout output" do
       response = client.run(:handle => handle, :script => "echo hi")
-      response.exit_status.should == 0
-      response.stdout.should == "hi\n"
-      response.stderr.should == ""
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to eq "hi\n"
+      expect(response.stderr).to eq ""
     end
 
     it "should redirect stderr output" do
       response = client.run(:handle => handle, :script => "echo hi 1>&2")
-      response.exit_status.should == 0
-      response.stdout.should == ""
-      response.stderr.should == "hi\n"
+      expect(response.exit_status).to eq 0
+      expect(response.stdout).to eq ""
+      expect(response.stderr).to eq "hi\n"
     end
 
     context "when log_tag is given" do
@@ -56,7 +56,7 @@ module Warden::Protocol
         em(timeout: 5) do
           request = Warden::Protocol::RunRequest.new
           request.handle = handle
-          request.script = "echo hi out; echo hi err 1>&2"
+          request.script = "echo hi out; echo hi err 1>&2; sleep 1"
           request.log_tag = "some_log_tag"
           client.call(request)
           EM.stop
@@ -72,7 +72,7 @@ module Warden::Protocol
         em(timeout: 5) do
           request = Warden::Protocol::SpawnRequest.new
           request.handle = handle
-          request.script = "echo hi out; echo hi err 1>&2"
+          request.script = "echo hi out; echo hi err 1>&2; sleep 1"
           request.log_tag = "some_log_tag"
           client.call(request)
           EM.stop
@@ -87,7 +87,7 @@ module Warden::Protocol
 
     it "should propagate exit status" do
       response = client.run(:handle => handle, :script => "exit 123")
-      response.exit_status.should == 123
+      expect(response.exit_status).to eq 123
     end
 
     context "when the container is destroyed" do
@@ -104,7 +104,7 @@ module Warden::Protocol
 
         # The command should not have exited cleanly
         response = client.read
-        response.exit_status.should_not == 0
+        expect(response.exit_status).to_not eq 0
       end
 
       it "includes container info" do
@@ -112,7 +112,7 @@ module Warden::Protocol
         other_client.destroy(:handle => handle)
 
         response = client.read
-        response.info.should be_kind_of(InfoResponse)
+        expect(response.info).to be_kind_of(InfoResponse)
       end
     end
 
@@ -129,7 +129,7 @@ module Warden::Protocol
 
         sleep 0.0
         response = client.link(:handle => handle, :job_id => job_id)
-        response.exit_status.should == 0
+        expect(response.exit_status).to eq 0
       end
 
       it "should link a finished job" do
@@ -138,12 +138,12 @@ module Warden::Protocol
 
         sleep 0.1
         response = client.link(:handle => handle, :job_id => job_id)
-        response.exit_status.should == 0
+        expect(response.exit_status).to eq 0
       end
 
       it "should return an error after a job has already been linked" do
         job_id = client.spawn(:handle => handle, :script => "sleep 0.0").job_id
-        client.link(:handle => handle, :job_id => job_id).should_not be_nil
+        expect(client.link(:handle => handle, :job_id => job_id)).to_not be_nil
 
         expect do
           client.link(:handle => handle, :job_id => job_id)
@@ -173,14 +173,14 @@ module Warden::Protocol
 
           r1 = c1.read
           r2 = c2.read
-          r1.should == r2
+          expect(r1).to eq r2
         end
 
         it "should work when the connection that spawned the job disconnects" do
           c1.disconnect
 
           response = c2.link(:handle => handle, :job_id => job_id)
-          response.exit_status.should == 0
+          expect(response.exit_status).to eq 0
         end
       end
 
@@ -193,12 +193,12 @@ module Warden::Protocol
               script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
               response = client.run(:handle => handle, :script => script, :discard_output => discard_output)
 
-              response.exit_status.should == 255
-              response.send(io).size.should > 1024 * 100
-              response.send(io).size.should <= 1024 * 100 + 1024 * 64
+              expect(response.exit_status).to eq 255
+              expect(response.send(io).size).to be > 1024 * 100
+              expect(response.send(io).size).to be <= 1024 * 100 + 1024 * 64
 
               # Test that iomux-spawn was killed
-              `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
+              expect(`ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`).to eq ""
             end
           end
         end
@@ -211,8 +211,8 @@ module Warden::Protocol
               script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
               response = client.run(:handle => handle, :script => script, :discard_output => discard_output)
 
-              response.exit_status.should == 0
-              response.send(io).size.should == 0
+              expect(response.exit_status).to eq 0
+              expect(response.send(io).size).to eq 0
             end
           end
         end
@@ -236,16 +236,16 @@ module Warden::Protocol
         job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.1; printf B;").job_id
 
         r = stream(client, job_id)
-        r.select { |e| e.name == "stdout" }.collect(&:data).join.should == "AB"
-        r.select { |e| e.name == "stderr" }.collect(&:data).join.should == ""
-        r.last.exit_status.should == 0
+        expect(r.select { |e| e.name == "stdout" }.collect(&:data).join).to eq "AB"
+        expect(r.select { |e| e.name == "stderr" }.collect(&:data).join).to eq ""
+        expect(r.last.exit_status).to eq 0
       end
 
       it "includes container info" do
         job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.1; printf B;").job_id
 
         r = stream(client, job_id)
-        r.last.info.should be_kind_of(InfoResponse)
+        expect(r.last.info).to be_kind_of(InfoResponse)
       end
 
       it "should stream a finished job" do
@@ -254,16 +254,16 @@ module Warden::Protocol
         sleep 0.1
 
         r = stream(client, job_id)
-        r.select { |e| e.name == "stdout" }.collect(&:data).join.should == "AB"
-        r.select { |e| e.name == "stderr" }.collect(&:data).join.should == ""
-        r.last.exit_status.should == 0
+        expect(r.select { |e| e.name == "stdout" }.collect(&:data).join).to eq "AB"
+        expect(r.select { |e| e.name == "stderr" }.collect(&:data).join).to eq ""
+        expect(r.last.exit_status).to eq 0
       end
 
       it "should return an error after a job has already been streamed" do
         job_id = client.spawn(:handle => handle, :script => "sleep 0.0").job_id
 
         r = stream(client, job_id)
-        r.should_not be_empty
+        expect(r).to_not be_empty
 
         expect do
           stream(client, job_id)
@@ -283,9 +283,9 @@ module Warden::Protocol
 
         # Attempt to stream the job again; the server should have left it in tact
         r = stream(client, job_id)
-        r.select { |e| e.name == "stdout" }.collect(&:data).join.should == "1\n2\n"
-        r.select { |e| e.name == "stderr" }.collect(&:data).join.should == ""
-        r.last.exit_status.should == 0
+        expect(r.select { |e| e.name == "stdout" }.collect(&:data).join).to eq "1\n2\n"
+        expect(r.select { |e| e.name == "stderr" }.collect(&:data).join).to eq ""
+        expect(r.last.exit_status).to eq 0
       end
 
       describe "on different connections" do
@@ -316,14 +316,14 @@ module Warden::Protocol
             t[:result].each { |r| r.info = nil }
           end
 
-          r[0].should == r[1]
+          expect(r[0]).to eq r[1]
         end
 
         it "should work when the connection that spawned the job disconnects" do
           c1.disconnect
 
           r = stream(c2, job_id)
-          r.should_not be_empty
+          expect(r).to_not be_empty
         end
       end
 
@@ -334,12 +334,12 @@ module Warden::Protocol
             job_id = client.spawn(:handle => handle, :script => script).job_id
 
             responses = stream(client, job_id)
-            responses.last.exit_status.should == 255
-            responses.map(&:data).join.size.should > 1024 * 100
-            responses.map(&:data).join.size.should <= 1024 * 100 + 1024 * 64
+            expect(responses.last.exit_status).to eq 255
+            expect(responses.map(&:data).join.size).to be > 1024 * 100
+            expect(responses.map(&:data).join.size).to be <= 1024 * 100 + 1024 * 64
 
             # Test that iomux-spawn was killed
-            `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`.should == ""
+            expect(`ps ax | grep iomux-spawn | grep #{handle} | grep -v grep`).to eq ""
           end
         end
       end

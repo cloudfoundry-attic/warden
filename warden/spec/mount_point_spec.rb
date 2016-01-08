@@ -7,13 +7,13 @@ describe Warden::MountPoint do
     let(:root_pathname) { double("Pathname", mountpoint?: true, to_s: "/") }
 
     before do
-      root_pathname.stub(realpath: root_pathname)
-      Pathname.stub(:new).with("/").and_return(root_pathname)
+      allow(root_pathname).to receive(:realpath).and_return(root_pathname)
+      allow(Pathname).to receive(:new).with("/").and_return(root_pathname)
     end
 
     context "when we ask about the root of the filesystem" do
       it "returns root for root" do
-        mount_point.for_path("/").should == "/"
+        expect(mount_point.for_path("/")).to eq "/"
       end
     end
 
@@ -40,15 +40,15 @@ describe Warden::MountPoint do
       end
 
       before do
-        Pathname.stub(:new).with("/hello/world/path").and_return(path_pathname)
+        allow(Pathname).to receive(:new).with("/hello/world/path").and_return(path_pathname)
 
-        hello_pathname.stub(realpath: hello_pathname)
-        world_pathname.stub(realpath: world_pathname)
-        path_pathname.stub(realpath: path_pathname)
+        allow(hello_pathname).to receive(:realpath).and_return(hello_pathname)
+        allow(world_pathname).to receive(:realpath).and_return(world_pathname)
+        allow(path_pathname).to receive(:realpath).and_return(path_pathname)
       end
 
       it "returns the different mount point" do
-        mount_point.for_path("/hello/world/path").should == "/hello"
+        expect(mount_point.for_path("/hello/world/path")).to eq "/hello"
       end
     end
 
@@ -90,14 +90,14 @@ describe Warden::MountPoint do
       end
 
       before do
-        mnt_pathname.stub(realpath: mnt_pathname)
-        mnt_symlink_pathname.stub(realpath: mnt_symlink_pathname)
-        path_pathname.stub(realpath: path_pathname)
-        Pathname.stub(:new).with("/hello/symlink/path").and_return(path_pathname)
+        allow(mnt_pathname).to receive(:realpath).and_return(mnt_pathname)
+        allow(mnt_symlink_pathname).to receive(:realpath).and_return(mnt_symlink_pathname)
+        allow(path_pathname).to receive(:realpath).and_return(path_pathname)
+        allow(Pathname).to receive(:new).with("/hello/symlink/path").and_return(path_pathname)
       end
 
       it "returns the different mount point" do
-        mount_point.for_path("/hello/symlink/path").should == "/mnt"
+        expect(mount_point.for_path("/hello/symlink/path")).to eq "/mnt"
       end
     end
   end

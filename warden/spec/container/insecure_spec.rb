@@ -109,7 +109,7 @@ describe "insecure" do
 
     def net_in(options = {})
       response = client.net_in(options.merge(:handle => handle))
-      response.should be_ok
+      expect(response).to be_ok
       response
     end
 
@@ -128,7 +128,7 @@ describe "insecure" do
       external_ip = `ip route get 1.1.1.1`.split(/\n/).first.split(/\s+/).last
 
       # Pipe echo to give nc a stdin (it quits immediately after connecting if it doesn't have a stdin)
-      `echo | nc #{external_ip} #{response.host_port}`.chomp.should == "ok"
+      expect(`echo | nc #{external_ip} #{response.host_port}`.chomp).to eq "ok"
 
       # Clean up
       client.link(:handle => handle, :job_id => job_id)
@@ -141,7 +141,7 @@ describe "insecure" do
 
     it "should ignore the port on the container side if specified" do
       response = net_in(:container_port => 1234)
-      response.container_port.should_not == 1234
+      expect(response.container_port).to_not eq 1234
       check_mapping(response)
     end
   end

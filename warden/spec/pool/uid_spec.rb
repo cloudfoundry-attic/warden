@@ -6,7 +6,7 @@ require "warden/pool/uid"
 describe Warden::Pool::Uid do
 
   before(:each) do
-    Warden::Pool::Uid.should_receive(:local_uids).and_return([1000, 1001, 1002])
+    allow(Warden::Pool::Uid).to receive(:local_uids).and_return([1000, 1001, 1002])
   end
 
   context "create" do
@@ -25,10 +25,10 @@ describe Warden::Pool::Uid do
       end.to_not raise_error
 
       # Check size
-      pool.size.should == 5
+      expect(pool.size).to eq 5
 
       # Check first entry
-      pool.acquire.should == 2000
+      expect(pool.acquire).to eq 2000
     end
   end
 
@@ -49,7 +49,7 @@ describe Warden::Pool::Uid do
       pool = Warden::Pool::Uid.new(2000, 5)
       pool.release(3000)
 
-      pool.size.should == 5
+      expect(pool.size).to eq 5
     end
   end
 end

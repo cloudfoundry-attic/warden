@@ -34,7 +34,7 @@ def done
 
   ::EM.next_tick {
     # Assert something to show a spec-pass
-    :done.should == :done
+    expect(:done).to eq :done
     ::EM.stop_event_loop
   }
 end

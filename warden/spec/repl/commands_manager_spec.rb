@@ -11,15 +11,15 @@ describe Warden::Repl::CommandsManager::FlagElement do
       expect {
         described_class.new("%")
       }.to raise_error { |error|
-        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagElementError
-        error.message.should == "Invalid flag element: '%'."
+        expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagElementError
+        expect(error.message).to eq "Invalid flag element: '%'."
       }
 
       expect {
         described_class.new("0")
       }.to raise_error { |error|
-        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagElementError
-        error.message.should == "Invalid flag element: '0'."
+        expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagElementError
+        expect(error.message).to eq "Invalid flag element: '0'."
       }
     end
   end
@@ -27,39 +27,39 @@ describe Warden::Repl::CommandsManager::FlagElement do
   describe "#name, #index" do
     it "should parse the field name and index from a valid flag element string" do
       obj = described_class.new("field")
-      obj.name.should == "field"
-      obj.index.should be_nil
+      expect(obj.name).to eq "field"
+      expect(obj.index).to be_nil
 
       obj = described_class.new("field[0]")
-      obj.name.should == "field"
-      obj.index.should == 0
+      expect(obj.name).to eq "field"
+      expect(obj.index).to eq 0
     end
   end
 
   describe "#to_s" do
     it "should return the string representation" do
-      described_class.new("field").to_s.should == "field"
-      described_class.new("field[0]").to_s.should == "field[0]"
+      expect(described_class.new("field").to_s).to eq "field"
+      expect(described_class.new("field[0]").to_s).to eq "field[0]"
     end
   end
 
   describe "#==" do
     it "should return false for nil" do
-      (described_class.new("a[0]") == nil).should be_false
+      expect((described_class.new("a[0]") == nil)).to be false
     end
 
     it "should return false for different class type" do
-      (described_class.new("a[0]") == Object.new).should be_false
+      expect((described_class.new("a[0]") == Object.new)).to be false
     end
 
     it "should return false if attributes are different" do
       condition = (described_class.new("a[0]") == described_class.new("b[1]"))
-      condition.should be_false
+      expect(condition).to be false
     end
 
     it "should return true if attribtues are the same" do
       condition = (described_class.new("a[0]") == described_class.new("a[0]"))
-      condition.should be_true
+      expect(condition).to be true
     end
   end
 end
@@ -70,8 +70,8 @@ describe Warden::Repl::CommandsManager::Flag do
       expect {
         described_class.new("blah")
       }.to raise_error{ |error|
-        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-        error.message.should == "Invalid flag: 'blah'."
+        expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+        expect(error.message).to eq "Invalid flag: 'blah'."
       }
     end
 
@@ -79,9 +79,9 @@ describe Warden::Repl::CommandsManager::Flag do
       expect {
         described_class.new("--blah[0].-$%.foo.bar")
       }.to raise_error { |error|
-        error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+        expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
         msg = "In flag: '--blah[0].-$%.foo.bar', Invalid flag element: '-$%'."
-        error.message.should == msg
+        expect(error.message).to eq msg
       }
     end
   end
@@ -92,18 +92,18 @@ describe Warden::Repl::CommandsManager::Flag do
                   Warden::Repl::CommandsManager::FlagElement.new("b")]
       obj = described_class.new("--#{elements[0].to_s}.#{elements[1].to_s}")
 
-      obj.respond_to?(:each).should be_true
+      expect(obj.respond_to?(:each)).to be true
       index = 0
       obj.each do |element|
-        element.should be_an_instance_of Warden::Repl::CommandsManager::FlagElement
-        element.should == elements[index]
+        expect(element).to be_an_instance_of Warden::Repl::CommandsManager::FlagElement
+        expect(element).to eq elements[index]
         index += 1
       end
 
-      obj.respond_to?(:each_with_index).should be_true
+      expect(obj.respond_to?(:each_with_index)).to be true
       obj.each_with_index do |element, index|
-        element.should be_an_instance_of Warden::Repl::CommandsManager::FlagElement
-        element.should == elements[index]
+        expect(element).to be_an_instance_of Warden::Repl::CommandsManager::FlagElement
+        expect(element).to eq elements[index]
       end
     end
   end
@@ -119,14 +119,14 @@ describe Warden::Repl::CommandsManager do
 
   describe "#deserialize" do
     it "should allow global help flag" do
-      @subject.deserialize(["--help"]).should be_nil
-      @subject.deserialize(["help"]).should be_nil
+      expect(@subject.deserialize(["--help"])).to be_nil
+      expect(@subject.deserialize(["help"])).to be_nil
     end
 
     context "parse valid fields" do
       before :each do
         @request = nil
-        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+        allow(Warden::Protocol::Message::Type).to receive(:generate_klass_map).
           with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
@@ -140,8 +140,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::SimpleTest
-        @request.field.should == "value"
+        expect(@request).to be_an_instance_of Helpers::Repl::SimpleTest
+        expect(@request.field).to eq "value"
       end
 
       it "should parse repeated field" do
@@ -151,10 +151,10 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::RepeatedTest
-        @request.field.size.should == 2
-        @request.field[0].should == "value_0"
-        @request.field[1].should == "value_1"
+        expect(@request).to be_an_instance_of Helpers::Repl::RepeatedTest
+        expect(@request.field.size).to eq 2
+        expect(@request.field[0]).to eq "value_0"
+        expect(@request.field[1]).to eq "value_1"
       end
 
       it "should parse nested field" do
@@ -163,8 +163,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::NestedTest
-        @request.complex_field.field.should == "value"
+        expect(@request).to be_an_instance_of Helpers::Repl::NestedTest
+        expect(@request.complex_field.field).to eq "value"
       end
 
       it "should parse bool field" do
@@ -173,8 +173,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::BoolTest
-        @request.field.should be_true
+        expect(@request).to be_an_instance_of Helpers::Repl::BoolTest
+        expect(@request.field).to be true
       end
 
       it "should parse enum field" do
@@ -183,8 +183,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::EnumTest
-        @request.field.should == Helpers::Repl::EnumTest::Enum::A
+        expect(@request).to be_an_instance_of Helpers::Repl::EnumTest
+        expect(@request.field).to eq Helpers::Repl::EnumTest::Enum::A
       end
 
       it "should parse mixed fields" do
@@ -194,12 +194,12 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::MixedTest
-        @request.complex_field.should be_an_instance_of Array
-        @request.complex_field.size.should == 1
-        @request.complex_field[0].should be_an_instance_of Helpers::Repl::SimpleTest
-        @request.complex_field[0].field.should == "value"
-        @request.bool_field.should == true
+        expect(@request).to be_an_instance_of Helpers::Repl::MixedTest
+        expect(@request.complex_field).to be_an_instance_of Array
+        expect(@request.complex_field.size).to eq 1
+        expect(@request.complex_field[0]).to be_an_instance_of Helpers::Repl::SimpleTest
+        expect(@request.complex_field[0].field).to eq "value"
+        expect(@request.bool_field).to eq true
       end
 
       it "should allow overwriting of simple field" do
@@ -209,8 +209,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::SimpleTest
-        @request.field.should == "overwrite"
+        expect(@request).to be_an_instance_of Helpers::Repl::SimpleTest
+        expect(@request.field).to eq "overwrite"
       end
 
       it "should allow overwriting of repeated field" do
@@ -220,9 +220,9 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::RepeatedTest
-        @request.field.size.should == 1
-        @request.field[0].should == "overwrite"
+        expect(@request).to be_an_instance_of Helpers::Repl::RepeatedTest
+        expect(@request.field.size).to eq 1
+        expect(@request.field[0]).to eq "overwrite"
       end
 
       it "should allow overwriting of nested field" do
@@ -232,9 +232,9 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::NestedTest
-        @request.complex_field.should be_an_instance_of Helpers::Repl::SimpleTest
-        @request.complex_field.field.should == "overwrite"
+        expect(@request).to be_an_instance_of Helpers::Repl::NestedTest
+        expect(@request.complex_field).to be_an_instance_of Helpers::Repl::SimpleTest
+        expect(@request.complex_field.field).to eq "overwrite"
       end
 
       it "should allow overwriting of bool field" do
@@ -244,8 +244,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::BoolTest
-        @request.field.should be_true
+        expect(@request).to be_an_instance_of Helpers::Repl::BoolTest
+        expect(@request.field).to be true
       end
 
       it "should allow overwriting of enum field" do
@@ -255,8 +255,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::EnumTest
-        @request.field.should == Helpers::Repl::EnumTest::Enum::B
+        expect(@request).to be_an_instance_of Helpers::Repl::EnumTest
+        expect(@request.field).to eq Helpers::Repl::EnumTest::Enum::B
       end
 
       it "should work for a different field delimiter" do
@@ -265,8 +265,8 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args, ":")
 
-        @request.should be_an_instance_of Helpers::Repl::NestedTest
-        @request.complex_field.field.should == "value"
+        expect(@request).to be_an_instance_of Helpers::Repl::NestedTest
+        expect(@request.complex_field.field).to eq "value"
       end
 
       it "should not treat -- in the middle as a field" do
@@ -275,14 +275,14 @@ describe Warden::Repl::CommandsManager do
 
         @request = @subject.deserialize(args)
 
-        @request.should be_an_instance_of Helpers::Repl::SimpleTest
-        @request.field.should == "ab --help"
+        expect(@request).to be_an_instance_of Helpers::Repl::SimpleTest
+        expect(@request.field).to eq "ab --help"
       end
     end
 
     context "reject invalid commands and fields" do
       before :each do
-        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+        allow(Warden::Protocol::Message::Type).to receive(:generate_klass_map).
           with("Request").and_return(Helpers::Repl.test_klass_map)
       end
 
@@ -292,8 +292,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::CommandError
-          error.message.should == "Command: 'absent_command' is non-existent."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::CommandError
+          expect(error.message).to eq "Command: 'absent_command' is non-existent."
         }
       end
 
@@ -304,8 +304,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'help'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'help'."
         }
       end
 
@@ -315,8 +315,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'field'."
         }
 
         args = ["simple_test",
@@ -324,8 +324,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: '--field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: '--field'."
         }
 
         args = ["simple_test",
@@ -333,9 +333,9 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--bad_field', the field: 'bad_field' is invalid."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
       end
 
@@ -345,8 +345,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'field'."
         }
 
         args = ["repeated_test",
@@ -354,9 +354,9 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field', the field: 'field' is not indexed."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
 
         args = ["repeated_test",
@@ -364,10 +364,10 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[1]', the field: 'field[1]' is not indexed"
           msg << " correctly."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
 
         args = ["repeated_test",
@@ -375,10 +375,10 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[bad_index]',"
           msg << " Invalid flag element: 'field[bad_index]'."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
 
         args = ["repeated_test",
@@ -387,9 +387,9 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[-1]', Invalid flag element: 'field[-1]'."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
 
         args = ["repeated_test",
@@ -398,10 +398,10 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--field[2]',"
           msg << " the field: 'field[2]' is not indexed correctly."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
       end
 
@@ -411,8 +411,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'complex_field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'complex_field'."
         }
 
         args = ["nested_test",
@@ -420,8 +420,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: '--complex_field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: '--complex_field'."
         }
 
         args = ["nested_test",
@@ -429,10 +429,10 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--complex_field.absent_field',"
           msg << " the field: 'absent_field' is invalid."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
 
         args = ["nested_test",
@@ -440,8 +440,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: '--complex_field.field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: '--complex_field.field'."
         }
       end
 
@@ -451,8 +451,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'field'."
         }
 
         args = ["bool_test",
@@ -460,8 +460,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'value'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'value'."
         }
       end
 
@@ -471,8 +471,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: 'field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: 'field'."
         }
 
         args = ["enum_test",
@@ -480,8 +480,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
-          error.message.should == "Invalid flag: '--field'."
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error.message).to eq "Invalid flag: '--field'."
         }
 
         args = ["enum_test",
@@ -489,9 +489,9 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::FlagError
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::FlagError
           msg = "In flag: '--bad_field', the field: 'bad_field' is invalid."
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
       end
 
@@ -501,8 +501,8 @@ describe Warden::Repl::CommandsManager do
         expect {
           @subject.deserialize(args)
         }.to raise_error { |error|
-          error.should be_an_instance_of Warden::Repl::CommandsManager::CommandError
-          error.message.should == "invalid value for Integer(): \"blah\""
+          expect(error).to be_an_instance_of Warden::Repl::CommandsManager::CommandError
+          expect(error.message).to eq "invalid value for Integer(): \"blah\""
         }
       end
     end
@@ -510,9 +510,9 @@ describe Warden::Repl::CommandsManager do
     context "generate help" do
 
       before(:each) do
-        Warden::Protocol::Message::Type.stub(:generate_klass_map).
+        allow(Warden::Protocol::Message::Type).to receive(:generate_klass_map).
           with("Request").and_return(Helpers::Repl.test_klass_map)
-        @subject.stub(:command_descriptions).
+        allow(@subject).to receive(:command_descriptions).
           and_return(Helpers::Repl.test_description_map)
       end
 
@@ -522,8 +522,8 @@ describe Warden::Repl::CommandsManager do
 
         help = @subject.deserialize(args)
 
-        help.should be_an_instance_of Hash
-        help.should == {
+        expect(help).to be_an_instance_of Hash
+        expect(help).to eq({
           :simple_fields_help_test => {
             :description => "Test generation of help for simple fields.",
             :required => {
@@ -537,7 +537,7 @@ describe Warden::Repl::CommandsManager do
               :rep_field => "--rep_field[index] <rep_field> (uint32)  # array",
             }
           }
-        }
+        })
       end
 
       it "should generate help for a command with nested field(s)" do
@@ -546,7 +546,7 @@ describe Warden::Repl::CommandsManager do
 
         help = @subject.deserialize(args)
 
-        help.should be_an_instance_of Hash
+        expect(help).to be_an_instance_of Hash
 
         nested_field_help = {
           :req_complex_field => {
@@ -564,12 +564,12 @@ describe Warden::Repl::CommandsManager do
           }
         }
 
-        help.should == {
+        expect(help).to eq({
           :nested_fields_help_test => {
             :description => "Test generation of help for nested field.",
             :required => nested_field_help
           }
-        }
+        })
       end
 
       it "should work for a specified field delimiter" do
@@ -577,7 +577,7 @@ describe Warden::Repl::CommandsManager do
                 "--help"]
         help = @subject.deserialize(args, ":")
 
-        help.should be_an_instance_of Hash
+        expect(help).to be_an_instance_of Hash
 
         nested_field_help = {
           :req_complex_field => {
@@ -595,12 +595,12 @@ describe Warden::Repl::CommandsManager do
           }
         }
 
-        help.should == {
+        expect(help).to eq({
           :nested_fields_help_test => {
             :description => "Test generation of help for nested field.",
             :required => nested_field_help
           }
-        }
+        })
       end
     end
   end
@@ -611,19 +611,19 @@ describe Warden::Repl::CommandsManager do
         pb_handle = Helpers::Repl::SimpleTest.new
         pb_handle.field = "field"
         hash = @subject.serialize(pb_handle)
-        hash.should == {
+        expect(hash).to eq({
           "field" => "field",
-        }
+        })
       end
 
       it "should serialize repeated field" do
         pb_handle = Helpers::Repl::RepeatedTest.new
         pb_handle.field = ["value_0", "value_1"]
         hash = @subject.serialize(pb_handle)
-        hash.should == {
+        expect(hash).to eq({
           "field[0]" => "value_0",
           "field[1]" => "value_1",
-        }
+        })
       end
 
       it "should serialize nested field" do
@@ -631,27 +631,27 @@ describe Warden::Repl::CommandsManager do
         pb_handle.complex_field = Helpers::Repl::SimpleTest.new
         pb_handle.complex_field.field = "field"
         hash = @subject.serialize(pb_handle)
-        hash.should == {
+        expect(hash).to eq({
           "complex_field.field" => "field",
-        }
+        })
       end
 
       it "should serialize bool field" do
         pb_handle = Helpers::Repl::BoolTest.new
         pb_handle.field = true
         hash = @subject.serialize(pb_handle)
-        hash.should == {
+        expect(hash).to eq({
           "field" => "true",
-        }
+        })
       end
 
       it "should serialize enum field" do
         pb_handle = Helpers::Repl::EnumTest.new
         pb_handle.field = Helpers::Repl::EnumTest::Enum::A
         hash = @subject.serialize(pb_handle)
-        hash.should == {
+        expect(hash).to eq({
           "field" => "A",
-        }
+        })
       end
     end
 
@@ -664,13 +664,13 @@ describe Warden::Repl::CommandsManager do
           @subject.serialize(pb_handle)
         }.to raise_error{ |error|
           err_type = Warden::Repl::CommandsManager::SerializationError
-          error.should be_an_instance_of err_type
+          expect(error).to be_an_instance_of err_type
 
           msg = "Cannot serialize enum field: field."
           msg << " Duplicate constants defined in module:"
           msg << " #{Helpers::Repl::BadEnumTest::BadEnum}."
 
-          error.message.should == msg
+          expect(error.message).to eq msg
         }
       end
     end
@@ -685,12 +685,12 @@ describe Warden::Repl::CommandsManager do
         target = spawn_command.send(field.name)
         source = run_command.send(field.name)
 
-        target.should == source
+        expect(target).to eq source
 
         if target
-          target.object_id.should_not == source.object_id
+          expect(target.object_id).to_not eq source.object_id
         else
-          source.should be_nil
+          expect(source).to be_nil
         end
       end
     end
@@ -705,9 +705,9 @@ describe Warden::Repl::CommandsManager do
       stream_command = @subject.generate_stream_command(spawn_request,
                                                         spawn_response)
       handle = stream_command.handle
-      handle.should == spawn_request.handle
-      handle.object_id.should_not == spawn_request.handle.object_id
-      stream_command.job_id.should == spawn_response.job_id
+      expect(handle).to eq spawn_request.handle
+      expect(handle.object_id).to_not eq spawn_request.handle.object_id
+      expect(stream_command.job_id).to eq spawn_response.job_id
     end
   end
 end

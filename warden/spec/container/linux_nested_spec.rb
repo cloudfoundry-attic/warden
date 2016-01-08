@@ -77,7 +77,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
   def execute(command)
     `#{command}`.tap do
-      $?.should be_success
+      expect($?).to be_success
     end
   end
 
@@ -168,13 +168,13 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         puts "---------------------------- exit status: #{exit_status}" if debug?
 
-        exit_status.should == 0
+        expect(exit_status).to eq 0
       end
     end
 
     def create
       response = client.call(@create_request)
-      response.should be_ok
+      expect(response).to be_ok
 
       @handle = response.handle
     end
@@ -217,7 +217,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
         destroy = Warden::Protocol::DestroyRequest.new
         destroy.handle = @handle
-        client.call(destroy).should be_ok
+        expect(client.call(destroy)).to be_ok
       end
     end
 

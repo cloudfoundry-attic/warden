@@ -28,7 +28,7 @@ module Helpers
 
     def get_uid(client, handle)
       run_resp = client.run(:handle => handle, :script => "id -u")
-      run_resp.exit_status.should == 0
+      expect(run_resp.exit_status).to eq 0
       Integer(run_resp.stdout.chomp)
     end
 
@@ -37,13 +37,16 @@ module Helpers
 
       t = Thread.new do
         expect do
-          blk.call
-        end.to raise_error
+          blk.call(handle)
+        end.to raise_error do |error|
+          expect(error).to be_a(EOFError) | be_a(Errno::EPIPE)
+        end
       end
 
       # Force the request before the drain
       t.run if t.alive?
 
+      sleep 1
       drain
 
       t.join

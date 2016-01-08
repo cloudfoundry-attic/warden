@@ -15,10 +15,10 @@ describe Warden::Pool::Port do
       pool = Warden::Pool::Port.new(61001, 4000)
 
       # Check size
-      pool.size.should == 4000
+      expect(pool.size).to eq 4000
 
       # Check first entry
-      pool.acquire.should == 61001
+      expect(pool.acquire).to eq 61001
     end
   end
 
