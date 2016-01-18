@@ -1481,37 +1481,69 @@ describe "linux", :platform => "linux", :needs_root => true do
   end
 
   describe "recovery" do
-    before do
-      @h1 = client.create.handle
-      @h2 = client.create.handle
+    context 'for started containers' do
+      before do
+        @h1 = client.create.handle
+        @h2 = client.create.handle
 
-      stop_warden(:KILL)
+        stop_warden(:KILL)
+      end
+
+      after do
+        start_warden
+
+        reset_client
+
+        containers = client.list.handles
+        expect(containers).to_not include(@h1)
+        expect(containers).to include(@h2)
+
+        # Test that the path for h1 is gone
+        h1_path = File.join(container_depot_path, @h1)
+        expect(File.directory?(h1_path)).to be false
+      end
+
+      it "should destroy containers without snapshot" do
+        snapshot_path = File.join(container_depot_path, @h1, "snapshot.json")
+        expect(File.exist?(snapshot_path)).to be true
+        File.delete(snapshot_path)
+      end
+
+      it "should destroy containers that have stopped" do
+        wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
+        expect(File.exist?(wshd_pid_path)).to be true
+        Process.kill("KILL", File.read(wshd_pid_path).to_i)
+      end
     end
 
-    after do
-      start_warden
+    context 'for created containers' do
+      before do
+        @h1 = client.create.handle
 
-      reset_client
+        stop_warden(:KILL)
+      end
 
-      containers = client.list.handles
-      expect(containers).to_not include(@h1)
-      expect(containers).to include(@h2)
+      after do
+        start_warden
 
-      # Test that the path for h1 is gone
-      h1_path = File.join(container_depot_path, @h1)
-      expect(File.directory?(h1_path)).to be false
-    end
+        reset_client
 
-    it "should destroy containers without snapshot" do
-      snapshot_path = File.join(container_depot_path, @h1, "snapshot.json")
-      expect(File.exist?(snapshot_path)).to be true
-      File.delete(snapshot_path)
-    end
+        containers = client.list.handles
+        expect(containers).to be_nil
 
-    it "should destroy containers that have stopped" do
-      wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
-      expect(File.exist?(wshd_pid_path)).to be true
-      Process.kill("KILL", File.read(wshd_pid_path).to_i)
+        # Test that the path for h1 is gone
+        h1_path = File.join(container_depot_path, @h1)
+        expect(File.directory?(h1_path)).to be false
+      end
+
+      it "should destroy containers which have no etc/config" do
+        wshd_pid_path = File.join(container_depot_path, @h1, "run", "wshd.pid")
+        Process.kill("KILL", File.read(wshd_pid_path).to_i)
+
+        etc_config_path = File.join(container_depot_path, @h1, 'etc','config')
+        expect(File.exist?(etc_config_path)).to be true
+        File.delete(etc_config_path)
+      end
     end
   end
 
