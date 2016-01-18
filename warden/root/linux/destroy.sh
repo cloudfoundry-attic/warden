@@ -21,12 +21,12 @@ fi
 
 if [ -d $target ]
 then
-  if [ -f $target/destroy.sh ]
+  if [ -f $target/destroy.sh ] && [ -f $target/etc/config ]
   then
     $target/destroy.sh
   fi
 
-  # Retry 5 times to avoid ocational device busy
+  # Retry 5 times to avoid occasional device busy
   count=0
   until `rm -rf $target` || [ $count -eq 4 ]; do
      ((count++))
