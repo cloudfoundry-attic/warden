@@ -41,7 +41,9 @@ function setup_filter() {
   # Create instance chain
   iptables -w -N ${filter_instance_chain}
   iptables -w -A ${filter_instance_chain} \
-    --goto ${filter_default_chain}
+    --jump ${filter_default_chain}
+
+  iptables -w -A ${filter_instance_chain} --jump REJECT
 
   # Bind instance chain to forward chain
   iptables -w -I ${filter_forward_chain} 2 \
@@ -156,7 +158,7 @@ case "${1}" in
       target="--jump RETURN"
     fi
 
-    iptables -w -I ${filter_instance_chain} 1 ${opts} ${target}
+    iptables -w -I ${filter_instance_chain} 2 ${opts} ${target}
 
     ;;
   "get_ingress_info")
