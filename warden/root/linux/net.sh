@@ -100,6 +100,15 @@ function setup_filter() {
   # Always allow established connections to warden containers
   iptables -w -A ${filter_default_chain} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
+  for n in ${ALLOW_NETWORKS}; do
+    if [ "$n" == "" ]
+    then
+      break
+    fi
+
+    iptables -w -A ${filter_default_chain} --destination "$n" --jump RETURN
+  done
+
   for n in ${DENY_NETWORKS}; do
     if [ "$n" == "" ]
     then
@@ -109,14 +118,7 @@ function setup_filter() {
     iptables -w -A ${filter_default_chain} --destination "$n" --jump DROP
   done
 
-  for n in ${ALLOW_NETWORKS}; do
-    if [ "$n" == "" ]
-    then
-      break
-    fi
-
-    iptables -w -A ${filter_default_chain} --destination "$n" --jump ACCEPT
-  done
+  iptables -w -A ${filter_default_chain} --jump REJECT
 
   # Accept packets related to previously established connections
   iptables -w -I INPUT -m state --state ESTABLISHED,RELATED --jump ACCEPT -m comment --comment 'related-traffic'
