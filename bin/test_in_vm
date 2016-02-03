@@ -1,36 +1,14 @@
-#!/usr/bin/env ruby
-require 'tmpdir'
-require 'timeout'
-require 'fileutils'
+#!/bin/bash
+set -e -x -u
 
-def system!(cmd)
-  system(cmd) or raise "Command failed: '#{cmd}'"
-end
+cd $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..
+vagrant up
+echo "===== VAGRANT BOX PROVISIONED AND STARTED ====="
 
-tmpdir = Dir.mktmpdir
 
-FileUtils.copy("Vagrantfile", tmpdir)
-FileUtils.copy("bin/rsync_workspace_into_vm.sh", tmpdir)
-puts "Running vagrant in a temporary folder: #{tmpdir}"
+echo "about to ssh to run tests"
+date
 
-build_timeout_in_seconds = 2400
-warden_source_dir = Dir.pwd
-Dir.chdir(tmpdir) do
-  begin
-    Timeout.timeout(build_timeout_in_seconds) do
-      system!("vagrant up --provider=virtualbox")
-      system!("./rsync_workspace_into_vm.sh #{warden_source_dir}")
-      system!("vagrant ssh -c 'cd ~/workspace && bin/test'")
-    end
-  rescue Timeout::Error => e
-    puts "Build took too long, killing the VM"
-    raise e
-  ensure
-    if ENV["NODESTROY"]
-      puts "Skipping vagrant destroy"
-    else
-      system!("vagrant destroy --force")
-    end
-    system!("vagrant status")
-  end
-end
+if [ -z ${NOTEST:=} ]; then
+  vagrant ssh -c "/var/cf-release/src/dea-hm-workspace/src/warden/bin/test"
+fi

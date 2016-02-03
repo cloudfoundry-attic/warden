@@ -1,12 +1,14 @@
 #!/bin/bash
 
-set -e
-set -x
+set -e -x
 
 # Assumes the rootfs is already installed to /var/warden/rootfs
 # The warden test suite currently uses /tmp/warden/rootfs instead
-mkdir -p /tmp/warden
-sudo ln -sf /var/warden/rootfs_cflinuxfs2 /tmp/warden/rootfs
+mkdir -p /tmp/warden/rootfs
+
+echo -n "Extracting rootfs..."
+sudo tar -xf /var/cf-release/.blobs/`basename $(readlink /var/cf-release/blobs/rootfs/*)` -C /tmp/warden/rootfs
+echo "finished"
 
 # Close stdin
 exec 0>&-
@@ -17,7 +19,7 @@ exec 0>&-
 # Install dependencies
 # sudo apt-get -y install quota
 
-cd warden
+cd /var/cf-release/src/dea-hm-workspace/src/warden/warden
 sudo bundle install
 sudo bundle exec rake setup:bin
 sudo bundle exec rake spec
