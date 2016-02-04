@@ -33,7 +33,6 @@ describe "linux", :platform => "linux", :needs_root => true do
       @container_depot_path = File.join(work_path, "containers")
       container_depot_file = container_depot_path + ".img"
       allow_networks = []
-      deny_networks = []
       mtu = 1500
 
 
@@ -51,7 +50,6 @@ describe "linux", :platform => "linux", :needs_root => true do
             "pool_size" => 64,
             "mtu" => mtu,
             "allow_networks" => allow_networks,
-            "deny_networks" => deny_networks },
         "port" => {
             "pool_start_port" => 64000,
             "pool_size" => 1000 },

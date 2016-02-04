@@ -23,7 +23,6 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:have_uid_support) { true }
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
   let(:allow_networks) { [] }
-  let(:deny_networks) { [] }
   let(:allow_host_access) { false }
   let(:mtu) { 1500 }
   let(:job_output_limit) { 100 * 1024 }
@@ -125,7 +124,6 @@ describe "linux", :platform => "linux", :needs_root => true do
               "pool_size" => 64,
               "mtu" => mtu,
               "allow_networks" => allow_networks,
-              "deny_networks" => deny_networks,
               "allow_host_access" => allow_host_access },
           "port" => {
               "pool_start_port" => 64000,

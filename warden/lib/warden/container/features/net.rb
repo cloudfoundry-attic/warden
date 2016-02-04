@@ -181,16 +181,12 @@ module Warden
 
           include Spawn
 
-          # Network blacklist
-          attr_accessor :deny_networks
-
           # Network whitelist
           attr_accessor :allow_networks
 
           def setup(config)
             super(config)
 
-            self.deny_networks  = config.network["deny_networks"]
             self.allow_networks = config.network["allow_networks"]
           end
         end

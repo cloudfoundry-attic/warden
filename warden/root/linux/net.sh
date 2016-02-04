@@ -12,9 +12,8 @@ nat_prerouting_chain="warden-prerouting"
 nat_postrouting_chain="warden-postrouting"
 nat_instance_prefix="warden-i-"
 
-# Default ALLOW_NETWORKS/DENY_NETWORKS to empty
+# Default ALLOW_NETWORKS to empty
 ALLOW_NETWORKS=${ALLOW_NETWORKS:-}
-DENY_NETWORKS=${DENY_NETWORKS:-}
 
 # Default ALLOW_HOST_ACCESS to false
 ALLOW_HOST_ACCESS=${ALLOW_HOST_ACCESS:-false}
@@ -107,15 +106,6 @@ function setup_filter() {
     fi
 
     iptables -w -A ${filter_default_chain} --destination "$n" --jump RETURN
-  done
-
-  for n in ${DENY_NETWORKS}; do
-    if [ "$n" == "" ]
-    then
-      break
-    fi
-
-    iptables -w -A ${filter_default_chain} --destination "$n" --jump DROP
   done
 
   iptables -w -A ${filter_default_chain} --jump REJECT

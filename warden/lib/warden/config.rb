@@ -89,7 +89,6 @@ module Warden
     def self.network_defaults
       {
         "pool_network"   => "10.254.0.0/24",
-        "deny_networks"  => [],
         "allow_networks" => [],
         "allow_host_access" => false,
         "mtu"            => 1500,
@@ -108,7 +107,6 @@ module Warden
           optional("release_delay")          => Integer,
           optional("mtu")                => Integer,
 
-          "deny_networks"      => [String],
           "allow_networks"     => [String],
           optional("allow_host_access") => bool,
         }
@@ -201,7 +199,6 @@ module Warden
         split("::").
         inject(Kernel) { |prev, cur| prev.const_get(cur) }
 
-      @network["deny_networks"]  = @network["deny_networks"].compact
       @network["allow_networks"] = @network["allow_networks"].compact
 
       # Transform pool_start_address/pool_size into pool_network if needed

@@ -43,7 +43,6 @@ module Warden
             :env => {
               "POOL_NETWORK" => config.network["pool_network"],
               "ALLOW_NETWORKS" => allow_networks.join(" "),
-              "DENY_NETWORKS" => deny_networks.join(" "),
               "ALLOW_HOST_ACCESS" => config.network["allow_host_access"].to_s,
               "CONTAINER_ROOTFS_PATH" => container_rootfs_path,
               "CONTAINER_DEPOT_PATH" => container_depot_path,
