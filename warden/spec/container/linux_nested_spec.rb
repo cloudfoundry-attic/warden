@@ -49,7 +49,7 @@ describe "linux", :platform => "linux", :needs_root => true do
             "pool_start_address" => "10.244.0.0",
             "pool_size" => 64,
             "mtu" => mtu,
-            "allow_networks" => allow_networks,
+            "allow_networks" => allow_networks },
         "port" => {
             "pool_start_port" => 64000,
             "pool_size" => 1000 },

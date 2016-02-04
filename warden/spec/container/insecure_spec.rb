@@ -58,7 +58,7 @@ describe "insecure" do
         "network" => {
           "pool_start_address" => start_address,
           "pool_size" => 64,
-          "allow_networks" => ["4.2.2.3/32"],
+          "allow_networks" => ["4.2.2.3/32"] },
         "port" => {
           "pool_start_port" => 64000,
           "pool_size" => 1000 },
