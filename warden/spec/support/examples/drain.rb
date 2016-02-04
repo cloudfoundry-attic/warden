@@ -319,7 +319,23 @@ shared_examples "drain" do
       drain_and_restart
       sleep 0.1
       new_client = create_client
-      expect{ new_client.info(:handle => handle) }.to raise_error(/unknown handle/)
+      destroyed = false
+      begin
+        Timeout::timeout(10) do
+          begin
+            new_client.info(:handle => handle)
+          rescue Warden::Client::ServerError => e
+            retry unless e.message =~ /unknown handle/
+            destroyed = true
+          rescue
+            retry
+          end
+        end
+      rescue Timeout::Error
+        puts "Timed out waiting on destroy container"
+      end
+
+      expect(destroyed).to be_truthy
     end
 
     it "should cancel the timer when client reconnects" do
