@@ -2,6 +2,7 @@
 set -e -x -u
 
 cd $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..
+vagrant box update
 vagrant up
 echo "===== VAGRANT BOX PROVISIONED AND STARTED ====="
 
