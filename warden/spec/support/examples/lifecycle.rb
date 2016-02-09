@@ -125,27 +125,10 @@ module Warden::Protocol
         # Disconnect the client
         client.disconnect
 
-        # Let the grace time pass
-        sleep 1.1
-
-        destroyed = false
-        client.reconnect
-        begin
-          Timeout::timeout(10) do
-            begin
-              client.run(:handle => handle, :script => 'echo')
-            rescue Warden::Client::ServerError => e
-              retry unless e.message =~ /unknown handle/
-              destroyed = true
-            rescue
-              retry
-            end
-          end
-        rescue Timeout::Error
-          puts "Timed out waiting on destroy container"
-        end
-
-        expect(destroyed).to be_truthy
+        expect do
+          client.reconnect
+          client.run(:handle => handle, :script => 'echo')
+        end.to eventually_error_with(Warden::Client::ServerError, /unknown handle/, 10)
       end
 
       it "should not blow up when container was already destroyed" do
@@ -154,14 +137,11 @@ module Warden::Protocol
         # Disconnect the client
         client.disconnect
 
-        # Let the grace time pass
-        sleep 1.1
-
         # Test that the container can no longer be referenced
         expect do
           client.reconnect
           result = client.run(:handle => handle, :script => "echo")
-        end.to raise_error(/unknown handle/i)
+        end.to eventually_error_with(Warden::Client::ServerError, /unknown handle/, 10)
       end
 
       it "should not destroy container when referenced by another client" do

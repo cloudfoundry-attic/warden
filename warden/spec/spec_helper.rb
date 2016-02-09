@@ -1,6 +1,7 @@
 # coding: UTF-8
 
 require "rspec"
+require "rspec/eventually"
 require "tempfile"
 require "tmpdir"
 require "warden/protocol"

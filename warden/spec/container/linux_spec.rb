@@ -1145,10 +1145,7 @@ describe "linux", :platform => "linux", :needs_root => true do
                               :script => "id -u")
       job_id_2 = response.job_id
 
-      sleep 0.1
-
-      response = client.info(:handle => handle)
-      expect(response.job_ids).to eq [job_id_1]
+      expect(Rspec::Eventually::Eventually.new(eq [job_id_1]).matches? -> { client.info(:handle => handle).job_ids }).to be true
     end
   end
 
@@ -1296,11 +1293,9 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       it "terminates when writing more data than the memory limit" do
         run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=34")
-        sleep 0.20 # wait a bit for the warden to be notified of the oom
 
-        response = client.info(:handle => handle)
-        expect(response.state).to eq "stopped"
-        expect(response.events).to include("out of memory")
+        expect(Rspec::Eventually::Eventually.new(eq("stopped")).matches? -> { client.info(:handle => handle).state }).to be true
+        expect(Rspec::Eventually::Eventually.new(include("out of memory")).matches? -> { client.info(:handle => handle).events }).to be true
       end
     end
   end

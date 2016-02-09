@@ -11,12 +11,7 @@ shared_examples "drain" do
   it "should cause the warden to exit after all connections are closed" do
     Process.kill("USR2", @pid)
 
-    20.times do
-      break if !warden_running?
-      sleep 0.05
-    end
-
-    expect(warden_running?).to be_falsey
+    expect(Rspec::Eventually::Eventually.new(be_falsey).matches? -> { warden_running? }).to be true
   end
 
   it "should break connections that are inactive" do
@@ -302,8 +297,7 @@ shared_examples "drain" do
     @handle = c.create.handle
     @job_id = client.spawn(:handle => @handle, :script => "echo hello; exit 2").job_id
 
-    sleep 0.1
-
+    sleep 1
     drain_and_restart
 
     c = create_client
@@ -317,25 +311,11 @@ shared_examples "drain" do
     it "should destroy container after grace time on restart" do
       handle = client.create(:grace_time => 0).handle
       drain_and_restart
-      sleep 0.1
-      new_client = create_client
-      destroyed = false
-      begin
-        Timeout::timeout(10) do
-          begin
-            new_client.info(:handle => handle)
-          rescue Warden::Client::ServerError => e
-            retry unless e.message =~ /unknown handle/
-            destroyed = true
-          rescue
-            retry
-          end
-        end
-      rescue Timeout::Error
-        puts "Timed out waiting on destroy container"
-      end
 
-      expect(destroyed).to be_truthy
+      expect do
+        new_client = create_client
+        new_client.info(:handle => handle)
+      end.to eventually_error_with(Warden::Client::ServerError, /unknown handle/)
     end
 
     it "should cancel the timer when client reconnects" do

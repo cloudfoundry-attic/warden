@@ -7,18 +7,14 @@ shared_examples "writing_pidfile" do
     after { FileUtils.rm_rf(piddir) }
 
     it "writes to it on startup and removes it on shutdown" do
-      expect {
-        start_warden
+      start_warden
 
-        # give warden EM thread time to write out the pidfile
-        sleep(0.1)
-      }.to change { File.exists?(server_pidfile) }.from(false).to(true)
-
+      expect(Rspec::Eventually::Eventually.new(be true).matches? -> { File.exists?(server_pidfile) }).to be true
       expect(File.read(server_pidfile).to_i).to eq(@pid)
 
-      expect {
-        stop_warden
-      }.to change { File.exists?(server_pidfile) }.from(true).to(false)
+      stop_warden
+
+      expect(Rspec::Eventually::Eventually.new(be false).matches? -> { File.exists?(server_pidfile) }).to be true
     end
   end
 end

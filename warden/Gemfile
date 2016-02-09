@@ -13,4 +13,5 @@ gem "warden-client", :path => "../warden-client"
 
 group :spec do
   gem "rspec", "~> 3.0"
+  gem "rspec-eventually", "~> 0.1.0"
 end
