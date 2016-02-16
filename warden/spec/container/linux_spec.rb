@@ -48,8 +48,10 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     execute("mkfs.ext4 -b 4096 -q -F -O ^has_journal,uninit_bg #{container_depot_file}")
     execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1 | xargs --no-run-if-empty --max-args=1 losetup --detach")
-    execute("losetup --find #{container_depot_file}")
-    @loop_device = execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1").strip
+    @loop_device = execute("losetup -f").strip
+    execute("losetup #{@loop_device} #{container_depot_file}")
+    # execute("losetup --find #{container_depot_file}")
+    # @loop_device = execute("losetup --all | grep #{container_depot_file} | cut --delimiter=: --fields=1").strip
 
     execute("mount #{@loop_device} #{container_depot_path}")
 
