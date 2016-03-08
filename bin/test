@@ -13,13 +13,20 @@ echo "finished"
 # Close stdin
 exec 0>&-
 
+export WROOT=/var/cf-release/src/dea-hm-workspace/src/warden
+
 # Remove remnants of apparmor (specific to Travis VM)
 # sudo dpkg --purge apparmor
 
 # Install dependencies
 # sudo apt-get -y install quota
 
-cd /var/cf-release/src/dea-hm-workspace/src/warden/warden
+# Test em-posix-spawn
+cd $WROOT/em-posix-spawn
+sudo bundle install
+sudo rake test
+
+cd $WROOT/warden
 sudo bundle install
 sudo bundle exec rake setup:bin
 sudo bundle exec rake spec
