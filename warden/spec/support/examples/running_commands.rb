@@ -168,7 +168,10 @@ module Warden::Protocol
 
           r1 = c1.read
           r2 = c2.read
-          expect(r1).to eq r2
+          # Test a tuple of the container IP and container path, since some of the memory
+          # stats may actually change between requests
+          expect(r1[:info][:container_ip]).to eq r2[:info][:container_ip]
+          expect(r1[:info][:container_path]).to eq r2[:info][:container_path]
         end
 
         it "should work when the connection that spawned the job disconnects" do
