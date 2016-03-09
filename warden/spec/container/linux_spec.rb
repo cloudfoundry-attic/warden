@@ -1252,25 +1252,6 @@ describe "linux", :platform => "linux", :needs_root => true do
       response
     end
 
-    it "is a directory" do
-      response = run("[ -d /dev/shm ]")
-      expect(response.exit_status).to eq 0
-    end
-
-    it "is mounted as a tmpfs device" do
-      response = run("grep /dev/shm /proc/mounts")
-      expect(response.exit_status).to eq 0
-      expect(response.stdout).to match(/tmpfs/)
-    end
-
-    it "can be written to by unprivileged users" do
-      response = run("id -u > /dev/shm/id.txt")
-      expect(response.exit_status).to eq 0
-
-      response = run("cat /dev/shm/id.txt")
-      expect(response.stdout.strip).to_not eq('0')
-    end
-
     context "when there is a memory limit" do
       let(:megabyte)     { 1024 * 1024 }
       let(:memory_limit) { megabyte * 32 }
