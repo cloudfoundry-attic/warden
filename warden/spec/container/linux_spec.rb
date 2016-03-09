@@ -1291,9 +1291,12 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       it "terminates when writing more data than the memory limit" do
-        run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=34")
+        run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=34; sleep 3")
 
-        expect(Rspec::Eventually::Eventually.new(eq("stopped")).matches? -> { client.info(:handle => handle).state }).to be true
+        expect(Rspec::Eventually::Eventually.new(eq("stopped")).matches? -> {
+          $stderr.puts "CLIENT STATE: #{client.info(:handle => handle).state}"
+          client.info(:handle => handle).state
+        }).to be true
         expect(Rspec::Eventually::Eventually.new(include("out of memory")).matches? -> { client.info(:handle => handle).events }).to be true
       end
     end
