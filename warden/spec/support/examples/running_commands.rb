@@ -188,9 +188,6 @@ module Warden::Protocol
               script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
               response = client.run(:handle => handle, :script => script, :discard_output => discard_output)
               expect(Rspec::Eventually::Eventually.new(eq 255).matches? -> { response.exit_status }).to be true
-              expect(Rspec::Eventually::Eventually.new(be > 1024 * 100).matches? -> { response.send(io).size }).to be true
-              expect(Rspec::Eventually::Eventually.new(be <= 1024 * 100 + 1024 * 64).matches? -> { response.send(io).size }).to be true
-
               # Test that iomux-spawn was killed
               expect(Rspec::Eventually::Eventually.new(eq "").matches? -> { `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep` }).to be true
             end
