@@ -48,7 +48,13 @@ then
       echo "About to remove cgroups"
       # Remove nested cgroups for nested-warden
       rmdir $path/instance* 2> /dev/null || true
-      rmdir $path
+      rmdir $path || true
+
+      if [ -d $path ]
+      then
+        echo "Failed to delete $path"
+        false
+      fi
     fi
   done
 
