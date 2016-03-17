@@ -1144,7 +1144,7 @@ describe "linux", :platform => "linux", :needs_root => true do
                               :script => "id -u")
       job_id_2 = response.job_id
 
-      expect(Rspec::Eventually::Eventually.new(eq [job_id_1]).matches? -> { client.info(:handle => handle).job_ids }).to be true
+      expect { client.info(:handle => handle).job_ids }.to eventually(eq [job_id_1])
     end
   end
 
@@ -1274,8 +1274,8 @@ describe "linux", :platform => "linux", :needs_root => true do
       it "terminates when writing more data than the memory limit" do
         run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=34")
 
-        expect(Rspec::Eventually::Eventually.new(eq("stopped")).matches? -> { client.info(:handle => handle).state }).to be true
-        expect(Rspec::Eventually::Eventually.new(include("out of memory")).matches? -> { client.info(:handle => handle).events }).to be true
+        expect { client.info(:handle => handle).state }.to eventually(eq("stopped"))
+        expect { client.info(:handle => handle).events }.to eventually(include("out of memory"))
       end
     end
   end
@@ -1296,10 +1296,11 @@ describe "linux", :platform => "linux", :needs_root => true do
 
     it "activates a container side network adapter" do
       script = "/sbin/ifconfig w-#{handle}-1 | grep -Eo 'RUNNING'"
-      expect(Rspec::Eventually::Eventually.new(eq("RUNNING\n")).matches? -> {
+
+      expect {
         @response = client.run(:handle => handle, :script => script)
         @response.stdout
-      }).to be true
+      }.to eventually(eq "RUNNING\n")
       expect(@response.exit_status).to eq 0
     end
 

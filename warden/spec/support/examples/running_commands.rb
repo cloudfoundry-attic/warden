@@ -100,14 +100,14 @@ module Warden::Protocol
         other_client.destroy(:handle => handle)
 
         # The command should not have exited cleanly
-        expect(Rspec::Eventually::Eventually.new(eq 0).not.matches? -> { client.read.exit_status }).to be true
+        expect { client.read.exit_status }.to eventually_not(eq(0))
       end
 
       it "includes container info" do
         other_client = create_client
         other_client.destroy(:handle => handle)
 
-        expect(Rspec::Eventually::Eventually.new(be_kind_of(InfoResponse)).matches? -> { client.read.info }).to be true
+        expect { client.read.info }.to eventually(be_kind_of(InfoResponse))
       end
     end
 
@@ -190,9 +190,10 @@ module Warden::Protocol
             it "should kill a job exceeding #{io} buffer limit" do
               script = "( head -c #{1024 * 200} /dev/urandom; sleep 1 ) 1>&#{fd}"
               response = client.run(:handle => handle, :script => script, :discard_output => discard_output)
-              expect(Rspec::Eventually::Eventually.new(eq 255).matches? -> { response.exit_status }).to be true
+
+              expect(response.exit_status).to eq(255)
               # Test that iomux-spawn was killed
-              expect(Rspec::Eventually::Eventually.new(eq "").matches? -> { `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep` }).to be true
+              expect { `ps ax | grep iomux-spawn | grep #{handle} | grep -v grep` }.to eventually(eq '')
             end
           end
         end
@@ -246,9 +247,9 @@ module Warden::Protocol
         job_id = client.spawn(:handle => handle, :script => "printf A; sleep 0.0; printf B;").job_id
 
         r = stream(client, job_id)
-        expect(Rspec::Eventually::Eventually.new(eq "AB").matches? -> { r.select { |e| e.name == "stdout" }.collect(&:data).join }).to be true
-        expect(Rspec::Eventually::Eventually.new(eq "").matches? -> { r.select { |e| e.name == "stderr"}.collect(&:data).join }).to be true
-        expect(Rspec::Eventually::Eventually.new(eq 0).matches? -> { r.last.exit_status }).to be true
+        expect { r.select { |e| e.name == "stdout" }.collect(&:data).join }.to eventually(eq 'AB')
+        expect { r.select { |e| e.name == "stderr" }.collect(&:data).join }.to eventually(eq '')
+        expect { r.last.exit_status }.to eventually(eq 0)
       end
 
       it "should return an error after a job has already been streamed" do
@@ -275,9 +276,9 @@ module Warden::Protocol
 
         # Attempt to stream the job again; the server should have left it in tact
         r = stream(client, job_id)
-        expect(Rspec::Eventually::Eventually.new(eq "1\n2\n").matches? -> { r.select { |e| e.name == "stdout" }.collect(&:data).join }).to be true
-        expect(Rspec::Eventually::Eventually.new(eq "").matches? -> { r.select { |e| e.name == "stderr"}.collect(&:data).join }).to be true
-        expect(Rspec::Eventually::Eventually.new(eq 0).matches? -> { r.last.exit_status }).to be true
+        expect { r.select { |e| e.name == "stdout" }.collect(&:data).join }.to eventually(eq "1\n2\n")
+        expect { r.select { |e| e.name == "stderr" }.collect(&:data).join }.to eventually(eq '')
+        expect { r.last.exit_status }.to eventually(eq(0))
       end
 
       describe "on different connections" do

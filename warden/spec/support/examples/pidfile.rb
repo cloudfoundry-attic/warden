@@ -9,12 +9,12 @@ shared_examples "writing_pidfile" do
     it "writes to it on startup and removes it on shutdown" do
       start_warden
 
-      expect(Rspec::Eventually::Eventually.new(be true).matches? -> { File.exists?(server_pidfile) }).to be true
+      expect { File.exists?(server_pidfile) }.to eventually(be_truthy)
       expect(File.read(server_pidfile).to_i).to eq(@pid)
 
       stop_warden
 
-      expect(Rspec::Eventually::Eventually.new(be false).matches? -> { File.exists?(server_pidfile) }).to be true
+      expect { File.exists?(server_pidfile) }.to eventually(be_falsey)
     end
   end
 end

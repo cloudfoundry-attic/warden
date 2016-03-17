@@ -21,7 +21,7 @@ describe Warden::Pool::Base do
 
       # It should not be possible to immediately acquire the entry again
       expect(pool.acquire).to be_nil
-      expect(Rspec::Eventually::Eventually.new(be_nil).not.matches? -> { pool.acquire }).to be true
+      expect { pool.acquire }.to eventually_not(be nil)
     end
   end
 

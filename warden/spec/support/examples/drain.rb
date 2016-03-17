@@ -11,7 +11,7 @@ shared_examples "drain" do
   it "should cause the warden to exit after all connections are closed" do
     Process.kill("USR2", @pid)
 
-    expect(Rspec::Eventually::Eventually.new(be_falsey).matches? -> { warden_running? }).to be true
+    expect { warden_running? }.to eventually(be_falsey)
   end
 
   it "should break connections that are inactive" do
