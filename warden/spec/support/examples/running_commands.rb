@@ -328,7 +328,7 @@ module Warden::Protocol
 
             responses = stream(client, job_id)
             expect(responses.last.exit_status).to eq 255
-            expect(responses.map(&:data).join.size).to be > 1024 * 100
+            expect(responses.map(&:data).join.size).to be > 1024 * 100 - 200
             expect(responses.map(&:data).join.size).to be <= 1024 * 100 + 1024 * 64
 
             # Test that iomux-spawn was killed
