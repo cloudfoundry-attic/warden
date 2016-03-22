@@ -1272,7 +1272,7 @@ describe "linux", :platform => "linux", :needs_root => true do
       end
 
       it "terminates when writing more data than the memory limit" do
-        run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=34")
+        run("dd of=/dev/shm/out.bin if=/dev/urandom bs=#{megabyte} count=45")
 
         expect { client.info(:handle => handle).state }.to eventually(eq("stopped"))
         expect { client.info(:handle => handle).events }.to eventually(include("out of memory"))
