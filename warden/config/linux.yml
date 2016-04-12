@@ -15,6 +15,8 @@ server:
   #
   container_grace_time: 300
 
+  container_stop_timeout: 80
+
   unix_domain_permissions: 0777
 
   # Specifies the path to the base chroot used as the read-only root
