@@ -43,6 +43,7 @@ describe "linux", :platform => "linux", :needs_root => true do
             "container_rootfs_path" => container_rootfs_path,
             "container_depot_path" => container_depot_path,
             "container_grace_time" => nil,
+            "container_stop_timeout" => 80,
             "job_output_limit" => 100 * 1024,
             "allow_nested_warden" => true  },
         "network" => {
