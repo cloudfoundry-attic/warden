@@ -28,6 +28,7 @@ module Warden
         attr_reader :container_rootfs_path
         attr_reader :container_depot_path
         attr_reader :container_iface_mtu
+        attr_reader :container_stop_timeout
 
         # Stores a map of handles to their respective container objects. Only
         # live containers are reachable through this map. Containers are only
@@ -53,6 +54,7 @@ module Warden
 
           # Default MTU 1500
           @container_iface_mtu = config.network["mtu"]
+          @container_stop_timeout = config.server["container_stop_timeout"]
 
           @container_rootfs_path   = config.server["container_rootfs_path"]
           @container_rootfs_path ||= File.join(@root_path, "base", "rootfs")
@@ -167,6 +169,10 @@ module Warden
 
       def container_iface_mtu
         self.class.container_iface_mtu
+      end
+
+      def container_stop_timeout
+        self.class.container_stop_timeout
       end
 
       def cancel_grace_timer

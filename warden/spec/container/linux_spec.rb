@@ -20,6 +20,7 @@ describe "linux", :platform => "linux", :needs_root => true do
   let(:container_klass) { "Warden::Container::Linux" }
   let(:container_depot_path) { File.join(work_path, "containers") }
   let(:container_depot_file) { container_depot_path + ".img" }
+  let(:container_stop_timeout) { 80 }
   let(:have_uid_support) { true }
   let(:netmask) { Warden::Network::Netmask.new(255, 255, 255, 252) }
   let(:allow_networks) { [] }
@@ -115,6 +116,7 @@ describe "linux", :platform => "linux", :needs_root => true do
               "container_rootfs_path" => container_rootfs_path,
               "container_depot_path" => container_depot_path,
               "container_grace_time" => 5,
+              "container_stop_timeout" => container_stop_timeout,
               "job_output_limit" => job_output_limit,
               "pidfile" => server_pidfile,
               "syslog_socket" => syslog_socket },

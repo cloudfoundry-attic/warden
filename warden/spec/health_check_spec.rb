@@ -47,7 +47,8 @@ describe "health check" do
           "unix_domain_path" => unix_domain_path,
           "container_rootfs_path" => container_rootfs_path,
           "container_depot_path" => container_depot_path,
-          "container_grace_time" => 5
+          "container_grace_time" => 5,
+          "container_stop_timeout" => 80
         },
         "health_server" => {
           "port" => 2345
