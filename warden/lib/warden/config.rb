@@ -92,6 +92,7 @@ module Warden
         "allow_networks" => [],
         "allow_host_access" => false,
         "mtu"            => 1500,
+        "dns_servers" => [],
       }
     end
 
@@ -109,6 +110,7 @@ module Warden
 
           "allow_networks"     => [String],
           optional("allow_host_access") => bool,
+          optional("dns_servers") => [String],
         }
       end
     end

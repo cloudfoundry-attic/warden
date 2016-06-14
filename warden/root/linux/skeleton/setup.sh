@@ -91,13 +91,24 @@ cat > mnt/etc/hosts <<-EOS
 $network_container_ip $id
 EOS
 
+
+if [[ -n "${dns_servers}" ]]
+then
+  # A custom DNS server list was given; use that
+  rm -f mnt/etc/resolv.conf
+
+  for server in ${dns_servers}
+  do
+    echo "nameserver ${server}" >> mnt/etc/resolv.conf
+  done
+
 # By default, inherit the nameserver from the host container.
 #
 # Exception: When the host's nameserver is set to localhost (127.0.0.1), it is
 # assumed to be running its own DNS server and listening on all interfaces.
 # In this case, the warden container must use the network_host_ip address
 # as the nameserver.
-if [[ "$(cat /etc/resolv.conf)" == "nameserver 127.0.0.1" ]]
+elif [[ "$(cat /etc/resolv.conf)" == "nameserver 127.0.0.1" ]]
 then
   cat > mnt/etc/resolv.conf <<-EOS
 nameserver $network_host_ip
