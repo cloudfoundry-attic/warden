@@ -83,6 +83,7 @@ module Warden
           "rootfs_path" => container_rootfs_path,
           "allow_nested_warden" => Server.config.allow_nested_warden?.to_s,
           "container_iface_mtu" => container_iface_mtu,
+          "dns_servers" => Server.config.network["dns_servers"].join("\n"),
         }
       end
 

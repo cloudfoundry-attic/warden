@@ -35,6 +35,8 @@ describe "linux", :platform => "linux", :needs_root => true do
     @container_rootfs_path = File.join(work_path, "..", "rootfs")
   end
 
+  let(:dns_servers) { [] }
+
   before do
     FileUtils.mkdir_p(work_path)
 
@@ -123,7 +125,8 @@ describe "linux", :platform => "linux", :needs_root => true do
               "pool_size" => 64,
               "mtu" => mtu,
               "allow_networks" => allow_networks,
-              "allow_host_access" => allow_host_access },
+              "allow_host_access" => allow_host_access,
+              "dns_servers" => dns_servers },
           "port" => {
               "pool_start_port" => 64000,
               "pool_size" => 1000},
@@ -204,6 +207,65 @@ describe "linux", :platform => "linux", :needs_root => true do
         expect(response.exit_status).to eq 0
         expect(response.stdout.strip).to eq 'LANG=en_US.UTF-8'
         expect(response.stderr).to eq ""
+      end
+    end
+  end
+
+  describe 'managing resolv.conf' do
+    before do
+      @handle = client.create.handle
+      @response = client.run(:handle => @handle,
+                            :script => 'cat /etc/resolv.conf')
+      @host_conf = `cat /etc/resolv.conf`
+    end
+
+    context 'when no nameservers are specified in the config' do
+      let (:not_dns_servers) { [
+        "peter",
+        "frank",
+        "george"
+      ] }
+
+      context 'and the host uses localhost for DNS' do
+        before do
+          FileUtils.cp('/etc/resolv.conf', '/tmp/resolv.conf')
+          `sudo cp spec/assets/config/resolv.conf.localhost /etc/resolv.conf`
+          restart_warden
+          @client = create_client
+          @handle = @client.create.handle
+          @network_host_ip = @client.run(:handle => @handle,
+            :script => "netstat -rn | awk '/^0\.0\.0\.0/{ print $2 }'")
+          @response = client.run(:handle => @handle,
+                            :script => 'cat /etc/resolv.conf')
+          @expected_conf = "nameserver " + @network_host_ip.stdout.strip
+        end
+
+        after do
+          `sudo cp /tmp/resolv.conf /etc/resolv.conf`
+        end
+
+        it 'points the container at the host for DNS' do
+          expect(@response.stdout.strip).to eq(@expected_conf)
+        end
+      end
+
+      context 'and the host does not use localhost for DNS' do
+        it 'copies resolv.conf from the host into the container' do
+          expect(@response.stdout).to eq(@host_conf)
+        end
+      end
+
+      context 'when nameservers are specified in the config' do
+        let (:dns_servers) { not_dns_servers }
+
+        it 'copies the nameservers into the container resolv.conf' do
+          output = @response.stdout
+          dns_servers.each do |ns|
+            expect(output.strip.include?("nameserver #{ns}")).to be true
+          end
+
+          expect(output.lines.length).to eq(3)
+        end
       end
     end
   end
