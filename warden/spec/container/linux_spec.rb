@@ -855,7 +855,7 @@ describe "linux", :platform => "linux", :needs_root => true do
 
       context "when allow_networks is configured" do
         # Allow traffic to the first two subnets
-        host_gw_ip = `ip route get 1.1.1.1 | cut -f 3 -d ' ' |head -n 1`
+        host_gw_ip = "8.8.4.4"
         let(:allow_networks) do
           [host_gw_ip]
         end
