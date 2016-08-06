@@ -22,5 +22,10 @@ then
   exec $(dirname $0)/centos.sh $@
 fi
 
+if grep -q -i debian /etc/issue
+then
+  exec $(dirname $0)/debian.sh $@
+fi
+
 echo "Unknown distribution: $(head -1 /etc/issue)"
 exit 1
