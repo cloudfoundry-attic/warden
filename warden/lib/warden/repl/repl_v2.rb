@@ -191,6 +191,7 @@ module Warden::Repl
           # TODO: Need to eliminate special case for run command.
           command = to_stream_command(command) if type == :run
           response = @client.stream(command, &process_stream)
+          process_stream.call(response)
           command_info[:exit_status] = response.exit_status if type == :run
         else
           response = @client.call(command)
